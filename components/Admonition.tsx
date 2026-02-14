@@ -8,9 +8,9 @@ interface AdmonitionProps {
 
 export const Admonition: React.FC<AdmonitionProps> = ({ type, title, children }) => {
   const styles = {
-    note: 'border-[#0055FF] bg-[#0055FF]/[0.03] text-[#0055FF]',
-    security: 'border-red-500 bg-red-500/[0.03] text-red-600',
-    important: 'border-amber-500 bg-amber-500/[0.03] text-amber-700'
+    note: 'border-[var(--trust-blue)] bg-[var(--admonition-bg)] text-[var(--trust-blue)]',
+    security: 'border-red-500 bg-red-500/5 text-red-500',
+    important: 'border-amber-500 bg-amber-500/5 text-amber-500'
   };
 
   return (
@@ -19,7 +19,7 @@ export const Admonition: React.FC<AdmonitionProps> = ({ type, title, children })
         <span>{type === 'note' ? 'ⓘ' : type === 'security' ? '⚠' : '!'}</span>
         <span>{title || type}</span>
       </div>
-      <div className="text-body text-[15px] leading-relaxed dark:text-gray-300">
+      <div className="text-[15px] leading-relaxed font-normal opacity-90">
         {children}
       </div>
     </div>

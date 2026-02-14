@@ -11,31 +11,31 @@ export type Theme = 'standard' | 'midnight';
 
 const Sidebar: React.FC<{ currentView: string; isOpen: boolean }> = ({ currentView, isOpen }) => (
   <aside 
-    className={`fixed left-0 top-0 h-screen w-72 bg-[#F8F9FA] dark:bg-[#010409] border-r border-[#E1E4E8] dark:border-[#30363D] z-40 transition-transform duration-300 transform 
+    className={`fixed left-0 top-0 h-screen w-72 bg-[var(--bg-sidebar)] border-r border-[var(--border-light)] z-40 transition-transform duration-300 transform 
     ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}
   >
     <div className="p-8">
       <div className="flex items-center gap-3 mb-12">
-        <div className="cr-badge text-[#0055FF]">cr</div>
-        <span className="font-bold tracking-tight text-xl">Signet v0.2.5</span>
+        <div className="cr-badge text-[var(--trust-blue)]">cr</div>
+        <span className="font-bold tracking-tight text-xl text-[var(--text-header)]">Signet v0.2.5</span>
       </div>
 
       <nav className="space-y-1">
-        <p className="px-4 text-[10px] uppercase tracking-widest font-bold opacity-40 mb-4">Core Specification</p>
+        <p className="px-4 text-[10px] uppercase tracking-widest font-bold text-[var(--text-body)] opacity-40 mb-4">Core Specification</p>
         <a href="#" className={`sidebar-link ${currentView === 'home' ? 'active' : ''}`}>0. Introduction</a>
         <a href="#standards" className={`sidebar-link ${currentView === 'standards' ? 'active' : ''}`}>1. Standards & C2PA</a>
         <a href="#architecture" className="sidebar-link">2. Neural Prism Pipeline</a>
         <a href="#schema" className={`sidebar-link ${currentView === 'schema' ? 'active' : ''}`}>3. VPR JSON Manifest</a>
         <a href="#spec" className={`sidebar-link ${currentView === 'spec' ? 'active' : ''}`}>4. Technical Draft</a>
         
-        <p className="px-4 pt-8 text-[10px] uppercase tracking-widest font-bold opacity-40 mb-4">Identity & Trust</p>
+        <p className="px-4 pt-8 text-[10px] uppercase tracking-widest font-bold text-[var(--text-body)] opacity-40 mb-4">Identity & Trust</p>
         <a href="#tks" className="sidebar-link">5. TrustKey Registry</a>
         <a href="#contact" className="sidebar-link">6. Technical Inquiries</a>
       </nav>
     </div>
 
     <div className="absolute bottom-8 left-8">
-      <div className="flex items-center gap-2 text-[10px] font-mono opacity-50">
+      <div className="flex items-center gap-2 text-[10px] font-mono opacity-50 text-[var(--text-body)]">
         <div className="w-2 h-2 rounded-full bg-green-500"></div>
         <span>MAINNET_NODE: ACTIVE</span>
       </div>
@@ -44,25 +44,25 @@ const Sidebar: React.FC<{ currentView: string; isOpen: boolean }> = ({ currentVi
 );
 
 const Header: React.FC<{ onToggleSidebar: () => void; theme: Theme; onToggleTheme: () => void }> = ({ onToggleSidebar, theme, onToggleTheme }) => (
-  <header className="fixed top-0 right-0 left-0 lg:left-72 h-16 bg-white dark:bg-[#0D1117] border-b border-[#E1E4E8] dark:border-[#30363D] z-30 flex items-center justify-between px-8">
-    <button onClick={onToggleSidebar} className="lg:hidden p-2 text-2xl">☰</button>
-    <div className="hidden lg:block text-[11px] font-mono opacity-40 uppercase tracking-widest">
+  <header className="fixed top-0 right-0 left-0 lg:left-72 h-16 bg-[var(--bg-standard)] border-b border-[var(--border-light)] z-30 flex items-center justify-between px-8">
+    <button onClick={onToggleSidebar} className="lg:hidden p-2 text-2xl text-[var(--text-header)]">☰</button>
+    <div className="hidden lg:block text-[11px] font-mono text-[var(--text-body)] opacity-40 uppercase tracking-widest">
       ISO/TC 290 - Cognitive Provenance Standard
     </div>
     
     <div className="flex items-center gap-6">
       <button 
         onClick={onToggleTheme}
-        className="text-[10px] font-mono uppercase tracking-widest hover:text-[#0055FF] transition-colors"
+        className="text-[10px] font-mono uppercase tracking-widest text-[var(--text-body)] hover:text-[var(--trust-blue)] transition-colors"
       >
-        {theme === 'standard' ? 'Dark Mode' : 'Light Mode'}
+        {theme === 'standard' ? 'Switch to Midnight' : 'Switch to Standard'}
       </button>
       <a 
         href="https://verify.signetai.io" 
         target="_blank"
-        className="px-4 py-1.5 bg-[#0055FF] text-white text-[11px] font-bold rounded hover:opacity-90 transition-all"
+        className="px-4 py-1.5 bg-[var(--trust-blue)] text-white text-[11px] font-bold rounded hover:brightness-110 transition-all"
       >
-        Launch Verifier
+        Verifier SDK
       </a>
     </div>
   </header>
@@ -74,12 +74,7 @@ const App: React.FC = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   useEffect(() => {
-    document.documentElement.setAttribute('data-theme', theme === 'midnight' ? 'midnight' : 'standard');
-    if (theme === 'midnight') {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
+    document.documentElement.setAttribute('data-theme', theme);
   }, [theme]);
 
   useEffect(() => {
@@ -98,7 +93,7 @@ const App: React.FC = () => {
   }, []);
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-[var(--bg-standard)] transition-colors duration-200">
       <Sidebar currentView={view} isOpen={isSidebarOpen} />
       <Header 
         onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} 
@@ -123,12 +118,12 @@ const App: React.FC = () => {
           {view === 'standards' && <StandardsView />}
           {view === 'schema' && <SchemaView />}
 
-          <footer className="mt-24 pt-12 border-t border-[#E1E4E8] dark:border-[#30363D] flex justify-between items-center text-[10px] font-mono opacity-50 uppercase tracking-widest">
+          <footer className="mt-24 pt-12 border-t border-[var(--border-light)] flex justify-between items-center text-[10px] font-mono opacity-50 uppercase tracking-widest text-[var(--text-body)]">
             <div className="flex items-center gap-4">
               <div className="cr-badge">cr</div>
               <span>Signet Protocol Group © 2026</span>
             </div>
-            <span>Status: Draft-Song-02</span>
+            <span>ISO/IEC 19566-5 Compliance</span>
           </footer>
         </div>
       </main>

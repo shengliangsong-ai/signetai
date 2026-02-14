@@ -12,34 +12,34 @@ export const StandardsView: React.FC = () => {
   return (
     <article className="prose prose-slate max-w-none">
       <header className="mb-16">
-        <div className="text-[10px] font-mono text-[#0055FF] uppercase font-bold mb-4 tracking-[0.3em]">Section 1.0</div>
-        <h2 className="text-4xl font-bold mb-6">Standards & Compliance</h2>
-        <p className="text-lg text-gray-600 dark:text-gray-400">
+        <div className="text-[10px] font-mono text-[var(--trust-blue)] uppercase font-bold mb-4 tracking-[0.3em]">Section 1.0</div>
+        <h2 className="text-4xl font-bold mb-6 text-[var(--text-header)]">Standards & Compliance</h2>
+        <p className="text-lg text-[var(--text-body)] opacity-80">
           Signet Protocol leverages existing Content Credentials (C2PA) infrastructure to provide a "deep-logic" audit layer for autonomous agents.
         </p>
       </header>
 
       <section className="mb-16">
-        <h3 className="text-xl font-bold mb-4 border-b border-gray-100 pb-2">1.1 Implementation Architecture</h3>
-        <p className="mb-6">
+        <h3 className="text-xl font-bold mb-4 border-b border-[var(--border-light)] pb-2 text-[var(--text-header)]">1.1 Implementation Architecture</h3>
+        <p className="mb-6 text-[var(--text-body)]">
           The Neural Prism engine signs files using the standard C2PA toolchain (`c2patool`). Every Signet-verified asset contains a standard JUMBF box with custom `org.signetai.vpr` assertions.
         </p>
         
-        <div className="overflow-x-auto my-8 border border-[#E1E4E8] rounded">
+        <div className="overflow-x-auto my-8 border border-[var(--border-light)] rounded bg-[var(--bg-standard)]">
           <table className="w-full text-sm text-left">
-            <thead className="bg-[#F8F9FA] dark:bg-white/5 border-b border-[#E1E4E8]">
+            <thead className="bg-[var(--table-header)] border-b border-[var(--border-light)]">
               <tr>
-                <th className="px-6 py-4 font-bold">Feature</th>
-                <th className="px-6 py-4 font-bold">C2PA Native</th>
-                <th className="px-6 py-4 font-bold text-[#0055FF]">Signet VPR Extension</th>
+                <th className="px-6 py-4 font-bold text-[var(--text-header)]">Feature</th>
+                <th className="px-6 py-4 font-bold text-[var(--text-header)]">C2PA Native</th>
+                <th className="px-6 py-4 font-bold text-[var(--trust-blue)]">Signet VPR Extension</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#E1E4E8]">
+            <tbody className="divide-y divide-[var(--border-light)]">
               {matrix.map((row, i) => (
-                <tr key={i} className="hover:bg-gray-50 dark:hover:bg-white/5">
-                  <td className="px-6 py-4 font-medium">{row.feature}</td>
-                  <td className="px-6 py-4">{row.c2pa}</td>
-                  <td className="px-6 py-4 font-semibold text-[#0055FF]">{row.signet}</td>
+                <tr key={i} className="hover:bg-white/5 transition-colors">
+                  <td className="px-6 py-4 font-medium text-[var(--text-header)]">{row.feature}</td>
+                  <td className="px-6 py-4 text-[var(--text-body)] opacity-70">{row.c2pa}</td>
+                  <td className="px-6 py-4 font-semibold text-[var(--trust-blue)]">{row.signet}</td>
                 </tr>
               ))}
             </tbody>
@@ -52,15 +52,15 @@ export const StandardsView: React.FC = () => {
       </Admonition>
 
       <section className="mb-16">
-        <h3 className="text-xl font-bold mb-4">1.2 External References</h3>
+        <h3 className="text-xl font-bold mb-4 text-[var(--text-header)]">1.2 External References</h3>
         <ul className="space-y-4">
           <li>
-            <a href="https://spec.c2pa.org/" target="_blank" className="text-[#0055FF] hover:underline font-medium">
+            <a href="https://spec.c2pa.org/" target="_blank" className="text-[var(--trust-blue)] hover:underline font-medium">
               Official C2PA Specification (ISO/TC 290) &rarr;
             </a>
           </li>
           <li>
-            <a href="https://contentauthenticity.org/" target="_blank" className="text-[#0055FF] hover:underline font-medium">
+            <a href="https://contentauthenticity.org/" target="_blank" className="text-[var(--trust-blue)] hover:underline font-medium">
               Content Authenticity Initiative (CAI) &rarr;
             </a>
           </li>
