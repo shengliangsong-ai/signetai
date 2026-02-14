@@ -1,4 +1,4 @@
-// [SOURCE PROMPT]: Initialize the /docs/evolution/LOG.md file. Document the transition from aivoicecast.com to signetai.io. Then, generate the first "Verification Badge" component for the homepage that, when clicked, shows a popup explaining how the site's own code is a "Signet-Verified Asset."
+// [SOURCE PROMPT]: Implement the TrustKeyService (TKS) Registry API structure and UI for identity binding (Task F-01).
 
 import React, { useState, useEffect } from 'react';
 import { Hero } from './components/Hero';
@@ -6,6 +6,8 @@ import { Architecture } from './components/Architecture';
 import { SchemaDefinition } from './components/SchemaDefinition';
 import { SpecView } from './components/SpecView';
 import { VerificationBadge } from './components/VerificationBadge';
+import { TrustKeyService } from './components/TrustKeyService';
+import { ContactHub } from './components/ContactHub';
 
 const Footer: React.FC = () => (
   <footer className="py-20 px-6 border-t border-neutral-900 max-w-7xl mx-auto border-x">
@@ -28,7 +30,7 @@ const Footer: React.FC = () => (
           <ul className="text-neutral-500 text-sm space-y-2">
             <li className="hover:text-white cursor-pointer">Neural Lens</li>
             <li className="hover:text-white cursor-pointer">Neural Prism</li>
-            <li className="hover:text-white cursor-pointer">TrustKeyService</li>
+            <li><a href="#tks" className="hover:text-white cursor-pointer">TrustKeyService</a></li>
           </ul>
         </div>
         <div className="space-y-4">
@@ -59,8 +61,8 @@ const Navbar: React.FC<{ isSpec: boolean }> = ({ isSpec }) => (
         {!isSpec ? (
           <>
             <a href="#" className="hover:text-white transition-colors">Architecture</a>
-            <a href="#" className="hover:text-white transition-colors">SDK</a>
-            <a href="#" className="hover:text-white transition-colors">Pools</a>
+            <a href="#tks" className="hover:text-white transition-colors">TKS Registry</a>
+            <a href="#contact" className="hover:text-white transition-colors">Contact</a>
             <a href="#spec" className="hover:text-white transition-colors">Full Spec</a>
           </>
         ) : (
@@ -100,7 +102,9 @@ const App: React.FC = () => {
           <>
             <Hero />
             <Architecture />
+            <TrustKeyService />
             <SchemaDefinition />
+            <ContactHub />
           </>
         ) : (
           <SpecView />
