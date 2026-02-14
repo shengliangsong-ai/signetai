@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { SignetChainVisual } from './SignetChain';
 
@@ -23,12 +22,18 @@ export const Hero: React.FC = () => {
           </p>
 
           <div className="flex flex-wrap gap-4 pt-4">
-            <button className="px-8 py-4 bg-white text-black font-semibold rounded-none hover:bg-neutral-200 transition-colors">
+            <a 
+              href="#tks" 
+              className="px-8 py-4 bg-white text-black font-semibold rounded-none hover:bg-neutral-200 transition-colors text-center"
+            >
               GENERATE MASTER SIGNET
-            </button>
-            <button className="px-8 py-4 border border-neutral-700 text-white font-mono text-sm hover:bg-neutral-900 transition-colors">
+            </a>
+            <a 
+              href="#spec" 
+              className="px-8 py-4 border border-neutral-700 text-white font-mono text-sm hover:bg-neutral-900 transition-colors text-center"
+            >
               TECHNICAL_SPEC_V0.2
-            </button>
+            </a>
           </div>
         </div>
 

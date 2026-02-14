@@ -73,16 +73,17 @@ export const VerificationBadge: React.FC = () => {
               </div>
 
               <div className="pt-6 flex gap-4 border-t border-neutral-800">
-                <button 
+                <a 
+                  href="#tks"
                   onClick={() => setIsOpen(false)}
-                  className="px-6 py-2 bg-emerald-500 text-black font-mono text-[10px] uppercase tracking-widest hover:bg-emerald-400 transition-colors"
+                  className="px-6 py-2 bg-emerald-500 text-black font-mono text-[10px] uppercase tracking-widest hover:bg-emerald-400 transition-colors text-center"
                 >
                   Verify Now
-                </button>
+                </a>
                 <a 
                   href="#spec" 
                   onClick={() => setIsOpen(false)}
-                  className="px-6 py-2 border border-neutral-800 text-neutral-400 font-mono text-[10px] uppercase tracking-widest hover:text-white transition-colors"
+                  className="px-6 py-2 border border-neutral-800 text-neutral-400 font-mono text-[10px] uppercase tracking-widest hover:text-white transition-colors text-center"
                 >
                   View Spec
                 </a>
