@@ -5,6 +5,13 @@ export enum SignetEntityType {
   HUMAN = 'HUMAN'
 }
 
+export enum SignetPipelineLayer {
+  VISION_SUBSTRATE = 'L1: VISION_SUBSTRATE',
+  NEURAL_LENS = 'L2: NEURAL_LENS',
+  ADVERSARIAL_PROBE = 'L3: ADVERSARIAL_PROBE',
+  HUMAN_SIGNET = 'L4: HUMAN_SIGNET'
+}
+
 export interface SignetPayload {
   version: string;
   timestamp: number;
@@ -15,20 +22,20 @@ export interface SignetPayload {
   signature: string;
 }
 
-export interface TrustKeyRecord {
-  id: string;
-  ownerId: string;
-  publicKey: string;
-  provider: 'SIGNET' | 'GOOGLE' | 'DEEPSEEK';
-  status: 'ACTIVE' | 'REVOKED';
-  createdAt: Date;
+export interface XSignetVPRHeader {
+  version: string;
+  vprScore: number;
+  signatureHash: string;
+  layers: {
+    l1_thesis_id: string;
+    l2_dag_hash: string;
+    l3_logic_drift: number;
+    l4_curator_sig: string;
+  };
 }
 
-export interface NeuralRetinaNode {
-  id: string;
-  bookId: string;
-  contentHash: string;
-  dependencies: string[]; // List of other node IDs
-  verifiedBy: string; // Master Signet ID
-  symbolicParityScore: number;
+export interface AppSignetMapping {
+  app: string;
+  layer: SignetPipelineLayer;
+  contribution: string;
 }
