@@ -10,44 +10,50 @@
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&family=Inter:wght@100..900&display=swap" rel="stylesheet">
     <style>
       :root {
-        /* Default: Midnight */
+        /* Midnight (OLED Dark) */
         --bg-primary: #0a0a0a;
-        --bg-secondary: #141414;
+        --bg-secondary: #121212;
         --text-primary: #ffffff;
         --text-secondary: #a3a3a3;
-        --accent: #10b981; /* Emerald */
-        --border: rgba(255, 255, 255, 0.1);
+        --accent: #10b981;
+        --border: rgba(255, 255, 255, 0.08);
         --glass: rgba(255, 255, 255, 0.03);
-        --nav-bg: rgba(10, 10, 10, 0.8);
+        --nav-bg: rgba(10, 10, 10, 0.85);
+        --code-bg: #050505;
       }
 
       [data-theme='paper'] {
+        /* Ivory Paper (Editorial Light) */
         --bg-primary: #faf9f6;
         --bg-secondary: #f0ede4;
-        --text-primary: #1a1a1a;
+        --text-primary: #121212;
         --text-secondary: #525252;
-        --accent: #2563eb; /* Royal Blue */
+        --accent: #2563eb;
         --border: rgba(0, 0, 0, 0.1);
         --glass: rgba(0, 0, 0, 0.02);
         --nav-bg: rgba(250, 249, 246, 0.9);
+        --code-bg: #f5f4f0;
       }
 
       [data-theme='sepia'] {
+        /* Solarized Sepia (Reader Focus) */
         --bg-primary: #f4ecd8;
         --bg-secondary: #e8dfc4;
         --text-primary: #433422;
-        --text-secondary: #6b5a45;
-        --accent: #92400e; /* Amber */
-        --border: rgba(67, 52, 34, 0.15);
-        --glass: rgba(67, 52, 34, 0.03);
+        --text-secondary: #7a6a58;
+        --accent: #92400e;
+        --border: rgba(67, 52, 34, 0.12);
+        --glass: rgba(67, 52, 34, 0.04);
         --nav-bg: rgba(244, 236, 216, 0.9);
+        --code-bg: #ebe1c9;
       }
 
+      html { scroll-behavior: smooth; }
       body {
         background-color: var(--bg-primary);
         color: var(--text-primary);
         font-family: 'Inter', sans-serif;
-        transition: background-color 0.5s ease, color 0.5s ease;
+        transition: background-color 0.4s cubic-bezier(0.4, 0, 0.2, 1), color 0.4s cubic-bezier(0.4, 0, 0.2, 1);
       }
       .font-serif { font-family: 'Playfair Display', serif; }
       .font-mono { font-family: 'JetBrains Mono', monospace; }
@@ -60,11 +66,6 @@
       .theme-accent { color: var(--accent); }
       .theme-accent-bg { background-color: var(--accent); }
 
-      .gradient-text {
-        background: linear-gradient(to right, var(--text-primary), var(--text-secondary));
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-      }
       .glass-card {
         background: var(--glass);
         backdrop-filter: blur(12px);
