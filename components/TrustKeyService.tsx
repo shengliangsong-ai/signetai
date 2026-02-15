@@ -1,7 +1,9 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { initializeApp, getApps, getApp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
 import { getFirestore, doc, getDoc, setDoc, collection, query, where, getDocs, limit } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
 import { firebaseConfig } from '../private_keys';
+import { PersistenceService, VaultRecord } from '../services/PersistenceService';
 
 const initSignetFirebase = () => {
   try {
@@ -61,17 +63,12 @@ async function hashFile(file: File): Promise<string> {
   return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
-// --- Binary Injection Utility ---
 async function injectSignetManifest(file: File, manifest: any): Promise<Blob> {
   const arrayBuffer = await file.arrayBuffer();
   const uint8Array = new Uint8Array(arrayBuffer);
-  
-  // Signet Wrapper Start Marker: [S][I][G][N][E][T]
   const marker = new TextEncoder().encode("SIGNET_VPR_BEGIN");
   const manifestData = new TextEncoder().encode(JSON.stringify(manifest));
   const endMarker = new TextEncoder().encode("SIGNET_VPR_END");
-
-  // Create a combined blob: Original Binary + Signet Manifest Wrapper
   return new Blob([uint8Array, marker, manifestData, endMarker], { type: file.type });
 }
 
@@ -123,9 +120,24 @@ export const TrustKeyService: React.FC = () => {
   const readableIdentity = getFullIdentity(subject, namespace);
   const systemAnchor = readableIdentity ? generateSystemAnchor(readableIdentity) : "";
 
+  // --- Local Vault Auto-Load ---
+  useEffect(() => {
+    const autoLoad = async () => {
+      const active = await PersistenceService.getActiveVault();
+      if (active) {
+        setSubject(active.identity.split(SEPARATOR)[0]);
+        setNamespace(active.identity.split(SEPARATOR)[1] || "");
+        setPublicKey(active.publicKey);
+        setRecoveryPhrase(active.mnemonic);
+        setIsActivated(true);
+      }
+    };
+    autoLoad();
+  }, []);
+
   useEffect(() => {
     const checkUniqueness = async () => {
-      if (!subject || subject.length < 3 || !db) {
+      if (!subject || subject.length < 3 || !db || isActivated) {
         setAvailability('idle');
         return;
       }
@@ -138,7 +150,7 @@ export const TrustKeyService: React.FC = () => {
     };
     const timer = setTimeout(checkUniqueness, 600);
     return () => clearTimeout(timer);
-  }, [systemAnchor, subject]);
+  }, [systemAnchor, subject, isActivated]);
 
   const handleGenerate = () => {
     if (!subject || subject.length < 3) return;
@@ -156,6 +168,16 @@ export const TrustKeyService: React.FC = () => {
     const record = { readableIdentity, systemAnchor, publicKey, timestamp: Date.now(), subject, namespace: namespace || "ROOT", authority: PROTOCOL_AUTHORITY };
     try {
       await setDoc(doc(db, "identities", systemAnchor), record);
+      
+      // Save to Local IndexedDB Vault
+      await PersistenceService.saveVault({
+        anchor: systemAnchor,
+        identity: readableIdentity,
+        publicKey: publicKey,
+        mnemonic: recoveryPhrase || "",
+        timestamp: Date.now()
+      });
+
       setIsRegistering(false);
       setIsActivated(true);
     } catch (e: any) {
@@ -164,49 +186,34 @@ export const TrustKeyService: React.FC = () => {
     }
   };
 
+  // --- Fix: Implemented handleLookup to query identities from Firestore by subject (handle) ---
   const handleLookup = async () => {
     if (!lookupQuery || !db) return;
-    setLookupResults([]);
     setIsSearching(true);
     try {
-      const docRef = doc(db, "identities", lookupQuery);
-      const docSnap = await getDoc(docRef);
-      if (docSnap.exists()) {
+      const q = query(
+        collection(db, "identities"),
+        where("subject", "==", lookupQuery.toLowerCase().trim()),
+        limit(10)
+      );
+      const querySnapshot = await getDocs(q);
+      const results: IdentityRecord[] = [];
+      querySnapshot.forEach((docSnap) => {
         const data = docSnap.data();
-        setLookupResults([{ id: data.readableIdentity || data.subject, anchor: data.systemAnchor, key: data.publicKey, date: new Date(data.timestamp).toLocaleDateString() }]);
-      } else {
-        const cleanQuery = lookupQuery.toLowerCase().trim();
-        const q = query(collection(db, "identities"), where("readableIdentity", ">=", cleanQuery), where("readableIdentity", "<=", cleanQuery + "\uf8ff"), limit(5));
-        const querySnapshot = await getDocs(q);
-        const results: IdentityRecord[] = [];
-        querySnapshot.forEach((doc) => {
-          const data = doc.data();
-          results.push({ id: data.readableIdentity || data.subject, anchor: data.systemAnchor, key: data.publicKey, date: new Date(data.timestamp).toLocaleDateString() });
+        results.push({
+          id: data.readableIdentity,
+          anchor: data.systemAnchor,
+          key: data.publicKey,
+          date: new Date(data.timestamp).toLocaleDateString()
         });
-        setLookupResults(results);
-      }
-    } catch (e: any) { setNetworkError("Registry lookup failed."); }
-    finally { setIsSearching(false); }
-  };
-
-  const handleResolveManualIdentity = async () => {
-    if (!manualIdentity || !db) return;
-    setIsResolvingIdentity(true);
-    setNetworkError(null);
-    try {
-      const cleanId = manualIdentity.includes(PROTOCOL_AUTHORITY) ? manualIdentity : `${manualIdentity}${SEPARATOR}${PROTOCOL_AUTHORITY}`;
-      const anchor = generateSystemAnchor(cleanId);
-      const docRef = doc(db, "identities", anchor);
-      const docSnap = await getDoc(docRef);
-      if (docSnap.exists()) {
-        const data = docSnap.data();
-        setSubject(data.subject);
-        setNamespace(data.namespace);
-        setPublicKey(data.publicKey);
-        setIsActivated(true);
-      } else { setNetworkError("Identity not found in global registry."); }
-    } catch (e) { setNetworkError("Resolution Error."); }
-    finally { setIsResolvingIdentity(false); }
+      });
+      setLookupResults(results);
+    } catch (e: any) {
+      console.error("Lookup error:", e);
+      setNetworkError(e.message);
+    } finally {
+      setIsSearching(false);
+    }
   };
 
   const handleVaultRecovery = () => {
@@ -215,14 +222,36 @@ export const TrustKeyService: React.FC = () => {
       return;
     }
     setIsRecovering(true);
-    setTimeout(() => {
+    setTimeout(async () => {
+      const recoveredKey = deriveMockKey(readableIdentity);
       setRecoveryPhrase(recoveryInput);
-      setPublicKey(deriveMockKey(readableIdentity));
+      setPublicKey(recoveredKey);
+      
+      // Persist recovered authority to IndexedDB
+      await PersistenceService.saveVault({
+        anchor: systemAnchor,
+        identity: readableIdentity,
+        publicKey: recoveredKey,
+        mnemonic: recoveryInput,
+        timestamp: Date.now()
+      });
+
       setIsActivated(true);
       setIsRecovering(false);
       setShowRecoveryFlow(false);
       setNetworkError(null);
     }, 2000);
+  };
+
+  const handlePurgeVault = async () => {
+    if (confirm("DANGER: This will remove your signing keys from this browser. You will need your 12-word phrase to recover. Proceed?")) {
+      await PersistenceService.purgeVault(systemAnchor);
+      setSubject('');
+      setNamespace('');
+      setPublicKey(null);
+      setRecoveryPhrase(null);
+      setIsActivated(false);
+    }
   };
 
   const handleLabFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -239,8 +268,6 @@ export const TrustKeyService: React.FC = () => {
   const handleSignAsset = async () => {
     if (!labFile || !publicKey || !isActivated) return;
     setIsSigning(true);
-    
-    // 1. Generate real-world cryptographic manifest structure
     const manifest = {
       type: "org.signetai.vpr",
       strategy: signingStrategy,
@@ -254,26 +281,20 @@ export const TrustKeyService: React.FC = () => {
         signature: `sig_ed25519_v2.3_${Math.random().toString(36).substring(2)}` 
       }]
     };
-
     setSignedManifest(manifest);
-
-    // 2. Perform Binary Injection if strategy is embedded
     if (signingStrategy === 'embedded') {
       const blob = await injectSignetManifest(labFile, manifest);
       setSignedBlob(blob);
     } else {
       setSignedBlob(null);
     }
-
     setTimeout(() => setIsSigning(false), 800);
   };
 
   const downloadAsset = () => {
     if (!signedManifest) return;
-    
     let url: string;
     let filename: string;
-
     if (signingStrategy === 'embedded' && signedBlob) {
       url = URL.createObjectURL(signedBlob);
       filename = `signet_${labFile?.name}`;
@@ -282,7 +303,6 @@ export const TrustKeyService: React.FC = () => {
       url = dataStr;
       filename = `manifest_${labFile?.name.split('.')[0]}.vpr.json`;
     }
-
     const dl = document.createElement('a');
     dl.setAttribute("href", url);
     dl.setAttribute("download", filename);
@@ -343,15 +363,26 @@ export const TrustKeyService: React.FC = () => {
                       </div>
                     ) : (
                       <div className="space-y-6">
-                        <div className="p-8 bg-black text-white rounded border border-neutral-800 space-y-4">
+                        <div className="p-8 bg-black text-white rounded border border-neutral-800 space-y-4 relative">
+                          {isActivated && (
+                            <div className="absolute top-4 right-4 flex items-center gap-2">
+                               <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></div>
+                               <span className="text-[8px] font-mono text-blue-500 uppercase font-bold tracking-widest">Sealed In IndexedDB</span>
+                            </div>
+                          )}
                           <p className="font-mono text-[10px] text-neutral-500 uppercase font-bold">Private Recovery Mnemonic</p>
                           <div className="grid grid-cols-3 gap-2">
                             {recoveryPhrase?.split(" ").map((w, i) => <div key={i} className="bg-neutral-900 p-2 text-[10px] font-mono text-blue-400 text-center rounded">{w}</div>)}
                           </div>
                         </div>
-                        <button onClick={handleCommit} disabled={isActivated} className={`w-full py-6 font-mono text-[11px] uppercase tracking-widest font-bold rounded ${isActivated ? 'bg-green-600' : 'bg-[var(--trust-blue)]'} text-white shadow-lg`}>
-                          {isActivated ? '✓ IDENTITY_SETTLED' : 'Seal Mainnet Identity'}
-                        </button>
+                        {isActivated ? (
+                          <div className="space-y-4">
+                            <button className="w-full py-6 font-mono text-[11px] uppercase tracking-widest font-bold rounded bg-green-600 text-white shadow-lg cursor-default">✓ IDENTITY_SETTLED_LOCAL</button>
+                            <button onClick={handlePurgeVault} className="w-full py-4 font-mono text-[9px] uppercase text-red-500/50 hover:text-red-500 transition-colors">Purge Local Vault from Browser</button>
+                          </div>
+                        ) : (
+                          <button onClick={handleCommit} className="w-full py-6 font-mono text-[11px] uppercase tracking-widest font-bold rounded bg-[var(--trust-blue)] text-white shadow-lg">Seal Mainnet Identity</button>
+                        )}
                       </div>
                     )}
                   </>
@@ -359,14 +390,26 @@ export const TrustKeyService: React.FC = () => {
               </div>
             ) : activeTab === 'lookup' ? (
               <div className="space-y-10 animate-in fade-in duration-500">
-                <input type="text" placeholder="Search handle..." className="w-full bg-transparent border-b-2 border-[var(--text-header)] p-4 font-mono text-lg" value={lookupQuery} onChange={(e) => setLookupQuery(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleLookup()} />
+                <input type="text" placeholder="Search handle (e.g. shengliang.song)..." className="w-full bg-transparent border-b-2 border-[var(--text-header)] p-4 font-mono text-lg outline-none" value={lookupQuery} onChange={(e) => setLookupQuery(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleLookup()} />
                 <div className="mt-8 h-80 border border-[var(--border-light)] bg-[var(--code-bg)] rounded p-8 overflow-y-auto">
-                  {lookupResults.map((r, i) => (
-                    <div key={i} className="p-4 bg-[var(--bg-standard)] border border-[var(--border-light)] rounded mb-4">
-                      <p className="font-mono text-[10px] font-bold text-[var(--trust-blue)]">{r.id}</p>
-                      <p className="text-[10px] font-mono opacity-40 break-all">{r.key}</p>
-                    </div>
-                  ))}
+                  {isSearching ? (
+                    <div className="flex items-center justify-center h-full font-mono text-[10px] uppercase opacity-40 animate-pulse">Searching_Registry...</div>
+                  ) : lookupResults.length > 0 ? (
+                    lookupResults.map((r, i) => (
+                      <div key={i} className="p-4 bg-[var(--bg-standard)] border border-[var(--border-light)] rounded mb-4">
+                        <div className="flex justify-between items-start mb-2">
+                           <p className="font-mono text-[10px] font-bold text-[var(--trust-blue)]">{r.id}</p>
+                           <span className="text-[8px] font-mono opacity-20 uppercase">{r.date}</span>
+                        </div>
+                        <p className="text-[10px] font-mono opacity-40 break-all">{r.key}</p>
+                        <p className="text-[8px] font-mono opacity-20 mt-2 uppercase">Anchor: {r.anchor}</p>
+                      </div>
+                    ))
+                  ) : lookupQuery ? (
+                    <div className="flex items-center justify-center h-full font-mono text-[10px] uppercase opacity-20 italic">No_Identity_Found</div>
+                  ) : (
+                    <div className="flex items-center justify-center h-full font-mono text-[10px] uppercase opacity-20 italic">Enter_Handle_To_Query</div>
+                  )}
                 </div>
               </div>
             ) : (
@@ -382,13 +425,9 @@ export const TrustKeyService: React.FC = () => {
                       <div className="w-12 h-12 border border-neutral-300 rounded-full flex items-center justify-center mx-auto opacity-40">🔑</div>
                       <div className="space-y-2">
                         <p className="font-mono text-[10px] uppercase font-bold text-neutral-500">Link Active Identity</p>
-                        <p className="text-xs italic opacity-60">Enter your handle to link your registry anchor.</p>
+                        <p className="text-xs italic opacity-60">Identity vault empty. Please register or recover authority.</p>
                       </div>
-                      <div className="flex gap-2">
-                        <input type="text" placeholder="e.g. shengliang.song" className="flex-1 px-4 py-2 border rounded font-mono text-xs outline-none" value={manualIdentity} onChange={(e) => setManualIdentity(e.target.value)} />
-                        <button onClick={handleResolveManualIdentity} disabled={isResolvingIdentity} className="px-6 py-2 bg-black text-white font-mono text-[10px] uppercase font-bold rounded">Resolve</button>
-                      </div>
-                      {networkError && <p className="text-[9px] font-mono text-red-500">{networkError}</p>}
+                      <button onClick={() => setActiveTab('register')} className="px-6 py-2 bg-black text-white font-mono text-[10px] uppercase font-bold rounded">Go to Registry</button>
                     </div>
                   </div>
                 ) : (
@@ -416,8 +455,6 @@ export const TrustKeyService: React.FC = () => {
                               <span className="font-mono text-[10px] uppercase font-bold text-green-600">✓ {signingStrategy.toUpperCase()} INJECTION READY</span>
                               <button onClick={() => setSignedManifest(null)} className="text-[10px] font-mono uppercase opacity-40">Reset</button>
                            </div>
-                           
-                           {/* Binary Anatomy Visualization */}
                            <div className="space-y-2 mb-6">
                               <p className="font-mono text-[9px] uppercase opacity-40 font-bold tracking-widest text-center">Injected Binary Anatomy</p>
                               <div className="flex h-12 w-full rounded overflow-hidden border border-neutral-800">
@@ -426,7 +463,6 @@ export const TrustKeyService: React.FC = () => {
                                  <div className="bg-blue-600 w-[15%] flex items-center justify-center font-mono text-[8px] text-white animate-pulse">SIGNET_VPR</div>
                               </div>
                            </div>
-
                            <pre className="p-4 bg-black text-white rounded font-mono text-[9px] overflow-auto max-h-40 border border-white/10">{JSON.stringify(signedManifest, null, 2)}</pre>
                            <button onClick={downloadAsset} className="w-full py-4 bg-green-600 text-white font-mono text-[10px] uppercase font-bold rounded shadow-lg">Download Signed Asset</button>
                         </div>

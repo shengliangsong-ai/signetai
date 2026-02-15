@@ -14,6 +14,7 @@ To ensure the accountability of the 8 billion human curators, the protocol manda
 ### 2.2 Vault Recovery Protocol (VRP-R)
 - **Non-Custodial Root**: The root of trust is a 12-word mnemonic seed. 
 - **Recovery Logic**: If a user loses their private seed manifest (the local session file), they MAY re-derive their Ed25519 signing key using the BIP39-style mnemonic.
+- **Client-Side Persistence**: Authorized seeds MUST be stored in the browser's **IndexedDB** using the `SignetProtocol_v1` database. This data is isolated by the browser's Same-Origin Policy (SOP) and is only accessible to the `signetai.io` origin.
 - **Anchor Immutability**: Recovery resets the curatorial authority without changing the System Anchor, preserving the integrity of previously signed assets.
 
 ## 3. Manifest Delivery & Strategies

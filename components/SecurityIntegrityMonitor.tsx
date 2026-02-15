@@ -1,9 +1,22 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { PersistenceService } from '../services/PersistenceService';
 
 export const SecurityIntegrityMonitor: React.FC = () => {
+  const [vaultActive, setVaultActive] = useState(false);
+
+  useEffect(() => {
+    const check = async () => {
+      const active = await PersistenceService.getActiveVault();
+      setVaultActive(!!active);
+    };
+    check();
+    const interval = setInterval(check, 5000);
+    return () => clearInterval(interval);
+  }, []);
+
   const securityChecks = [
     { label: "Referrer Shield", status: "ENFORCED", detail: "signetai.io only" },
-    { label: "Anchor Entropy", status: "PASS", detail: "min_32_chars" },
+    { label: "Local Vault", status: vaultActive ? "SEALED" : "EMPTY", detail: "IndexedDB isolated" },
     { label: "Admin Lock", status: "LOCKED", detail: "shengliang.song.ai" },
     { label: "Project Isolation", status: "ACTIVE", detail: "signetai_prod" }
   ];
@@ -21,7 +34,7 @@ export const SecurityIntegrityMonitor: React.FC = () => {
               <p className="font-mono text-[10px] text-white/40 uppercase font-bold">{check.label}</p>
               <p className="font-mono text-[8px] text-white/20 italic">{check.detail}</p>
             </div>
-            <span className="font-mono text-[9px] text-green-500 font-bold">[{check.status}]</span>
+            <span className={`font-mono text-[9px] font-bold ${check.status === 'EMPTY' ? 'text-amber-500' : 'text-green-500'}`}>[{check.status}]</span>
           </div>
         ))}
       </div>
