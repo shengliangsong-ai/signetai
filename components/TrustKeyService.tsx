@@ -13,7 +13,9 @@ const initSignetFirebase = () => {
 };
 
 const app = initSignetFirebase();
-const db = app ? getFirestore(app, "signetai") : null;
+// Use the default database instance. Specifying "signetai" as the database ID 
+// often causes hangs if that specific named instance hasn't been created in the GCP console.
+const db = app ? getFirestore(app) : null;
 const auth = app ? getAuth(app) : null;
 
 const PROTOCOL_AUTHORITY = "signetai.io";
@@ -150,41 +152,50 @@ export const TrustKeyService: React.FC = () => {
     
     setIsGenerating(true);
     setIndexUrl(null);
-    setStatus(`STEP 1/4: Generating ${securityGrade * 11}-bit Entropy Mnemonic...`);
+    setStatus(`STEP 1/4: Syncing ${securityGrade * 11}-bit Entropy...`);
     
-    await new Promise(r => setTimeout(r, 800));
+    // Non-blocking delay for UI visual sync
+    await new Promise(r => setTimeout(r, 600));
 
     const identity = identityInput.trim().toLowerCase().replace(/\s+/g, '-');
     const anchor = `${PROTOCOL_AUTHORITY}${SEPARATOR}${identity}`;
     const pubKey = deriveMockKey(identity);
     const mnemonic = generateMnemonic(securityGrade);
 
+    // Timeout guard for Firestore operations (10 seconds)
+    const withTimeout = (promise: Promise<any>, timeoutMs: number) => {
+      return Promise.race([
+        promise,
+        new Promise((_, reject) => setTimeout(() => reject(new Error("Registry connection timeout. Check network or database status.")), timeoutMs))
+      ]);
+    };
+
     try {
       if (db) {
-        setStatus("STEP 2/4: Probing Remote Registry for Conflicts...");
-        const docSnap = await getDoc(doc(db, "identities", anchor));
+        setStatus("STEP 2/4: Checking Global Registry Conflicts...");
+        const docSnap = await withTimeout(getDoc(doc(db, "identities", anchor)), 10000);
         if (docSnap.exists()) {
-          throw new Error(`Anchor ${anchor} is already claimed in the Signet Registry.`);
+          throw new Error(`Anchor ${anchor} is already claimed.`);
         }
 
         if (currentUser && securityGrade === 24) {
-          setStatus("STEP 3/4: Enforcing Protocol Uniqueness...");
+          setStatus("STEP 3/4: Verifying Sovereign Uniqueness...");
           const q = query(collection(db, "identities"), where("ownerUid", "==", currentUser.uid), where("entropyBits", "==", 264));
-          const existing = await getDocs(q);
+          const existing = await withTimeout(getDocs(q), 10000);
           if (!existing.empty) {
-             throw new Error("One User, One Sovereign Signet. You already have a 264-bit identity registered.");
+             throw new Error("Protocol Policy: You already possess a registered Sovereign Signet.");
           }
         }
 
         setStatus("STEP 4/4: Sealing Registry Block...");
-        await setDoc(doc(db, "identities", anchor), {
+        await withTimeout(setDoc(doc(db, "identities", anchor), {
           identity,
           publicKey: pubKey,
           entropyBits: securityGrade * 11,
           ownerUid: currentUser?.uid || 'ANONYMOUS',
           provider: currentUser?.providerData[0]?.providerId || 'SOVEREIGN_SEED',
           timestamp: Date.now()
-        });
+        }), 10000);
       }
 
       const newVault: VaultRecord = {
@@ -204,12 +215,13 @@ export const TrustKeyService: React.FC = () => {
       setIsRegistering(false);
       setStatus(`SUCCESS: Vault Sealed for ${identity}.`);
     } catch (err: any) {
-      console.error("Signet Error:", err);
-      let errMsg = err.message || "Unknown error";
+      console.error("Signet Protocol Exception:", err);
+      let errMsg = err.message || "Unknown cryptographic fault.";
       
-      // Handle Missing Index Error
-      if (errMsg.includes("index") || errMsg.includes("FAILED_PRECONDITION")) {
-        setStatus("CRITICAL: Missing Firestore Index. See link below.");
+      if (errMsg.includes("permission-denied") || errMsg.includes("PERMISSION_DENIED")) {
+        errMsg = "Registry Denied: The Curatorial ID is either too short (<4 chars) or restricted. Try a longer identifier.";
+      } else if (errMsg.includes("index") || errMsg.includes("FAILED_PRECONDITION")) {
+        setStatus("CRITICAL: Missing Registry Index. Link provided below.");
         const match = errMsg.match(/https:\/\/console\.firebase\.google\.com[^\s]*/);
         if (match) setIndexUrl(match[0]);
       } else {
@@ -231,7 +243,7 @@ export const TrustKeyService: React.FC = () => {
   };
 
   const handlePurge = async (anchor: string) => {
-    if (confirm("DANGER: Remove this identity from local storage? Ensure you have your mnemonic manifest saved.")) {
+    if (confirm("DANGER: This identity will be removed from local storage. Ensure you have your mnemonic manifest saved. Proceed?")) {
       await PersistenceService.purgeVault(anchor);
       await refreshVaults();
       setStatus("Identity purged.");
@@ -248,14 +260,14 @@ export const TrustKeyService: React.FC = () => {
             <span className="font-mono text-[10px] text-[var(--trust-blue)] tracking-[0.4em] uppercase font-bold">Layer 5: TrustKey Registry</span>
             <h2 className="text-4xl font-bold italic text-[var(--text-header)]">Identity Authority.</h2>
             <p className="text-lg leading-relaxed text-[var(--text-body)] opacity-80 font-serif italic">
-              "Authority is non-custodial. You are the curator of your own digital presence."
+              "Every reasoning path requires an owner. Secure your curatorial signet in the global registry."
             </p>
           </div>
 
           {isRegistering ? (
             <div className="space-y-8 animate-in fade-in slide-in-from-top-4">
               <div className="flex justify-between items-center border-b border-[var(--border-light)] pb-4">
-                <h3 className="font-mono text-[11px] uppercase font-bold text-[var(--trust-blue)]">New Registration</h3>
+                <h3 className="font-mono text-[11px] uppercase font-bold text-[var(--trust-blue)]">New Curatorial Identity</h3>
                 {allVaults.length > 0 && (
                   <button onClick={() => setIsRegistering(false)} className="text-[10px] font-mono opacity-50 hover:opacity-100 uppercase font-bold">Cancel</button>
                 )}
@@ -263,7 +275,7 @@ export const TrustKeyService: React.FC = () => {
 
               <div className="space-y-6">
                 <div className="space-y-3">
-                  <label className="font-mono text-[10px] uppercase font-bold opacity-40">Verification Source (Optional)</label>
+                  <label className="font-mono text-[10px] uppercase font-bold opacity-40">Attestation Source (Optional)</label>
                   <div className="flex flex-wrap gap-2">
                     {[
                       { id: 'google', label: 'Google', color: 'hover:border-red-500' },
@@ -286,7 +298,7 @@ export const TrustKeyService: React.FC = () => {
                 </div>
 
                 <div className="space-y-3">
-                  <label className="font-mono text-[10px] uppercase font-bold opacity-40">Curatorial ID</label>
+                  <label className="font-mono text-[10px] uppercase font-bold opacity-40">Curatorial ID Anchor</label>
                   <div className="flex gap-2 p-4 border border-[var(--border-light)] rounded-lg bg-white shadow-sm focus-within:ring-2 focus-within:ring-[var(--trust-blue)]/20 transition-all">
                      <span className="font-mono text-sm opacity-30 flex items-center">{PROTOCOL_AUTHORITY}:</span>
                      <input 
@@ -298,7 +310,7 @@ export const TrustKeyService: React.FC = () => {
                        className="flex-1 bg-transparent outline-none font-mono text-sm text-[var(--trust-blue)] font-bold"
                      />
                   </div>
-                  <p className="text-[10px] font-serif italic opacity-40">This is your unique anchor. You can use your social handle or choose an anonymous pseudonym.</p>
+                  <p className="text-[10px] font-serif italic opacity-40">Choose a permanent identifier. Minimum 4 characters recommended.</p>
                 </div>
 
                 <div className="p-1 border border-[var(--border-light)] rounded-lg flex bg-[var(--bg-sidebar)]">
@@ -409,7 +421,7 @@ export const TrustKeyService: React.FC = () => {
                    >
                      [ ACTION REQUIRED: CLICK HERE TO CREATE FIRESTORE INDEX ]
                    </a>
-                   <p className="text-[9px] opacity-50 mt-1 italic">Building the index takes about 2-3 minutes.</p>
+                   <p className="text-[9px] opacity-50 mt-1 italic">The index creation process typically takes 3-5 minutes.</p>
                 </div>
               )}
             </div>

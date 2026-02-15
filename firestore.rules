@@ -23,9 +23,9 @@ service cloud.firestore {
       allow read: if true;
       
       // HARDENED: Only allow creation of high-entropy anchors.
-      // Adjusted from 32 to 16 to allow for 'signetai.io:name' formats.
+      // Adjusted minimum to 10 to allow for shorter usernames like 'signetai.io:joe'.
       allow create: if !exists(/databases/$(database)/documents/identities/$(anchorId))
-                    && anchorId.size() >= 16 
+                    && anchorId.size() >= 10 
                     && anchorId.size() <= 128;
       
       allow update, delete: if isAdmin();
