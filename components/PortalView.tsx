@@ -1,53 +1,66 @@
-import React, { useEffect, useState } from 'react';
+
+import React, { useEffect, useState, useRef } from 'react';
+
+const DefinitionItem: React.FC<{ term: string; def: string }> = ({ term, def }) => (
+  <div className="space-y-1">
+    <dt className="font-mono text-[9px] text-[var(--trust-blue)] uppercase font-bold tracking-widest">{term}</dt>
+    <dd className="text-[11px] text-[var(--text-body)] opacity-60 leading-relaxed italic">{def}</dd>
+  </div>
+);
 
 export const PortalView: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, onClose }) => {
-  const [logs, setLogs] = useState<{ id: string; msg: string; status: string }[]>([]);
-  
+  const [logs, setLogs] = useState<{ id: string; msg: string; status: string; timestamp: string }[]>([]);
+  const [isPaused, setIsPaused] = useState(false);
+  const [isFinalized, setIsFinalized] = useState(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && !isPaused && !isFinalized) {
       document.body.style.overflow = 'hidden';
-      // Simulate live verification stream
       const interval = setInterval(() => {
+        const now = new Date();
+        const timestamp = `${now.getHours()}:${now.getMinutes()}:${now.getSeconds()}.${now.getMilliseconds()}`;
         const newLog = {
-          id: Math.random().toString(36).substring(7).toUpperCase(),
+          id: Math.random().toString(36).substring(2, 8).toUpperCase(),
           msg: [
+            'Calibrating Neural Lens...',
             'Probing L2 DAG Nodes...',
             'Verifying Parity Score...',
-            'Signing Master Artifact...',
-            'Attesting identity binding...',
-            'Calibrating Neural Lens...'
+            'Attesting Signet Identity...',
+            'Soft-Binding JUMBF Payload...'
           ][Math.floor(Math.random() * 5)],
-          status: Math.random() > 0.1 ? 'OK' : 'AUDIT'
+          status: Math.random() > 0.15 ? 'OK' : 'AUDIT',
+          timestamp
         };
-        setLogs(prev => [newLog, ...prev].slice(0, 12));
-      }, 1500);
+        setLogs(prev => [newLog, ...prev].slice(0, 20));
+      }, 1000);
       return () => clearInterval(interval);
     } else {
       document.body.style.overflow = 'auto';
     }
-  }, [isOpen]);
+  }, [isOpen, isPaused, isFinalized]);
 
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 md:p-8 animate-in fade-in zoom-in-95 duration-300">
-      <div className="absolute inset-0 theme-bg/95 backdrop-blur-2xl" onClick={onClose}></div>
+      <div className="absolute inset-0 bg-black/90 backdrop-blur-2xl" onClick={onClose}></div>
       
-      <div className="relative w-full max-w-7xl h-full max-h-[90vh] glass-card overflow-hidden flex flex-col border-theme-accent/20">
+      <div className="relative w-full max-w-7xl h-full max-h-[90vh] bg-[var(--bg-standard)] border border-[var(--border-light)] shadow-2xl overflow-hidden flex flex-col">
         {/* Header */}
-        <div className="p-8 border-b-theme flex justify-between items-center bg-current/5">
+        <div className="p-8 border-b border-[var(--border-light)] flex justify-between items-center bg-[var(--table-header)]">
           <div className="flex items-center gap-6">
-            <div className="w-10 h-10 border border-current theme-text flex items-center justify-center rotate-45">
-              <div className="w-2 h-2 theme-accent-bg"></div>
+            <div className="w-10 h-10 border border-[var(--trust-blue)] flex items-center justify-center rotate-45">
+              <div className="w-2 h-2 bg-[var(--trust-blue)]"></div>
             </div>
             <div>
-              <h2 className="font-serif text-3xl theme-text italic font-bold">Signet Command Center</h2>
-              <p className="font-mono text-[10px] theme-text-secondary uppercase tracking-[0.4em]">Protocol Session: Active (V0.2.1-A)</p>
+              <h2 className="font-serif text-3xl text-[var(--text-header)] italic font-bold">Signet Command Center</h2>
+              <p className="font-mono text-[10px] text-[var(--text-body)] opacity-40 uppercase tracking-[0.4em]">Protocol Session: {isFinalized ? 'FINALIZED' : 'STREAMING'}</p>
             </div>
           </div>
           <button 
             onClick={onClose}
-            className="w-12 h-12 flex items-center justify-center theme-text-secondary hover:theme-text transition-colors text-2xl"
+            className="w-12 h-12 flex items-center justify-center text-[var(--text-body)] hover:text-[var(--trust-blue)] transition-colors text-2xl"
           >
             ×
           </button>
@@ -55,79 +68,92 @@ export const PortalView: React.FC<{ isOpen: boolean; onClose: () => void }> = ({
 
         {/* Content Grid */}
         <div className="flex-1 overflow-y-auto p-8 lg:p-12">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 h-full">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-12 h-full">
             
-            {/* Column 1: Identity & Stats */}
-            <div className="space-y-8">
-              <div className="p-8 glass-card border-l-4 border-l-[var(--accent)]">
-                <span className="font-mono text-[10px] theme-text-secondary uppercase tracking-widest mb-4 block font-bold">TKS Registry Binding</span>
-                <div className="space-y-2">
-                  <h3 className="font-serif text-2xl theme-text italic">Anonymous_Architect</h3>
-                  <p className="font-mono text-[11px] theme-text-secondary break-all opacity-60">ed25519:signet_8f2d...4a12</p>
+            {/* Column 1: Definitions & Control */}
+            <div className="space-y-10">
+              <div className="space-y-6">
+                <h3 className="font-mono text-[11px] uppercase tracking-widest text-[var(--text-header)] border-b border-[var(--border-light)] pb-2 font-bold">Audit Controls</h3>
+                <div className="flex flex-col gap-3">
+                  <button 
+                    onClick={() => setIsPaused(!isPaused)}
+                    className={`px-4 py-2 font-mono text-[10px] uppercase tracking-widest font-bold border ${isPaused ? 'bg-[var(--trust-blue)] text-white' : 'border-[var(--border-light)] text-[var(--text-body)]'}`}
+                  >
+                    {isPaused ? '▶ Resume Telemetry' : '⏸ Pause Stream'}
+                  </button>
+                  <button 
+                    onClick={() => setIsFinalized(true)}
+                    className="px-4 py-2 font-mono text-[10px] uppercase tracking-widest font-bold bg-black text-white hover:bg-[var(--trust-blue)] transition-colors"
+                  >
+                    🔒 Finalize & Sign Manifest
+                  </button>
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="p-6 glass-card text-center">
-                  <p className="font-mono text-[9px] theme-text-secondary uppercase mb-2">Verified Assets</p>
-                  <p className="font-serif text-4xl theme-text font-bold italic">24</p>
-                </div>
-                <div className="p-6 glass-card text-center">
-                  <p className="font-mono text-[9px] theme-text-secondary uppercase mb-2">Pool Rank</p>
-                  <p className="font-serif text-4xl theme-text font-bold italic">Top 3%</p>
-                </div>
-              </div>
-
-              <div className="p-8 glass-card">
-                <span className="font-mono text-[10px] theme-text-secondary uppercase tracking-widest mb-6 block font-bold">Network Health</span>
-                <div className="space-y-4">
-                  {[
-                    { label: 'Neural Lens Parity', val: '0.998', status: 'optimal' },
-                    { label: 'Signet Pool Liquidity', val: '$1.2M', status: 'high' },
-                    { label: 'Attestation Latency', val: '42ms', status: 'optimal' }
-                  ].map(stat => (
-                    <div key={stat.label} className="flex justify-between items-center border-b border-current/5 pb-2">
-                      <span className="font-serif text-sm theme-text-secondary">{stat.label}</span>
-                      <span className={`font-mono text-[10px] font-bold ${stat.status === 'optimal' ? 'theme-accent' : 'theme-text'}`}>{stat.val}</span>
-                    </div>
-                  ))}
-                </div>
+              <div className="space-y-6">
+                <h3 className="font-mono text-[11px] uppercase tracking-widest text-[var(--text-header)] border-b border-[var(--border-light)] pb-2 font-bold">Protocol Glossary</h3>
+                <dl className="space-y-4">
+                  <DefinitionItem term="Trace ID" def="Unique identifier for a single reasoning node in the Logic DAG." />
+                  <DefinitionItem term="Audit Message" def="The specific layer of validation being applied to the node." />
+                  <DefinitionItem term="Status: OK" def="Cryptographic parity confirmed between AI model and manifest." />
+                  <DefinitionItem term="Status: AUDIT" def="Logic drift detected. Node flagged for manual human attestation." />
+                </dl>
               </div>
             </div>
 
-            {/* Column 2: Live Verification Feed */}
-            <div className="lg:col-span-2 flex flex-col h-full">
-              <div className="flex-1 glass-card overflow-hidden flex flex-col">
-                <div className="p-6 border-b-theme bg-current/5 flex justify-between items-center">
-                  <span className="font-mono text-[11px] theme-text uppercase tracking-widest font-bold">Neural Lens Stream</span>
+            {/* Column 2 & 3: Live Verification Feed */}
+            <div className="lg:col-span-2 flex flex-col h-full border-l border-[var(--border-light)] pl-12">
+              <div className="flex-1 border border-[var(--border-light)] rounded overflow-hidden flex flex-col bg-[var(--code-bg)]">
+                <div className="p-4 border-b border-[var(--border-light)] bg-[var(--table-header)] flex justify-between items-center">
+                  <span className="font-mono text-[11px] text-[var(--text-header)] uppercase tracking-widest font-bold">Neural Lens Stream / Live Audit</span>
                   <div className="flex items-center gap-2">
-                    <span className="w-1.5 h-1.5 rounded-full theme-accent-bg animate-pulse"></span>
-                    <span className="font-mono text-[9px] theme-accent uppercase tracking-tighter">Live Audit</span>
+                    <span className={`w-1.5 h-1.5 rounded-full ${isFinalized ? 'bg-green-500' : 'bg-[var(--trust-blue)] animate-pulse'}`}></span>
+                    <span className="font-mono text-[9px] text-[var(--text-body)] uppercase tracking-tighter opacity-60">
+                      {isFinalized ? 'MANIFEST_IMMUTABLE' : isPaused ? 'IDLE: STATE_LOCKED' : 'PROBING_ACTIVE'}
+                    </span>
                   </div>
                 </div>
-                <div className="flex-1 p-6 font-mono text-[11px] overflow-y-auto space-y-4 theme-text-secondary">
+                
+                {/* Table Headers */}
+                <div className="grid grid-cols-4 px-6 py-2 border-b border-[var(--border-light)] bg-[var(--table-header)] font-mono text-[9px] uppercase font-bold opacity-40">
+                  <div>Timestamp</div>
+                  <div>Trace ID</div>
+                  <div className="col-span-1">Operation</div>
+                  <div className="text-right">Verdict</div>
+                </div>
+
+                <div className="flex-1 p-6 font-mono text-[12px] overflow-y-auto space-y-2 text-[var(--text-body)]" ref={scrollRef}>
+                  {isFinalized && (
+                    <div className="p-4 bg-green-500/10 border border-green-500/20 text-green-600 rounded mb-4 text-center">
+                      <p className="font-bold">✓ AUDIT COMPLETE</p>
+                      <p className="text-[10px] opacity-70">Manifest bound to JUMBF Box 0x92AF...C110</p>
+                    </div>
+                  )}
                   {logs.map((log, idx) => (
-                    <div key={idx} className="flex gap-6 animate-in slide-in-from-left-2 duration-300">
-                      <span className="opacity-40 whitespace-nowrap">[{log.id}]</span>
+                    <div key={idx} className={`grid grid-cols-4 gap-4 animate-in slide-in-from-left-1 duration-200 ${idx === 0 ? 'text-[var(--trust-blue)]' : 'opacity-60'}`}>
+                      <span className="opacity-40 text-[10px]">{log.timestamp}</span>
+                      <span className="font-bold">[{log.id}]</span>
                       <span className="flex-1">{log.msg}</span>
-                      <span className={log.status === 'OK' ? 'theme-accent' : 'text-red-500'}>{log.status}</span>
+                      <span className={`text-right font-bold ${log.status === 'OK' ? 'text-green-500' : 'text-red-500'}`}>{log.status}</span>
                     </div>
                   ))}
+                  {logs.length === 0 && <p className="opacity-20 animate-pulse text-center mt-20">Initializing Neural Link...</p>}
                 </div>
               </div>
 
-              <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
-                {[
-                  { name: 'Scripture_V2', date: 'Feb 14', score: '0.992' },
-                  { name: 'Lens_UI_Artifact', date: 'Feb 13', score: '0.998' },
-                  { name: 'Podcast_Oracle', date: 'Feb 12', score: '0.985' }
-                ].map(asset => (
-                  <div key={asset.name} className="p-4 border border-current/10 glass-card hover:theme-accent-bg/5 transition-colors cursor-pointer group">
-                    <p className="font-mono text-[9px] theme-text-secondary uppercase mb-2">{asset.date}</p>
-                    <h4 className="font-serif text-sm theme-text group-hover:theme-accent transition-colors font-bold">{asset.name}</h4>
-                    <p className="mt-2 font-mono text-[10px] theme-accent font-bold">VPR: {asset.score}</p>
-                  </div>
-                ))}
+              <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="p-4 border border-[var(--border-light)] text-center bg-[var(--table-header)]">
+                  <p className="font-mono text-[9px] text-[var(--text-body)] opacity-50 uppercase mb-1">Total Nodes</p>
+                  <p className="font-serif text-2xl text-[var(--text-header)] font-bold italic">{isFinalized ? '241' : logs.length + 150}</p>
+                </div>
+                <div className="p-4 border border-[var(--border-light)] text-center bg-[var(--table-header)]">
+                  <p className="font-mono text-[9px] text-[var(--text-body)] opacity-50 uppercase mb-1">Integrity Score</p>
+                  <p className="font-serif text-2xl text-[var(--trust-blue)] font-bold italic">0.9982</p>
+                </div>
+                <div className="p-4 border border-[var(--border-light)] text-center bg-[var(--table-header)]">
+                  <p className="font-mono text-[9px] text-[var(--text-body)] opacity-50 uppercase mb-1">State Drift</p>
+                  <p className="font-serif text-2xl text-[var(--text-header)] font-bold italic">0.00%</p>
+                </div>
               </div>
             </div>
 
@@ -135,14 +161,17 @@ export const PortalView: React.FC<{ isOpen: boolean; onClose: () => void }> = ({
         </div>
 
         {/* Footer */}
-        <div className="p-6 border-t-theme bg-current/5 flex flex-col sm:flex-row justify-between items-center gap-4">
-          <p className="font-mono text-[9px] theme-text-secondary tracking-widest uppercase opacity-40">Session attestation provided by Signet Labs HSM Cluster-7</p>
+        <div className="p-6 border-t border-[var(--border-light)] bg-[var(--table-header)] flex flex-col sm:flex-row justify-between items-center gap-4">
+          <p className="font-mono text-[9px] text-[var(--text-body)] opacity-40 tracking-widest uppercase">Signet AI Labs | Protocol Compliance Node v0.2.5</p>
           <div className="flex gap-4">
-            <button className="px-6 py-2 border border-current theme-text font-mono text-[9px] uppercase tracking-widest font-bold hover:theme-accent-bg hover:text-white transition-all">
-              Security Log
+            <button className="px-6 py-2 border border-[var(--border-light)] text-[var(--text-body)] font-mono text-[9px] uppercase tracking-widest font-bold hover:bg-[var(--trust-blue)] hover:text-white transition-all">
+              Export VPR Manifest
             </button>
-            <button className="px-6 py-2 theme-accent-bg text-white font-mono text-[9px] uppercase tracking-widest font-bold shadow-lg">
-              Withdrawal Proxy
+            <button 
+              disabled={isFinalized}
+              className={`px-6 py-2 ${isFinalized ? 'bg-neutral-500 cursor-not-allowed' : 'bg-[var(--trust-blue)]'} text-white font-mono text-[9px] uppercase tracking-widest font-bold shadow-lg transition-all`}
+            >
+              {isFinalized ? 'SESSION_LOCKED' : 'Re-Attest Session'}
             </button>
           </div>
         </div>
