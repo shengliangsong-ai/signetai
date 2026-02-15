@@ -15,6 +15,7 @@ import { ManualView } from './components/ManualView';
 import { LiveAssistant } from './components/LiveAssistant';
 import { AuditorView } from './components/AuditorView';
 import { SecurityIntegrityMonitor } from './components/SecurityIntegrityMonitor';
+import { ProvenanceLab } from './components/ProvenanceLab';
 
 export type Theme = 'standard' | 'midnight';
 
@@ -26,7 +27,7 @@ const Sidebar: React.FC<{ currentView: string; isOpen: boolean }> = ({ currentVi
     <div className="p-8 h-full flex flex-col">
       <div className="flex items-center gap-3 mb-12">
         <div className="cr-badge text-[var(--trust-blue)]">cr</div>
-        <span className="font-bold tracking-tight text-xl text-[var(--text-header)]">Signet v0.2.6</span>
+        <span className="font-bold tracking-tight text-xl text-[var(--text-header)]">Signet v0.2.7</span>
       </div>
 
       <nav className="space-y-1 flex-1 overflow-y-auto">
@@ -38,8 +39,8 @@ const Sidebar: React.FC<{ currentView: string; isOpen: boolean }> = ({ currentVi
         <a href="#spec" className={`sidebar-link ${currentView === 'spec' ? 'active' : ''}`}>4. Technical Draft</a>
         
         <p className="px-4 pt-8 text-[10px] uppercase tracking-widest font-bold text-[var(--text-body)] opacity-40 mb-4">Identity & Trust</p>
-        <a href="#identity" className="sidebar-link">5. TrustKey Registry</a>
-        <a href="#auditor" className={`sidebar-link ${currentView === 'auditor' ? 'active' : ''}`}>6. C2PA Test Suite</a>
+        <a href="#identity" className="sidebar-link">5. TrustKey Registry (Register)</a>
+        <a href="#auditor" className={`sidebar-link ${currentView === 'auditor' ? 'active' : ''}`}>6. Provenance Lab (Verify)</a>
         <a href="#branding" className={`sidebar-link ${currentView === 'branding' ? 'active' : ''}`}>7. Branding Kit</a>
         <a href="#manual" className={`sidebar-link ${currentView === 'manual' ? 'active' : ''}`}>8. Operator's Manual</a>
         <a href="#contact" className="sidebar-link">9. Technical Inquiries</a>
@@ -74,7 +75,7 @@ const Header: React.FC<{ onToggleSidebar: () => void; theme: Theme; onToggleThem
         onClick={onOpenPortal}
         className="px-4 py-1.5 bg-[var(--trust-blue)] text-white text-[11px] font-bold rounded hover:brightness-110 transition-all shadow-sm"
       >
-        Verifier SDK
+        Verifier SDK (∑)
       </button>
     </div>
   </header>
@@ -179,7 +180,7 @@ const App: React.FC = () => {
           {view === 'schema' && <SchemaView />}
           {view === 'branding' && <BrandingView />}
           {view === 'manual' && <ManualView />}
-          {view === 'auditor' && <AuditorView />}
+          {view === 'auditor' && <ProvenanceLab />}
           {view === 'apps' && (
             <div className="py-24 space-y-12">
               <header className="space-y-2">
