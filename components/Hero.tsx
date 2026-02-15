@@ -4,33 +4,37 @@ export const Hero: React.FC<{ onOpenPortal: () => void }> = ({ onOpenPortal }) =
   return (
     <section className="mb-24">
       <div className="space-y-6">
-        <h1 className="text-5xl md:text-6xl tracking-tight leading-[1.1] mb-8 text-[var(--text-header)]">
-          Signet Protocol:<br />
-          <span className="text-[var(--trust-blue)]">Verifiable Proof of Reasoning</span>
+        <div className="flex items-center gap-4 mb-2">
+          <span className="w-10 h-px bg-[var(--trust-blue)]"></span>
+          <span className="font-mono text-[10px] uppercase tracking-[0.4em] text-[var(--trust-blue)] font-bold">Standard 0.2.5_ACTIVE</span>
+        </div>
+        <h1 className="text-5xl md:text-7xl tracking-tighter leading-[0.9] mb-8 text-[var(--text-header)] font-bold">
+          Verifiable Proof <br />
+          <span className="text-[var(--trust-blue)] italic font-normal">of Reasoning.</span>
         </h1>
         
-        <p className="text-xl text-[var(--text-body)] opacity-90 leading-relaxed max-w-2xl font-normal">
-          A technical framework for the cryptographic attestation of AI-generated reasoning paths, built natively on the ISO/C2PA JUMBF manifest structure.
+        <p className="text-xl text-[var(--text-body)] opacity-90 leading-relaxed max-w-2xl font-normal font-serif">
+          The technical framework for attesting AI logic paths. Built natively on ISO/C2PA, delivered via unified subdirectory provenance.
         </p>
 
-        <div className="flex flex-wrap gap-4 pt-6">
+        <div className="flex flex-wrap gap-4 pt-10">
           <button 
             onClick={onOpenPortal}
-            className="px-6 py-2.5 bg-[var(--trust-blue)] text-white text-[13px] font-bold rounded shadow-md hover:brightness-110 transition-all"
+            className="px-8 py-3 bg-[var(--trust-blue)] text-white text-[11px] font-bold uppercase tracking-widest rounded shadow-2xl hover:brightness-110 transition-all active:scale-95"
           >
-            Launch Verifier
+            Verifier SDK
           </button>
           <a 
-            href="#standards" 
-            className="px-6 py-2.5 border border-[var(--border-light)] text-[var(--text-header)] text-[13px] font-bold rounded hover:bg-white/5 transition-all text-center"
+            href="#identity" 
+            className="px-8 py-3 border border-[var(--border-light)] text-[var(--text-header)] text-[11px] font-bold uppercase tracking-widest rounded hover:bg-white/5 transition-all text-center"
           >
-            Read Specification
+            /#identity
           </a>
           <a 
-            href="#schema" 
-            className="px-6 py-2.5 border border-[var(--border-light)] text-[var(--text-header)] text-[13px] font-bold rounded hover:bg-white/5 transition-all text-center"
+            href="/apps/summarizer" 
+            className="px-8 py-3 border border-[var(--trust-blue)] text-[var(--trust-blue)] text-[11px] font-bold uppercase tracking-widest rounded hover:bg-[var(--admonition-bg)] transition-all text-center"
           >
-            VPR Manifest L3
+            /apps/summarizer
           </a>
         </div>
       </div>

@@ -15,7 +15,7 @@ export const TrustKeyService: React.FC = () => {
   };
 
   return (
-    <section id="tks" className="py-32 px-6 max-w-7xl mx-auto border-v theme-bg-secondary/50">
+    <section id="identity" className="py-32 px-6 max-w-7xl mx-auto border-v theme-bg-secondary/50">
       <div className="flex flex-col lg:flex-row gap-24">
         <div className="flex-1 space-y-10">
           <div className="inline-block">

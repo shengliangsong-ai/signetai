@@ -30,7 +30,7 @@ export const VerificationBadge: React.FC = () => {
           onClick={() => setIsOpen(false)}
         >
           <div 
-            className="max-w-xl w-full glass-card p-8 md:p-12 border-emerald-500/30 relative"
+            className="max-w-xl w-full glass-card p-8 md:p-12 border-emerald-500/30 relative rounded-lg"
             onClick={(e) => e.stopPropagation()}
           >
             <button 
@@ -42,20 +42,24 @@ export const VerificationBadge: React.FC = () => {
 
             <div className="space-y-6">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-emerald-500/30 bg-emerald-500/10">
-                <span className="font-mono text-[9px] uppercase text-emerald-500 tracking-tighter">Asset Authentication</span>
+                <span className="font-mono text-[9px] uppercase text-emerald-500 tracking-tighter">Unified Subdirectory Attestation</span>
               </div>
               
               <h2 className="font-serif text-3xl text-white italic">Protocol Attestation</h2>
               
               <div className="space-y-4 text-neutral-400 text-sm leading-relaxed">
                 <p>
-                  This site is a <span className="text-white">Signet-Verified Asset</span>. Every block of code, UI component, and protocol logic was generated through a recorded chain of reasoning, fulfilling the requirements of **Section 3: Layer 4 (Human-in-the-Loop Signet)**.
+                  This site is a <span className="text-white">Signet-Verified Asset</span>. Every block of code was generated through a recorded chain of reasoning, fulfilling the requirements of **Section 3: Layer 4 (Human-in-the-Loop Signet)**.
                 </p>
                 
                 <div className="bg-neutral-950 p-4 border border-neutral-900 rounded font-mono text-[10px] space-y-2">
                   <div className="flex justify-between">
                     <span className="text-neutral-500">X-Signet-Verified</span>
                     <span className="text-emerald-500">true</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-neutral-500">PROVENANCE_ROOT</span>
+                    <span className="text-emerald-500">/apps/root</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-neutral-500">VPR_PARITY_SCORE</span>
@@ -68,22 +72,22 @@ export const VerificationBadge: React.FC = () => {
                 </div>
 
                 <p>
-                  By clicking the badge, you are interacting with the **Neural Lens** verifier interface. The integrity of this application is mathematically independent of its hosting environment.
+                  By clicking the badge, you are interacting with the **Neural Lens** verifier interface. The integrity of this application is verified via the unified `signetai.io` origin.
                 </p>
               </div>
 
               <div className="pt-6 flex gap-4 border-t border-neutral-800">
                 <a 
-                  href="#tks"
+                  href="#identity"
                   onClick={() => setIsOpen(false)}
-                  className="px-6 py-2 bg-emerald-500 text-black font-mono text-[10px] uppercase tracking-widest hover:bg-emerald-400 transition-colors text-center"
+                  className="px-6 py-2 bg-emerald-500 text-black font-mono text-[10px] uppercase tracking-widest hover:bg-emerald-400 transition-colors text-center font-bold"
                 >
-                  Verify Now
+                  /#identity
                 </a>
                 <a 
                   href="#spec" 
                   onClick={() => setIsOpen(false)}
-                  className="px-6 py-2 border border-neutral-800 text-neutral-400 font-mono text-[10px] uppercase tracking-widest hover:text-white transition-colors text-center"
+                  className="px-6 py-2 border border-neutral-800 text-neutral-400 font-mono text-[10px] uppercase tracking-widest hover:text-white transition-colors text-center font-bold"
                 >
                   View Spec
                 </a>

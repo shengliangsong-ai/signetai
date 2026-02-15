@@ -20,7 +20,7 @@ const PipelineStep: React.FC<{ layer: string; title: string; desc: string; tools
 
 export const Architecture: React.FC = () => {
   return (
-    <section id="architecture" className="py-40 px-6 max-w-7xl mx-auto border-v">
+    <section id="developers" className="py-40 px-6 max-w-7xl mx-auto border-v">
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-24 lg:gap-32">
         <div>
           <div className="w-12 h-px theme-accent-bg mb-10"></div>
