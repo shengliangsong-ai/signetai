@@ -11,23 +11,70 @@ const DefinitionTooltip: React.FC<{ title: string; text: string }> = ({ title, t
   </div>
 );
 
+// Simple deterministic string generator for UI demonstration
+const deriveMockKey = (identity: string) => {
+  let hash = 0;
+  for (let i = 0; i < identity.length; i++) {
+    hash = ((hash << 5) - hash) + identity.charCodeAt(i);
+    hash |= 0; // Convert to 32bit integer
+  }
+  const absHash = Math.abs(hash).toString(36);
+  const salt = "signet_v02_";
+  return `ed25519:${salt}${absHash}${absHash.split('').reverse().join('')}772v3aqmcne`;
+};
+
+const MOCK_WORDS = [
+  "logic", "prism", "trust", "neural", "manifest", "anchor", "trace", "binary", 
+  "provenance", "vertex", "curator", "signet", "shard", "protocol", "entropy", "static",
+  "verify", "identity", "secure", "mainnet", "node", "reason", "parity", "drift"
+];
+
 export const TrustKeyService: React.FC = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [publicKey, setPublicKey] = useState<string | null>(null);
   const [identity, setIdentity] = useState('');
   const [isActivated, setIsActivated] = useState(false);
+  const [showToast, setShowToast] = useState(false);
 
   const generateKey = () => {
     setIsGenerating(true);
+    // Simulate complex KDF computation
     setTimeout(() => {
-      const mockKey = 'ed25519:signet_' + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
-      setPublicKey(mockKey);
+      const derived = deriveMockKey(identity.toLowerCase().trim());
+      setPublicKey(derived);
       setIsGenerating(false);
-    }, 2000);
+    }, 1200);
+  };
+
+  const handleExportSeed = () => {
+    // Generate a 24-word phrase based on identity hash
+    const seedPhrase = Array(24).fill(0).map((_, i) => {
+      const index = (Math.abs(publicKey?.length || 0) * (i + 1)) % MOCK_WORDS.length;
+      return MOCK_WORDS[index];
+    }).join(" ");
+
+    const content = `SIGNET PROTOCOL RECOVERY SEED\nIDENTITY: ${identity}\nPUBLIC_KEY: ${publicKey}\n\nPHRASE: ${seedPhrase}\n\nWARNING: KEEP THIS FILE OFFLINE.`;
+    const blob = new Blob([content], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${identity.replace('.', '_')}_seed.txt`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    setShowToast(true);
+    setTimeout(() => setShowToast(false), 3000);
   };
 
   return (
-    <section id="identity" className="py-32 px-6 max-w-7xl mx-auto border-v bg-[var(--bg-sidebar)]/30">
+    <section id="identity" className="py-32 px-6 max-w-7xl mx-auto border-v bg-[var(--bg-sidebar)]/30 relative">
+      {showToast && (
+        <div className="fixed top-20 right-8 z-[200] bg-black text-white border border-[var(--trust-blue)] px-6 py-3 font-mono text-[10px] uppercase tracking-widest shadow-2xl animate-in slide-in-from-right duration-300">
+          Seed Exported to Local Storage ✓
+        </div>
+      )}
+
       <div className="flex flex-col lg:flex-row gap-24">
         <div className="flex-1 space-y-10">
           <div className="inline-block">
@@ -40,7 +87,7 @@ export const TrustKeyService: React.FC = () => {
           
           <div className="space-y-6 pt-6 border-t border-[var(--border-light)]">
             {[
-              { num: '01', title: 'Entropy Harvesting', sub: 'Local device random seeding' },
+              { num: '01', title: 'Deterministic Derivation', sub: 'Input-based Identity Anchor' },
               { num: '02', title: 'Identity Binding', sub: 'Protocol association' },
               { num: '03', title: 'Activation', sub: 'Mainnet Node Registry entry' }
             ].map((step) => (
@@ -67,7 +114,11 @@ export const TrustKeyService: React.FC = () => {
                   placeholder="name.signet"
                   className="w-full bg-transparent border-b-2 border-[var(--text-header)] text-[var(--text-header)] p-6 font-mono text-xl focus:border-[var(--trust-blue)] focus:outline-none transition-all placeholder:opacity-20"
                   value={identity}
-                  onChange={(e) => setIdentity(e.target.value)}
+                  onChange={(e) => {
+                    setIdentity(e.target.value);
+                    setPublicKey(null);
+                    setIsActivated(false);
+                  }}
                 />
               </div>
 
@@ -80,7 +131,7 @@ export const TrustKeyService: React.FC = () => {
                       ? 'bg-neutral-500/10 text-neutral-500 cursor-not-allowed' 
                       : 'bg-[var(--trust-blue)] text-white hover:brightness-110 active:scale-[0.98]'}`}
                 >
-                  {isGenerating ? 'GENERATE_SEED_...' : 'Initialize Registry'}
+                  {isGenerating ? 'ANALYZING_ENTROPY_...' : 'Initialize Registry'}
                 </button>
               ) : (
                 <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
@@ -92,19 +143,22 @@ export const TrustKeyService: React.FC = () => {
                         SECURE_KEY
                       </div>
                     </div>
-                    <p className="font-mono text-xs text-[var(--text-header)] break-all leading-relaxed bg-[var(--bg-sidebar)] p-4 select-all rounded border border-[var(--border-light)]">
+                    <p className="font-mono text-xs text-[var(--text-header)] break-all leading-relaxed bg-[var(--bg-sidebar)] p-4 select-all rounded border border-[var(--border-light)] shadow-inner">
                       {publicKey}
                     </p>
                   </div>
 
                   <div className="flex flex-col sm:flex-row gap-4">
                     <div className="flex-1 space-y-2">
-                      <button className="w-full py-4 border border-[var(--text-header)] text-[var(--text-header)] font-mono text-[10px] uppercase tracking-widest hover:bg-[var(--text-header)] hover:text-[var(--bg-standard)] transition-all font-bold rounded">
+                      <button 
+                        onClick={handleExportSeed}
+                        className="w-full py-4 border border-[var(--text-header)] text-[var(--text-header)] font-mono text-[10px] uppercase tracking-widest hover:bg-[var(--text-header)] hover:text-[var(--bg-standard)] transition-all font-bold rounded shadow-sm"
+                      >
                         Export Seed
                       </button>
                       <div className="text-center">
-                        <span className="text-[9px] font-mono opacity-40">PRIVATE BACKUP</span>
-                        <DefinitionTooltip title="Export Seed" text="Saves the encrypted 24-word seed phrase required to recover this identity on other devices." />
+                        <span className="text-[9px] font-mono opacity-40 uppercase tracking-tighter">Download .txt</span>
+                        <DefinitionTooltip title="Export Seed" text="Generates a local backup file containing your 24-word recovery phrase. Crucial for cross-device identity migration." />
                       </div>
                     </div>
 
@@ -113,14 +167,14 @@ export const TrustKeyService: React.FC = () => {
                         onClick={() => setIsActivated(true)}
                         className={`w-full py-4 font-mono text-[10px] uppercase tracking-widest font-bold rounded shadow-lg transition-all
                           ${isActivated 
-                            ? 'bg-green-500 text-white' 
+                            ? 'bg-green-500 text-white shadow-[0_0_20px_rgba(34,197,94,0.3)]' 
                             : 'bg-[var(--trust-blue)] text-white hover:brightness-110 active:scale-95'}`}
                       >
                         {isActivated ? '✓ IDENTITY_ACTIVE' : 'Activate Identity'}
                       </button>
                       <div className="text-center">
-                        <span className="text-[9px] font-mono opacity-40">NETWORK REGISTRY</span>
-                        <DefinitionTooltip title="Activate Identity" text="Broadcasts your public key to the Signet Mainnet to enable verified reasoning signatures." />
+                        <span className="text-[9px] font-mono opacity-40 uppercase tracking-tighter">Broadcasting Node</span>
+                        <DefinitionTooltip title="Activate Identity" text="Commits your public key to the global Signet Registry. Required for valid X-Signet-VPR signatures." />
                       </div>
                     </div>
                   </div>
@@ -128,7 +182,7 @@ export const TrustKeyService: React.FC = () => {
               )}
 
               <p className="font-mono text-[9px] text-[var(--text-body)] opacity-40 text-center leading-loose tracking-tight italic">
-                KEYS GENERATED VIA SIGNET SDK V0.2.1-ALPHA.<br />
+                {publicKey ? `DETERMINISTIC_BINDING: ${identity.toUpperCase()}` : 'WAITING_FOR_OPERATOR_INPUT'} <br />
                 SIGNET AI LABS MAINTAINS ZERO KNOWLEDGE OF PRIVATE KEY SEEDS.
               </p>
             </div>
