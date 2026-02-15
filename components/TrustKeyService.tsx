@@ -17,7 +17,7 @@ const db = app ? getFirestore(app, "signetai") : null;
 const PROTOCOL_AUTHORITY = "signetai.io";
 const SEPARATOR = ":";
 
-// BIP-39 English Wordlist (Full 2048 words required for 11-bit index mapping)
+// BIP-39 English Wordlist
 const BIP39_WORDS = [
   "abandon", "ability", "able", "about", "above", "absent", "absorb", "abstract", "absurd", "abuse", "access", "accident",
   "account", "accuse", "achieve", "acid", "acoustic", "acquire", "across", "act", "action", "actor", "actress", "actual",
@@ -87,8 +87,12 @@ export const TrustKeyService: React.FC = () => {
   }, []);
 
   const loadVault = async () => {
-    const vault = await PersistenceService.getActiveVault();
-    setActiveVault(vault);
+    try {
+      const vault = await PersistenceService.getActiveVault();
+      setActiveVault(vault);
+    } catch (e) {
+      console.error("Vault Load Error:", e);
+    }
   };
 
   const handleGenerate = async () => {
@@ -115,19 +119,29 @@ export const TrustKeyService: React.FC = () => {
       };
 
       try {
+        // Step 1: Save to local IndexedDB (SOP Compliant)
         await PersistenceService.saveVault(newVault);
+        
+        // Step 2: Attempt remote Registry Sync (Firestore)
         if (db) {
-          await setDoc(doc(db, "registry", anchor), {
-            identity,
-            publicKey: pubKey,
-            entropyBits: securityGrade * 11,
-            timestamp: Date.now()
-          });
+          try {
+            await setDoc(doc(db, "identities", anchor), {
+              identity,
+              publicKey: pubKey,
+              entropyBits: securityGrade * 11,
+              timestamp: Date.now()
+            });
+          } catch (syncErr) {
+            console.warn("Registry Sync Bypass (Local Storage Intact):", syncErr);
+            // We proceed even if Firestore fails to ensure user has their seed
+          }
         }
+        
         setActiveVault(newVault);
         setStatus(`Vault Sealed: ${securityGrade * 11}-bit Sovereign Entropy established.`);
-      } catch (err) {
-        setStatus("Storage Fault. Check SOP Policy.");
+      } catch (err: any) {
+        console.error("Storage Fault Details:", err);
+        setStatus(`Storage Fault: ${err.message || 'Check SOP Policy'}`);
       }
       setIsGenerating(false);
     }, 1500);
@@ -145,9 +159,13 @@ export const TrustKeyService: React.FC = () => {
 
   const handlePurge = async () => {
     if (activeVault && confirm("DANGER: This will remove your keys. Recovery requires your seed manifest. Continue?")) {
-      await PersistenceService.purgeVault(activeVault.anchor);
-      setActiveVault(null);
-      setStatus("Vault Purged.");
+      try {
+        await PersistenceService.purgeVault(activeVault.anchor);
+        setActiveVault(null);
+        setStatus("Vault Purged.");
+      } catch (e) {
+        setStatus("Purge Operation Failed.");
+      }
     }
   };
 
