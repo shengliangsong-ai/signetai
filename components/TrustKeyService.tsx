@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { initializeApp, getApps, getApp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
 import { getFirestore, doc, getDoc, setDoc, collection, query, where, getDocs } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
-import { getAuth, signInWithPopup, GoogleAuthProvider, TwitterAuthProvider, FacebookAuthProvider, OAuthProvider, onAuthStateChanged, User } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js';
+import { getAuth, signInWithPopup, GoogleAuthProvider, TwitterAuthProvider, FacebookAuthProvider, OAuthProvider, onAuthStateChanged, signOut, User } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js';
 import { firebaseConfig } from '../private_keys';
 import { PersistenceService, VaultRecord } from '../services/PersistenceService';
 
@@ -78,6 +78,8 @@ const deriveMockKey = (identity: string) => {
 
 export const TrustKeyService: React.FC = () => {
   const [activeVault, setActiveVault] = useState<VaultRecord | null>(null);
+  const [allVaults, setAllVaults] = useState<VaultRecord[]>([]);
+  const [isRegistering, setIsRegistering] = useState(false);
   const [securityGrade, setSecurityGrade] = useState<12 | 24>(24);
   const [identityInput, setIdentityInput] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
@@ -85,7 +87,7 @@ export const TrustKeyService: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
 
   useEffect(() => {
-    loadVault();
+    refreshVaults();
     if (auth) {
       const unsubscribe = onAuthStateChanged(auth, (user) => {
         setCurrentUser(user);
@@ -98,11 +100,18 @@ export const TrustKeyService: React.FC = () => {
     }
   }, []);
 
-  const loadVault = async () => {
-    try {
-      const vault = await PersistenceService.getActiveVault();
-      setActiveVault(vault);
-    } catch (e) { console.error("Vault Load Error:", e); }
+  const refreshVaults = async () => {
+    const vaults = await PersistenceService.getAllVaults();
+    const active = await PersistenceService.getActiveVault();
+    setAllVaults(vaults);
+    setActiveVault(active);
+    if (vaults.length === 0) setIsRegistering(true);
+  };
+
+  const handleSwitchVault = async (anchor: string) => {
+    await PersistenceService.setActiveVault(anchor);
+    refreshVaults();
+    setIsRegistering(false);
   };
 
   const handleSocialLogin = async (providerName: 'google' | 'x' | 'facebook' | 'linkedin') => {
@@ -112,17 +121,22 @@ export const TrustKeyService: React.FC = () => {
       case 'google': provider = new GoogleAuthProvider(); break;
       case 'x': provider = new TwitterAuthProvider(); break;
       case 'facebook': provider = new FacebookAuthProvider(); break;
-      case 'linkedin': 
-        provider = new OAuthProvider('oidc.linkedin'); 
-        break;
+      case 'linkedin': provider = new OAuthProvider('oidc.linkedin'); break;
       default: return;
     }
     try {
       setStatus(`Connecting to ${providerName.toUpperCase()} IdP...`);
       await signInWithPopup(auth, provider);
-      setStatus(`Authenticated with ${providerName.toUpperCase()}. Suggesting identity.`);
+      setStatus(`Authenticated with ${providerName.toUpperCase()}. Identity unlocked.`);
     } catch (err: any) {
       setStatus(`Auth Failure: ${err.message}`);
+    }
+  };
+
+  const handleLogout = async () => {
+    if (auth) {
+      await signOut(auth);
+      setStatus("Logged out of Social IdP.");
     }
   };
 
@@ -146,7 +160,7 @@ export const TrustKeyService: React.FC = () => {
           // Check for existing anchor
           const docSnap = await getDoc(doc(db, "identities", anchor));
           if (docSnap.exists()) {
-            throw new Error(`Anchor ${anchor} is already claimed by another curator.`);
+            throw new Error(`Anchor ${anchor} is already claimed in the registry.`);
           }
 
           // Enforce 1:1 Sovereign identity for social users
@@ -154,7 +168,7 @@ export const TrustKeyService: React.FC = () => {
             const q = query(collection(db, "identities"), where("ownerUid", "==", currentUser.uid), where("entropyBits", "==", 264));
             const existing = await getDocs(q);
             if (!existing.empty) {
-               throw new Error("Protocol Policy: Only one Sovereign identity per social account is permitted.");
+               throw new Error("Protocol Policy: You already have an active Sovereign identity.");
             }
           }
 
@@ -163,7 +177,7 @@ export const TrustKeyService: React.FC = () => {
             identity,
             publicKey: pubKey,
             entropyBits: securityGrade * 11,
-            ownerUid: currentUser?.uid || 'UNLINKED',
+            ownerUid: currentUser?.uid || 'ANONYMOUS',
             provider: currentUser?.providerData[0]?.providerId || 'SOVEREIGN_SEED',
             timestamp: Date.now()
           });
@@ -174,14 +188,18 @@ export const TrustKeyService: React.FC = () => {
           identity,
           publicKey: pubKey,
           mnemonic,
-          timestamp: Date.now()
+          timestamp: Date.now(),
+          type: securityGrade === 24 ? 'SOVEREIGN' : 'CONSUMER',
+          provider: currentUser?.providerData[0]?.providerId
         };
 
         // Step 2: Local Storage
         await PersistenceService.saveVault(newVault);
+        await PersistenceService.setActiveVault(newVault.anchor);
         
-        setActiveVault(newVault);
-        setStatus(`Vault Sealed: ${securityGrade * 11}-bit Sovereign Entropy established.`);
+        await refreshVaults();
+        setIsRegistering(false);
+        setStatus(`Vault Sealed: ${securityGrade * 11}-bit identity established.`);
       } catch (err: any) {
         setStatus(`Storage Fault: ${err.message}`);
       }
@@ -199,11 +217,11 @@ export const TrustKeyService: React.FC = () => {
     a.click();
   };
 
-  const handlePurge = async () => {
-    if (activeVault && confirm("DANGER: This will remove your keys. Recovery requires your seed manifest. Continue?")) {
-      await PersistenceService.purgeVault(activeVault.anchor);
-      setActiveVault(null);
-      setStatus("Vault Purged.");
+  const handlePurge = async (anchor: string) => {
+    if (confirm("DANGER: Remove this identity from local storage? Recovery requires your seed manifest.")) {
+      await PersistenceService.purgeVault(anchor);
+      await refreshVaults();
+      setStatus("Identity removed from local vault.");
     }
   };
 
@@ -215,127 +233,143 @@ export const TrustKeyService: React.FC = () => {
         <div className="space-y-10 relative z-10">
           <div className="space-y-4">
             <span className="font-mono text-[10px] text-[var(--trust-blue)] tracking-[0.4em] uppercase font-bold">Layer 5: TrustKey Registry</span>
-            <h2 className="text-4xl font-bold italic text-[var(--text-header)]">Sovereign Grade Identity.</h2>
-            <p className="text-lg leading-relaxed text-[var(--text-body)] opacity-80">
-              Signet replaces deprecated standards with 264-bit industrial-grade entropy. 
-              Authentication sources provide curatorial accountability across 8 billion users.
+            <h2 className="text-4xl font-bold italic text-[var(--text-header)]">Identity Management.</h2>
+            <p className="text-lg leading-relaxed text-[var(--text-body)] opacity-80 font-serif italic">
+              "Authority is non-custodial. You are the curator of your own reasoning."
             </p>
           </div>
 
-          {!activeVault ? (
-            <div className="space-y-8 animate-in fade-in duration-500">
-              {/* Social Auth Layer */}
-              <div className="space-y-4">
-                <label className="font-mono text-[10px] uppercase font-bold opacity-40">Attestation Source (Optional)</label>
-                <div className="grid grid-cols-4 gap-3">
-                  {[
-                    { id: 'google', label: 'G', color: 'hover:border-red-500' },
-                    { id: 'x', label: 'X', color: 'hover:border-neutral-500' },
-                    { id: 'linkedin', label: 'In', color: 'hover:border-blue-700' },
-                    { id: 'facebook', label: 'F', color: 'hover:border-blue-600' }
-                  ].map(p => (
-                    <button 
-                      key={p.id}
-                      onClick={() => handleSocialLogin(p.id as any)}
-                      className={`h-10 border border-[var(--border-light)] rounded font-mono font-bold text-xs flex items-center justify-center transition-all bg-white ${p.color}`}
-                    >
-                      {currentUser?.providerData[0]?.providerId.includes(p.id) ? '✓' : p.label}
-                    </button>
-                  ))}
-                </div>
+          {isRegistering ? (
+            <div className="space-y-8 animate-in fade-in slide-in-from-top-4">
+              <div className="flex justify-between items-center">
+                <h3 className="font-mono text-[11px] uppercase font-bold text-[var(--trust-blue)]">New Registration</h3>
+                {allVaults.length > 0 && (
+                  <button onClick={() => setIsRegistering(false)} className="text-[10px] font-mono opacity-50 hover:opacity-100 uppercase">Cancel</button>
+                )}
               </div>
 
-              <div className="space-y-4">
-                <label className="font-mono text-[10px] uppercase font-bold opacity-40">Curatorial ID Anchor</label>
-                <div className="flex gap-2 p-2 border border-[var(--border-light)] rounded bg-white">
-                   <span className="font-mono text-sm opacity-30 px-2 flex items-center">{PROTOCOL_AUTHORITY}:</span>
-                   <input 
-                     type="text" 
-                     value={identityInput} 
-                     onChange={(e) => setIdentityInput(e.target.value)}
-                     placeholder="e.g. shengliang.song"
-                     className="flex-1 bg-transparent outline-none font-mono text-sm text-[var(--trust-blue)]"
-                   />
-                   {currentUser && (
-                     <div className="flex items-center gap-1 px-2 bg-blue-50 border-l border-blue-100">
-                        <span className="text-[8px] font-mono text-blue-500 uppercase font-bold">Verified</span>
-                     </div>
-                   )}
-                </div>
-              </div>
-
-              <div className="p-1 border border-[var(--border-light)] rounded-lg flex bg-[var(--bg-sidebar)]">
-                <button 
-                  onClick={() => setSecurityGrade(12)}
-                  className={`flex-1 py-3 font-mono text-[10px] uppercase font-bold tracking-widest transition-all rounded ${securityGrade === 12 ? 'bg-white text-[var(--trust-blue)] shadow-sm' : 'opacity-40'}`}
-                >
-                  Consumer (132-bit)
-                </button>
-                <button 
-                  onClick={() => setSecurityGrade(24)}
-                  className={`flex-1 py-3 font-mono text-[10px] uppercase font-bold tracking-widest transition-all rounded ${securityGrade === 24 ? 'bg-white text-emerald-500 shadow-sm' : 'opacity-40'}`}
-                >
-                  Sovereign (264-bit)
-                </button>
-              </div>
-
-              <div className="p-10 border border-dashed border-[var(--border-light)] rounded-lg text-center space-y-8 bg-[var(--table-header)]/50">
-                <div className="space-y-2">
-                  <h3 className="font-serif text-2xl font-bold italic">Seal Registry Anchor</h3>
-                  <div className="flex items-center justify-center gap-2 font-mono text-[10px] text-emerald-600 font-bold uppercase tracking-widest">
-                    <span>{securityGrade * 11} bits</span>
-                    <span className="opacity-20">/</span>
-                    <span className="bg-emerald-500 text-white px-2 py-0.5 rounded">{currentUser ? 'Linked' : 'Unlinked'}</span>
+              <div className="space-y-6">
+                <div className="space-y-4">
+                  <label className="font-mono text-[10px] uppercase font-bold opacity-40">Attestation Provider</label>
+                  <div className="flex flex-wrap gap-2">
+                    {[
+                      { id: 'google', label: 'Google', color: 'hover:border-red-500' },
+                      { id: 'x', label: 'X', color: 'hover:border-neutral-500' },
+                      { id: 'linkedin', label: 'LinkedIn', color: 'hover:border-blue-700' }
+                    ].map(p => (
+                      <button 
+                        key={p.id}
+                        onClick={() => handleSocialLogin(p.id as any)}
+                        className={`px-4 py-2 border border-[var(--border-light)] rounded font-mono font-bold text-[10px] transition-all bg-white ${currentUser?.providerData[0]?.providerId.includes(p.id) ? 'bg-blue-50 border-blue-500 text-blue-600' : p.color}`}
+                      >
+                        {currentUser?.providerData[0]?.providerId.includes(p.id) ? `✓ ${p.label}` : p.label}
+                      </button>
+                    ))}
+                    {currentUser && (
+                      <button onClick={handleLogout} className="px-4 py-2 text-[10px] font-mono text-red-500 opacity-50 hover:opacity-100">Sign Out</button>
+                    )}
                   </div>
                 </div>
-                
+
+                <div className="space-y-4">
+                  <label className="font-mono text-[10px] uppercase font-bold opacity-40">Curatorial ID</label>
+                  <div className="flex gap-2 p-3 border border-[var(--border-light)] rounded bg-white shadow-sm focus-within:border-[var(--trust-blue)] transition-all">
+                     <span className="font-mono text-sm opacity-30 flex items-center">{PROTOCOL_AUTHORITY}:</span>
+                     <input 
+                       type="text" 
+                       value={identityInput} 
+                       onChange={(e) => setIdentityInput(e.target.value)}
+                       placeholder="e.g. shengliang.song"
+                       className="flex-1 bg-transparent outline-none font-mono text-sm text-[var(--trust-blue)] font-bold"
+                     />
+                  </div>
+                  <p className="text-[10px] font-serif italic opacity-40">This will be your permanent anchor in the signetai.io registry.</p>
+                </div>
+
+                <div className="p-1 border border-[var(--border-light)] rounded-lg flex bg-[var(--bg-sidebar)]">
+                  <button 
+                    onClick={() => setSecurityGrade(12)}
+                    className={`flex-1 py-3 font-mono text-[10px] uppercase font-bold tracking-widest transition-all rounded ${securityGrade === 12 ? 'bg-white text-[var(--trust-blue)] shadow-sm' : 'opacity-40'}`}
+                  >
+                    Consumer (132-bit)
+                  </button>
+                  <button 
+                    onClick={() => setSecurityGrade(24)}
+                    className={`flex-1 py-3 font-mono text-[10px] uppercase font-bold tracking-widest transition-all rounded ${securityGrade === 24 ? 'bg-white text-emerald-500 shadow-sm' : 'opacity-40'}`}
+                  >
+                    Sovereign (264-bit)
+                  </button>
+                </div>
+
                 <button 
                   onClick={handleGenerate}
                   disabled={isGenerating || !identityInput}
                   className={`w-full py-5 text-white font-mono text-xs uppercase font-bold tracking-[0.3em] rounded shadow-2xl transition-all active:scale-95 ${securityGrade === 24 ? 'bg-emerald-600' : 'bg-[var(--trust-blue)]'}`}
                 >
-                  {isGenerating ? 'ENTROPY_POOL_SYNCING...' : `Register & Seal Vault`}
+                  {isGenerating ? 'ENTROPY_POOL_SYNCING...' : `Seal & Register Identity`}
                 </button>
               </div>
             </div>
           ) : (
-            <div className="p-10 border border-[var(--border-light)] rounded-lg space-y-8 bg-[var(--code-bg)] shadow-xl animate-in fade-in slide-in-from-bottom-4">
-               <div className="flex justify-between items-start">
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 rounded-full bg-green-500"></div>
-                      <span className="font-mono text-[10px] text-green-500 font-bold uppercase tracking-widest">Vault Sealed</span>
-                    </div>
-                    <h3 className="font-serif text-3xl font-bold italic text-[var(--text-header)]">{activeVault.identity}</h3>
-                  </div>
-                  <div className="px-3 py-1 border border-[var(--trust-blue)]/30 text-[var(--trust-blue)] text-[9px] font-mono font-bold uppercase tracking-widest rounded-full">
-                    {activeVault.mnemonic.split(' ').length * 11}-bit Entropy
-                  </div>
-               </div>
+            <div className="space-y-8 animate-in fade-in">
+              <div className="flex justify-between items-center">
+                 <h3 className="font-mono text-[11px] uppercase font-bold opacity-40">Active Signet</h3>
+                 <button onClick={() => setIsRegistering(true)} className="text-[10px] font-mono text-[var(--trust-blue)] font-bold uppercase hover:underline">+ New Identity</button>
+              </div>
 
-               <div className="space-y-4">
-                  <div className="space-y-1">
-                    <p className="font-mono text-[9px] opacity-40 uppercase font-bold">Public Key (Ed25519-256)</p>
-                    <p className="font-mono text-[11px] text-[var(--trust-blue)] break-all p-4 bg-white/50 rounded border border-[var(--border-light)]">{activeVault.publicKey}</p>
+              {activeVault && (
+                <div className="p-8 border border-[var(--border-light)] rounded-lg bg-[var(--code-bg)] shadow-xl space-y-6">
+                   <div className="flex justify-between items-start">
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <div className={`w-2 h-2 rounded-full ${activeVault.type === 'SOVEREIGN' ? 'bg-emerald-500' : 'bg-blue-500'}`}></div>
+                          <span className={`font-mono text-[9px] font-bold uppercase tracking-widest ${activeVault.type === 'SOVEREIGN' ? 'text-emerald-500' : 'text-blue-500'}`}>
+                            {activeVault.type} SIGNET
+                          </span>
+                        </div>
+                        <h3 className="font-serif text-3xl font-bold italic text-[var(--text-header)]">{activeVault.identity}</h3>
+                      </div>
+                      <div className="px-3 py-1 border border-[var(--border-light)] text-[9px] font-mono opacity-40 rounded uppercase">
+                        {activeVault.provider || 'ANONYMOUS'}
+                      </div>
+                   </div>
+
+                   <div className="space-y-4">
+                      <div className="space-y-1">
+                        <p className="font-mono text-[9px] opacity-40 uppercase font-bold">Registry Anchor</p>
+                        <p className="font-mono text-[11px] text-[var(--trust-blue)] break-all p-3 bg-white/50 rounded border border-[var(--border-light)]">{activeVault.anchor}</p>
+                      </div>
+                      <div className="space-y-1">
+                        <p className="font-mono text-[9px] opacity-40 uppercase font-bold">Public Key (Ed25519)</p>
+                        <p className="font-mono text-[10px] opacity-60 break-all p-3 border border-[var(--border-light)] rounded">{activeVault.publicKey}</p>
+                      </div>
+                   </div>
+
+                   <button 
+                      onClick={handleDownloadVault}
+                      className="w-full py-4 bg-[var(--trust-blue)] text-white font-mono text-[10px] uppercase font-bold tracking-widest rounded shadow-lg hover:brightness-110 transition-all"
+                   >
+                     Download Seed Manifest (.json)
+                   </button>
+                </div>
+              )}
+
+              {allVaults.length > 1 && (
+                <div className="space-y-4">
+                  <h4 className="font-mono text-[10px] uppercase font-bold opacity-30">Other Identities in Vault</h4>
+                  <div className="grid grid-cols-1 gap-2">
+                    {allVaults.filter(v => v.anchor !== activeVault?.anchor).map(v => (
+                      <div key={v.anchor} className="flex justify-between items-center p-4 border border-[var(--border-light)] rounded hover:bg-white/50 transition-all group">
+                        <button onClick={() => handleSwitchVault(v.anchor)} className="flex-1 text-left">
+                           <p className="font-serif text-sm font-bold">{v.identity}</p>
+                           <p className="font-mono text-[9px] opacity-40">{v.type} | {v.provider || 'ANONYMOUS'}</p>
+                        </button>
+                        <button onClick={() => handlePurge(v.anchor)} className="p-2 opacity-0 group-hover:opacity-100 text-red-500 transition-all">✕</button>
+                      </div>
+                    ))}
                   </div>
-               </div>
-
-               <button 
-                  onClick={handleDownloadVault}
-                  className="w-full py-4 bg-[var(--trust-blue)] text-white font-mono text-[10px] uppercase font-bold tracking-widest rounded shadow-lg hover:brightness-110 transition-all"
-               >
-                 Download Seed Manifest (.json)
-               </button>
-
-               <div className="pt-6 border-t border-[var(--border-light)] flex justify-between items-center">
-                  <button 
-                    onClick={handlePurge}
-                    className="text-[10px] font-mono text-red-500 uppercase font-bold hover:underline"
-                  >
-                    Purge Local Vault
-                  </button>
-                  <span className="text-[9px] font-mono opacity-20 uppercase tracking-tighter">SEC_LEVEL_SOVEREIGN</span>
-               </div>
+                </div>
+              )}
             </div>
           )}
           
@@ -348,12 +382,12 @@ export const TrustKeyService: React.FC = () => {
 
         <div className="space-y-8 lg:pt-12">
           <div className="p-10 border border-[var(--border-light)] rounded-lg bg-[var(--bg-standard)] shadow-lg relative group">
-            <h4 className="font-mono text-[11px] opacity-40 uppercase tracking-widest mb-6 font-bold">Seed Manifest (VRP-R Target)</h4>
+            <h4 className="font-mono text-[11px] opacity-40 uppercase tracking-widest mb-6 font-bold">Mnemonic Recovery Key</h4>
             
             {!activeVault ? (
               <div className="h-48 border border-dashed border-[var(--border-light)] flex flex-col items-center justify-center italic opacity-20 text-sm font-serif">
                 <span className="text-4xl mb-4">🔑</span>
-                <p>Awaiting curatorial identity anchor...</p>
+                <p>Establishing new entropy pool...</p>
               </div>
             ) : (
               <div className="space-y-6">
@@ -368,7 +402,7 @@ export const TrustKeyService: React.FC = () => {
                 <div className="flex items-center gap-4 p-4 bg-amber-500/5 border border-amber-500/20 rounded">
                    <span className="text-xl">🛡️</span>
                    <p className="text-[10px] font-serif italic opacity-70 leading-relaxed">
-                     This is your <strong>Master Recovery Key</strong>. If you lose this, you lose your authority. Hover to reveal words, or download the manifest.
+                     Your keys never leave your device. Download your <strong>Seed Manifest</strong> to ensure cross-device recovery.
                    </p>
                 </div>
               </div>
@@ -376,23 +410,23 @@ export const TrustKeyService: React.FC = () => {
           </div>
 
           <div className="p-10 glass-card space-y-6">
-            <h4 className="font-mono text-[11px] opacity-40 uppercase tracking-widest font-bold">Identity Sovereignty Policy</h4>
+            <h4 className="font-mono text-[11px] opacity-40 uppercase tracking-widest font-bold">Policy Matrix v0.2.7</h4>
             <div className="space-y-4">
               <div className="flex justify-between items-end border-b border-[var(--border-light)] pb-2">
-                 <span className="font-serif italic text-sm">One User, One Sovereign Signet</span>
-                 <span className="font-mono text-[10px] opacity-40 text-green-500 font-bold">ENFORCED</span>
+                 <span className="font-serif italic text-sm">Sovereign Signet (24 Words)</span>
+                 <span className="font-mono text-[10px] text-emerald-500 font-bold">1:1 REMOTE ENFORCED</span>
               </div>
               <div className="flex justify-between items-end border-b border-[var(--border-light)] pb-2">
-                 <span className="font-serif italic text-sm">Consumer Sub-Identities</span>
-                 <span className="font-mono text-[10px] opacity-40">UNLIMITED</span>
+                 <span className="font-serif italic text-sm">Consumer Signet (12 Words)</span>
+                 <span className="font-mono text-[10px] opacity-40">LOCAL UNLIMITED</span>
               </div>
               <div className="flex justify-between items-end border-b border-[var(--border-light)] pb-2">
-                 <span className="font-serif italic text-sm">Anonymous Registration</span>
+                 <span className="font-serif italic text-sm">Anonymous Identity</span>
                  <span className="font-mono text-[10px] opacity-40">PERMITTED</span>
               </div>
             </div>
             <p className="text-[11px] opacity-60 leading-relaxed font-serif italic">
-              Signet Protocol allows "Sovereign-Only" registration for maximum privacy, but Social-Linked identities enjoy faster verification by third-party auditors.
+              Anonymous identities lack social proof but retain full cryptographic authority. They are ideal for high-privacy curatorial tasks.
             </p>
           </div>
         </div>
