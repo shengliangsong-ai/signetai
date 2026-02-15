@@ -198,7 +198,7 @@ export const TrustKeyService: React.FC = () => {
             <div className="flex items-center gap-2">
               <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse"></div>
               <span className="font-mono text-[9px] opacity-40 uppercase tracking-widest">
-                REFERRER_SHIELD: ACTIVE
+                REFERRER_SHIELD: CLOUD_RUN_WILDCARD_ACTIVE
               </span>
             </div>
           </div>
