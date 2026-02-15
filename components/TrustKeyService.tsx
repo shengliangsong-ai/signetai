@@ -3,6 +3,7 @@ import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebas
 import { getFirestore, doc, getDoc, setDoc } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
 import { firebaseConfig } from '../private_keys';
 
+// Initialize Firebase with encapsulated config
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
@@ -63,6 +64,8 @@ export const TrustKeyService: React.FC = () => {
   const [isActivated, setIsActivated] = useState(false);
   const [networkError, setNetworkError] = useState<string | null>(null);
 
+  const isConfigDefault = firebaseConfig.apiKey.includes("REPLACE_WITH");
+
   const getFullIdentity = (sub: string, ns: string) => {
     const cleanSub = sub.toLowerCase().trim();
     const cleanNs = ns.toLowerCase().trim();
@@ -78,7 +81,7 @@ export const TrustKeyService: React.FC = () => {
 
   useEffect(() => {
     const checkUniqueness = async () => {
-      if (!subject || subject.length < 2) {
+      if (!subject || subject.length < 3) {
         setAvailability('idle');
         return;
       }
@@ -101,7 +104,7 @@ export const TrustKeyService: React.FC = () => {
   }, [systemAnchor, subject]);
 
   const handleGenerate = () => {
-    if (!subject || subject.length < 2) return;
+    if (!subject || subject.length < 3) return;
     setIsGenerating(true);
     setTimeout(() => {
       setPublicKey(deriveMockKey(readableIdentity));
@@ -186,7 +189,7 @@ export const TrustKeyService: React.FC = () => {
     downloadAnchorNode.remove();
   };
 
-  const isButtonDisabled = isGenerating || !subject || subject.length < 2 || availability === 'taken' || availability === 'checking';
+  const isButtonDisabled = isGenerating || !subject || subject.length < 3 || availability === 'taken' || availability === 'checking';
 
   return (
     <section id="identity" className="py-32 px-6 max-w-7xl mx-auto border-v bg-[var(--bg-sidebar)]/30 relative">
@@ -195,8 +198,10 @@ export const TrustKeyService: React.FC = () => {
           <div className="flex items-center gap-4">
             <span className="font-mono text-[10px] uppercase bg-[var(--trust-blue)] text-white px-3 py-1 tracking-[0.2em] font-bold rounded-sm">FIREBASE_MAINNET</span>
             <div className="flex items-center gap-2">
-              <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></div>
-              <span className="font-mono text-[9px] opacity-40 uppercase tracking-widest">fir-cfb5e: connected</span>
+              <div className={`w-1.5 h-1.5 rounded-full ${isConfigDefault ? 'bg-amber-500 animate-pulse' : 'bg-green-500 animate-pulse'}`}></div>
+              <span className="font-mono text-[9px] opacity-40 uppercase tracking-widest">
+                {isConfigDefault ? 'ENCRYPTED_VAULT: WAITING_FOR_ROTATION' : 'ENCRYPTED_VAULT: SECURED'}
+              </span>
             </div>
           </div>
           <h2 className="font-serif text-7xl italic leading-none text-[var(--text-header)] font-bold">TrustKey<br/>Registry.</h2>
@@ -207,9 +212,15 @@ export const TrustKeyService: React.FC = () => {
             <button onClick={() => setActiveTab('register')} className={`pb-4 px-2 font-mono text-[10px] uppercase tracking-widest font-bold transition-all ${activeTab === 'register' ? 'text-[var(--trust-blue)] border-b-2 border-[var(--trust-blue)]' : 'opacity-40'}`}>01. Register Identity</button>
             <button onClick={() => setActiveTab('lookup')} className={`pb-4 px-2 font-mono text-[10px] uppercase tracking-widest font-bold transition-all ${activeTab === 'lookup' ? 'text-[var(--trust-blue)] border-b-2 border-[var(--trust-blue)]' : 'opacity-40'}`}>02. Global Lookup</button>
           </div>
-          <div className="p-6 bg-[var(--code-bg)] border border-[var(--border-light)] rounded-lg">
-             <h4 className="font-mono text-[10px] uppercase text-[var(--trust-blue)] font-bold mb-4 tracking-widest">Protocol Version: draft-song-02.6</h4>
-             <p className="text-xs opacity-60 font-serif italic">Identities are stored as deterministic anchors. This provides collision resistance across namespaces.</p>
+          <div className="p-6 bg-[var(--code-bg)] border border-[var(--border-light)] rounded-lg space-y-3">
+             <div className="flex items-center justify-between">
+                <h4 className="font-mono text-[10px] uppercase text-[var(--trust-blue)] font-bold tracking-widest">Protocol Version: draft-song-02.6</h4>
+                <div className="flex items-center gap-1">
+                   <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
+                   <span className="font-mono text-[8px] opacity-40 font-bold uppercase">Hardened</span>
+                </div>
+             </div>
+             <p className="text-xs opacity-60 font-serif italic">Identities are stored as deterministic anchors. This version enforces encapsulated credential management for L4 Curators.</p>
           </div>
         </div>
 
@@ -231,7 +242,7 @@ export const TrustKeyService: React.FC = () => {
                     <label className="font-mono text-[10px] text-[var(--text-body)] opacity-40 uppercase tracking-[0.3em] font-bold">Organizational Namespace (Optional)</label>
                     <input type="text" placeholder="e.g. gmail.com" disabled={isActivated} className="w-full bg-transparent border-b-2 border-[var(--text-header)] text-[var(--text-header)] p-4 font-mono text-lg focus:border-[var(--trust-blue)] focus:outline-none transition-all placeholder:opacity-20" value={namespace} onChange={(e) => setNamespace(e.target.value.toLowerCase().replace(/\s/g, ''))} />
                   </div>
-                  {subject && subject.length >= 2 && (
+                  {subject && subject.length >= 3 && (
                     <div className="p-6 bg-[var(--code-bg)] border border-[var(--trust-blue)]/20 rounded-lg space-y-4 animate-in slide-in-from-top-2">
                        <div className="space-y-1">
                           <span className="font-mono text-[8px] opacity-40 uppercase font-bold">Deterministic System Anchor:</span>
