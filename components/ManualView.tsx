@@ -27,7 +27,7 @@ export const ManualView: React.FC = () => {
       <header className="mb-20 space-y-4">
         <h1 className="text-6xl font-bold tracking-tighter italic text-[var(--text-header)]">Operator's Manual</h1>
         <p className="text-xl text-[var(--text-body)] opacity-60 font-serif leading-relaxed italic">
-          v0.2.5 — Standardized Guidance for the Signet Accountability Layer.
+          v0.2.6 — Standardized Guidance for the Signet Accountability Layer.
         </p>
       </header>
 
@@ -39,35 +39,13 @@ export const ManualView: React.FC = () => {
           <FeatureCard 
             icon="ID" 
             title="Understanding Trace IDs" 
-            desc="Every row in the Live Audit table represents a specific 'Logic Node' in the AI's reasoning path. The ID is a unique SHA-256 fingerprint used to re-attest that specific thought later." 
+            desc="Every row in the Live Audit table represents a specific 'Logic Node' in the AI's reasoning path. The ID is a unique SHA-256 fingerprint." 
           />
           <FeatureCard 
             icon="∞" 
             title="The Continuous Heartbeat" 
-            desc="Signet uses 'Continuous Attestation'. The stream looks infinite because the system is constantly monitoring for 'State Drift' — ensuring the asset hasn't been tampered with since generation." 
+            desc="Signet uses 'Continuous Attestation'. The stream monitors for 'State Drift' — ensuring the asset hasn't been tampered with." 
           />
-        </div>
-      </ManualSection>
-
-      <ManualSection title="02. Scalability & Cost">
-        <div className="bg-[var(--admonition-bg)] p-10 border-l-4 border-[var(--trust-blue)] space-y-4">
-          <h4 className="font-bold text-[var(--text-header)] text-xl">Probabilistic vs. Exhaustive</h4>
-          <p className="text-[15px] leading-relaxed text-[var(--text-body)] opacity-80">
-            For global scale, we do not audit every node every second. We use **Probabilistic Sampling**. 
-            By auditing only a random percentage of the DAG, we maintain 99.9% security at 1/1000th of the computational cost.
-          </p>
-        </div>
-      </ManualSection>
-
-      <ManualSection title="03. Protocol Finalization">
-        <div className="border border-[var(--border-light)] rounded p-8 space-y-6 bg-[var(--code-bg)]">
-          <h4 className="font-mono text-xs uppercase tracking-widest font-bold">The Lifecycle of an Audit</h4>
-          <ol className="space-y-4 font-serif italic text-[15px] opacity-80 list-decimal pl-6">
-            <li>Initialize Session: The Neural Link is established with the model.</li>
-            <li>Stream Audit: Real-time telemetry begins (the "forever loop").</li>
-            <li>Manual Probe: The operator may trigger an exhaustive deep-scan of a specific node.</li>
-            <li>Finalize Manifest: The "Finalize" command stops the stream and seals the session into an immutable C2PA JUMBF Box.</li>
-          </ol>
         </div>
       </ManualSection>
 
@@ -75,7 +53,7 @@ export const ManualView: React.FC = () => {
         <a href="#" onClick={(e) => { e.preventDefault(); window.location.hash = ''; }} className="text-[var(--trust-blue)] hover:underline font-mono text-[10px] uppercase tracking-widest font-bold">
           &larr; Return to Dashboard
         </a>
-        <p className="font-mono text-[9px] opacity-30 uppercase tracking-[0.2em]">Certified by Signet Standards Group</p>
+        <p className="font-mono text-[9px] opacity-30 uppercase tracking-[0.2em]">Certified by Signet Standards Group | v0.2.6</p>
       </div>
     </div>
   );

@@ -177,7 +177,7 @@ export const PortalView: React.FC<{ isOpen: boolean; onClose: () => void }> = ({
                    <span className="font-mono text-[8px] uppercase tracking-widest text-[var(--trust-blue)] font-bold">HEARTBEAT_SYNC</span>
                 </div>
               </div>
-              <span className="font-mono text-[9px] opacity-40 uppercase tracking-widest">v0.2.5_CORE</span>
+              <span className="font-mono text-[9px] opacity-40 uppercase tracking-widest">v0.2.6_CORE</span>
             </div>
 
             <div className="flex-1 bg-[var(--code-bg)] p-8 overflow-y-auto font-mono text-[11px] space-y-2">

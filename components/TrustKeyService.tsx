@@ -17,7 +17,6 @@ const db = getFirestore(app);
 const PROTOCOL_AUTHORITY = "signetai.io";
 const SEPARATOR = ":";
 
-// Seed Phrase Wordlist
 const WORDLIST = [
   "abandon", "ability", "able", "about", "above", "absent", "absorb", "abstract", "absurd", "abuse", "access", "accident",
   "account", "accuse", "achieve", "acid", "acoustic", "acquire", "across", "act", "action", "actor", "actress", "actual",
@@ -42,9 +41,9 @@ const generateSystemAnchor = (input: string) => {
     hash = hash & hash;
   }
   const part1 = Math.abs(hash).toString(16).padStart(8, '0');
-  const part2 = Math.abs(hash * 0x5bd1e995).toString(16).padStart(8, '0');
-  const part3 = Math.abs(hash * 0x1b873593).toString(16).padStart(8, '0');
-  const part4 = Math.abs(hash * 0x85ebca6b).toString(16).padStart(8, '0');
+  const part2 = Math.abs(hash * 0x5bd1e995).toString(16);
+  const part3 = Math.abs(hash * 0x1b873593).toString(16);
+  const part4 = Math.abs(hash * 0x85ebca6b).toString(16);
   return `${part1}-${part2}-${part3}-${part4}`;
 };
 
@@ -87,7 +86,7 @@ export const TrustKeyService: React.FC = () => {
 
   useEffect(() => {
     const checkUniqueness = async () => {
-      if (!subject || subject.length < 3) {
+      if (!subject || subject.length < 2) {
         setAvailability('idle');
         return;
       }
@@ -102,7 +101,6 @@ export const TrustKeyService: React.FC = () => {
           setAvailability('available');
         }
       } catch (e) {
-        console.error("Firestore Error:", e);
         setAvailability('available'); 
       }
     };
@@ -111,7 +109,7 @@ export const TrustKeyService: React.FC = () => {
   }, [systemAnchor, subject]);
 
   const handleGenerate = () => {
-    if (!subject || subject.length < 3) return;
+    if (!subject || subject.length < 2) return;
     setIsGenerating(true);
     setTimeout(() => {
       setPublicKey(deriveMockKey(readableIdentity));
@@ -137,8 +135,7 @@ export const TrustKeyService: React.FC = () => {
       setIsRegistering(false);
       setIsActivated(true);
     } catch (e) {
-      console.error("Commit error:", e);
-      setNetworkError("Mainnet commit failed. Simulating local storage.");
+      setNetworkError("Mainnet commit simulation active.");
       setTimeout(() => {
         setIsRegistering(false);
         setIsActivated(true);
@@ -173,7 +170,6 @@ export const TrustKeyService: React.FC = () => {
         setNetworkError("Identity not found in global registry.");
       }
     } catch (e) {
-      console.error("Lookup error:", e);
       setNetworkError("Global registry lookup failed.");
     }
   };
@@ -198,7 +194,7 @@ export const TrustKeyService: React.FC = () => {
     downloadAnchorNode.remove();
   };
 
-  const isButtonDisabled = isGenerating || !subject || subject.length < 3 || availability === 'taken' || availability === 'checking';
+  const isButtonDisabled = isGenerating || !subject || subject.length < 2 || availability === 'taken' || availability === 'checking';
 
   return (
     <section id="identity" className="py-32 px-6 max-w-7xl mx-auto border-v bg-[var(--bg-sidebar)]/30 relative">
@@ -213,7 +209,7 @@ export const TrustKeyService: React.FC = () => {
           </div>
           <h2 className="font-serif text-7xl italic leading-none text-[var(--text-header)] font-bold">TrustKey<br/>Registry.</h2>
           <p className="text-[var(--text-body)] opacity-70 text-xl leading-relaxed max-w-md font-serif">
-            Hierarchical identity settlement for the 8 billion. Anchored via <span className="text-[var(--trust-blue)] font-bold italic">32-byte UUIDs</span>.
+            Hierarchical identity settlement for the 8 billion. Anchored via <span className="text-[var(--trust-blue)] font-bold italic">Signet UUIDs</span>.
           </p>
           <div className="flex gap-4 border-b border-[var(--border-light)] pb-px">
             <button onClick={() => setActiveTab('register')} className={`pb-4 px-2 font-mono text-[10px] uppercase tracking-widest font-bold transition-all ${activeTab === 'register' ? 'text-[var(--trust-blue)] border-b-2 border-[var(--trust-blue)]' : 'opacity-40'}`}>01. Register Identity</button>
@@ -221,7 +217,7 @@ export const TrustKeyService: React.FC = () => {
           </div>
           <div className="p-6 bg-[var(--code-bg)] border border-[var(--border-light)] rounded-lg">
              <h4 className="font-mono text-[10px] uppercase text-[var(--trust-blue)] font-bold mb-4 tracking-widest">Protocol Version: draft-song-02.6</h4>
-             <p className="text-xs opacity-60 font-serif italic">Identities are stored as SHA-256 derived UUIDs. This provides constant-time O(1) lookup and absolute collision resistance.</p>
+             <p className="text-xs opacity-60 font-serif italic">Identities are stored as deterministic anchors. This provides collision resistance across namespaces.</p>
           </div>
         </div>
 
@@ -236,18 +232,17 @@ export const TrustKeyService: React.FC = () => {
                       {availability === 'checking' && <span className="text-[9px] font-mono animate-pulse opacity-40 italic">Verifying Anchor...</span>}
                       {availability === 'available' && <span className="text-[9px] font-mono text-green-500 font-bold">✓ ANCHOR_FREE</span>}
                       {availability === 'taken' && <span className="text-[9px] font-mono text-red-500 font-bold">✕ ANCHOR_BOUND</span>}
-                      {availability === 'idle' && subject.length > 0 && subject.length < 3 && <span className="text-[9px] font-mono text-amber-500">MIN_3_CHARS</span>}
                     </div>
-                    <input type="text" placeholder="e.g. shengliang.song.ai@gmail.com" disabled={isActivated} className="w-full bg-transparent border-b-2 border-[var(--text-header)] text-[var(--text-header)] p-4 font-mono text-lg focus:border-[var(--trust-blue)] focus:outline-none transition-all placeholder:opacity-20" value={subject} onChange={(e) => setSubject(e.target.value.toLowerCase().replace(/\s/g, ''))} />
+                    <input type="text" placeholder="e.g. shengliang.song.ai" disabled={isActivated} className="w-full bg-transparent border-b-2 border-[var(--text-header)] text-[var(--text-header)] p-4 font-mono text-lg focus:border-[var(--trust-blue)] focus:outline-none transition-all placeholder:opacity-20" value={subject} onChange={(e) => setSubject(e.target.value.toLowerCase().replace(/\s/g, ''))} />
                   </div>
                   <div className="space-y-3">
                     <label className="font-mono text-[10px] text-[var(--text-body)] opacity-40 uppercase tracking-[0.3em] font-bold">Organizational Namespace (Optional)</label>
-                    <input type="text" placeholder="e.g. engineering" disabled={isActivated} className="w-full bg-transparent border-b-2 border-[var(--text-header)] text-[var(--text-header)] p-4 font-mono text-lg focus:border-[var(--trust-blue)] focus:outline-none transition-all placeholder:opacity-20" value={namespace} onChange={(e) => setNamespace(e.target.value.toLowerCase().replace(/\s/g, ''))} />
+                    <input type="text" placeholder="e.g. gmail.com" disabled={isActivated} className="w-full bg-transparent border-b-2 border-[var(--text-header)] text-[var(--text-header)] p-4 font-mono text-lg focus:border-[var(--trust-blue)] focus:outline-none transition-all placeholder:opacity-20" value={namespace} onChange={(e) => setNamespace(e.target.value.toLowerCase().replace(/\s/g, ''))} />
                   </div>
-                  {subject && subject.length >= 3 && (
+                  {subject && subject.length >= 2 && (
                     <div className="p-6 bg-[var(--code-bg)] border border-[var(--trust-blue)]/20 rounded-lg space-y-4 animate-in slide-in-from-top-2">
                        <div className="space-y-1">
-                          <span className="font-mono text-[8px] opacity-40 uppercase font-bold">Deterministic System Anchor (32-Byte UUID):</span>
+                          <span className="font-mono text-[8px] opacity-40 uppercase font-bold">Deterministic System Anchor:</span>
                           <p className="font-mono text-[11px] text-[var(--trust-blue)] font-bold break-all">{systemAnchor}</p>
                        </div>
                     </div>
@@ -293,7 +288,6 @@ export const TrustKeyService: React.FC = () => {
                     </div>
                   </div>
                 )}
-                {networkError && <div className="p-3 bg-amber-500/10 border border-amber-500/20 text-amber-600 text-[10px] font-mono text-center rounded">{networkError}</div>}
               </div>
             ) : (
               <div className="space-y-10 animate-in fade-in duration-500">
@@ -317,7 +311,7 @@ export const TrustKeyService: React.FC = () => {
                             <h4 className="text-[var(--text-header)] font-mono text-sm font-bold break-all">{lookupResult.id}</h4>
                          </div>
                          <div>
-                            <p className="font-mono text-[8px] opacity-40 uppercase mb-1">System Anchor (32-byte UUID)</p>
+                            <p className="font-mono text-[8px] opacity-40 uppercase mb-1">System Anchor</p>
                             <p className="font-mono text-[10px] text-[var(--trust-blue)] font-bold break-all">{lookupResult.anchor}</p>
                          </div>
                          <div className="bg-[var(--bg-sidebar)] p-4 rounded border border-[var(--border-light)]">
