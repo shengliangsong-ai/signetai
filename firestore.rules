@@ -26,38 +26,14 @@ service cloud.firestore {
       // Public lookup is required for global verification
       allow read: if true;
       
-      // First-to-Claim: Only allow creation if the anchor doesn't exist.
-      // We allow unauthenticated creation for the public protocol demo, 
-      // but the component enforces uniqueness.
-      allow create: if !exists(/databases/$(database)/documents/identities/$(anchorId));
+      // First-to-Claim (Public Demo Mode):
+      // We allow unauthenticated creation to keep the demo frictionless, 
+      // relying on GCP Referrer Whitelisting to prevent 3rd party script abuse.
+      allow create: if !exists(/databases/$(database)/documents/identities/$(anchorId))
+                    && anchorId.size() >= 20;
       
-      // Update and delete are restricted to administrators for revocation/governance
+      // Updates and deletions are strictly for governance/admins
       allow update, delete: if isAdmin();
-    }
-
-    // ----------------------------------------------------------------------
-    // Global Default
-    // ----------------------------------------------------------------------
-    match /{document=**} {
-      allow read, write: if isAdmin();
-    }
-
-    // ----------------------------------------------------------------------
-    // NEURAL CACHE & LEDGERS (Shared Knowledge Plane)
-    // ----------------------------------------------------------------------
-    match /neural_audio_ledger/{allPaths=**} {
-      allow read: if true; 
-      allow write: if isAuthenticated(); 
-    }
-
-    match /lecture_cache/{allPaths=**} {
-      allow read: if true; 
-      allow write: if isAuthenticated(); 
-    }
-
-    match /bible_ledger/{allPaths=**} {
-      allow read: if true; 
-      allow write: if isAuthenticated(); 
     }
 
     // ----------------------------------------------------------------------
@@ -65,8 +41,28 @@ service cloud.firestore {
     // ----------------------------------------------------------------------
     match /users/{userId} {
       allow read: if isAuthenticated(); 
-      allow create: if isOwner(userId);
-      allow update: if isOwner(userId) || isAdmin(); 
+      allow create: if isOwner(userId) && !(request.resource.data.keys().hasAny(['groups']));
+      allow update: if isAdmin() || (isOwner(userId) && !(request.resource.data.diff(resource.data).affectedKeys().hasAny(['groups'])));
+    }
+
+    // ----------------------------------------------------------------------
+    // NEURAL CACHE & LEDGERS (Append-Only for Users)
+    // ----------------------------------------------------------------------
+    match /neural_audio_ledger/{docId} {
+      allow read: if true; 
+      allow create: if isAuthenticated();
+      allow update, delete: if isAdmin();
+    }
+
+    match /lecture_cache/{docId} {
+      allow read: if true; 
+      allow write: if isAdmin(); 
+    }
+
+    match /bible_ledger/{docId} {
+      allow read: if true; 
+      allow create: if isAuthenticated();
+      allow update, delete: if isAdmin();
     }
 
     // ----------------------------------------------------------------------
@@ -74,17 +70,14 @@ service cloud.firestore {
     // ----------------------------------------------------------------------
     match /invitations/{inviteId} { 
       allow read: if isAuthenticated();
-      allow create, update: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated(); 
     }
     
-    match /receipts/{receiptId} { 
-      allow read: if isAuthenticated();
-      allow create, update: if isAuthenticated();
-    }
-
     match /coin_transactions/{txId} { 
-      allow read: if isAuthenticated(); 
-      allow create: if isAuthenticated(); 
+      allow read: if isAuthenticated() && (resource.data.uid == request.auth.uid || isAdmin()); 
+      allow create: if isAuthenticated() && request.resource.data.uid == request.auth.uid; 
+      allow update, delete: if isAdmin();
     }
 
     // ----------------------------------------------------------------------
@@ -92,65 +85,25 @@ service cloud.firestore {
     // ----------------------------------------------------------------------
     match /blogs/{blogId} {
       allow read: if true;
-      allow create, update: if isAuthenticated();
-      allow delete: if isAdmin();
-    }
-
-    match /blog_posts/{postId} {
-      allow read: if true;
-      allow create, update: if isAuthenticated();
-      allow delete: if isAdmin();
-    }
-
-    match /channels/{channelId} {
-      allow read: if true; 
-      allow create: if isAuthenticated();
-      allow update: if isAdmin() || isAuthenticated();
-      allow delete: if isAdmin();
-    }
-    
-    match /channel_stats/{id} {
-      allow read: if true;
-      allow write: if isAuthenticated();
+      allow write: if isAdmin();
     }
 
     match /chat_channels/{channelId} {
-      allow read, write: if isAuthenticated();
-      match /messages/{msgId} { allow read, write: if isAuthenticated(); }
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated();
+      match /messages/{msgId} { 
+        allow read: if isAuthenticated();
+        allow create: if isAuthenticated() && request.resource.data.senderId == request.auth.uid;
+        allow update, delete: if isAdmin() || (isAuthenticated() && resource.data.senderId == request.auth.uid);
+      }
     }
     
-    match /discussions/{discussionId} { 
-      allow read: if true; 
-      allow write: if isAuthenticated(); 
+    // ----------------------------------------------------------------------
+    // Global Default - Restrict general paths to Admins
+    // ----------------------------------------------------------------------
+    match /{document=**} {
+      allow read: if isAuthenticated() || isAdmin();
+      allow write: if isAdmin();
     }
-    
-    match /mock_interviews/{interviewId} { 
-      allow read: if isAuthenticated(); 
-      allow write: if isAuthenticated(); 
-    }
-    
-    match /custom_books/{bookId} {
-      allow read: if true;
-      allow write: if isAuthenticated();
-    }
-
-    match /system_book_metadata/{bookId} {
-      allow read: if true;
-      allow write: if isAuthenticated();
-    }
-
-    match /badges/{badgeId} {
-      allow read: if true;
-      allow write: if isAuthenticated();
-    }
-
-    match /bookings/{bookingId} { allow read, write: if isAuthenticated(); }
-    match /recordings/{recordingId} { allow read, write: if isAuthenticated(); }
-    match /checks/{checkId} { allow read: if true; allow write: if isAuthenticated(); }
-    match /shipping/{labelId} { allow read, write: if isAuthenticated(); }
-    match /icons/{iconId} { allow read, write: if isAuthenticated(); }
-    match /cards/{cardId} { allow read, write: if isAuthenticated(); }
-    match /notebooks/{notebookId} { allow read, write: if isAuthenticated(); }
-    match /feedback/{feedbackId} { allow read, write: if isAuthenticated(); }
   }
 }

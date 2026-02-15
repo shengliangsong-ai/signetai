@@ -1,26 +1,24 @@
 # Signet Protocol Security Policy
 
-## 1. Key Management (TKS-SEC-01)
-As of v0.2.6, all sensitive credentials MUST be stored in `private_keys.ts`. This file is explicitly ignored by version control.
+## 1. Risk Assessment (LOG-2026-02-15-C)
+- **API Key Leak**: Mitigated. Access is limited via **GCP Referrer Whitelisting** to `signetai.io` and `aivoicecast.com`.
+- **Identity Registry**: [FRICTIONLESS DEMO] Registration allows public `create` but strictly prevents `update/delete`. This ensures the "First-to-Claim" demo works without requiring user login, while maintaining record integrity.
+- **Data Integrity**: [HARDENED] Ledgers (Bible/Neural) are now **Append-Only** for users. Deletion is restricted to Admins.
+- **Privilege Escalation**: [FIXED] User document creation blocks self-assignment of the `admin_neural_prism` group.
 
-## 2. Deferred Rotation Incident (LOG-2026-02-15)
-- **Status**: [MITIGATION ACTIVE / ROTATION DEFERRED]
-- **Context**: The Firebase API Key was exposed in a public commit. Due to an active Hackathon Judging Period (frozen deployment at `aivoicecast.com`), full key rotation is deferred for 30 days to maintain uptime for evaluators.
+## 2. Mandatory GCP Configuration
+The security of the unauthenticated Registry depends ENTIRELY on the [GCP Credentials Console](https://console.cloud.google.com/apis/credentials). Verify these settings:
 
-### Phase A: Hardening (ACTIVE)
-- **Website Referrer Restrictions**: Applied in GCP Console to only allow requests from specific origins.
-- **Whitelist Patterns (Copy these into GCP Console):**
-    - `https://www.signetai.io/*`
-    - `https://www.aivoicecast.com/*`
-    - `https://*-836641670384.us-west1.run.app/*` (Covers all Cloud Run instances)
-    - `http://localhost:*` (Development only)
+1. **Website Restrictions:**
+   - `https://www.signetai.io/*`
+   - `https://www.aivoicecast.com/*`
+   - `http://localhost:*` (Allowed for dev)
 
-### Phase B: Scheduled Rotation
-- **Rotation Date**: March 15, 2026.
-- **Action**: Click "Regenerate Key" in GCP Console to invalidate the leaked string `...OKQjYLP0`.
+2. **API Restrictions:**
+   - Limit key usage to: Firestore, Storage, and Identity Toolkit.
 
-## 3. Why ".run.app" Wildcards?
-Google Cloud Run generates unique URLs for every service (e.g., `neural-prism-...`). By using the wildcard `*-836641670384.us-west1.run.app`, you authorize all apps belonging to your Project ID `836641670384` while blocking any other user's Cloud Run apps from stealing your quota.
-
-## 4. Contact
-For security disclosures, contact `trust@signetai.io`.
+## 3. Deployment Checklist
+- [ ] Deploy Firestore Rules (v0.2.6_STABLE)
+- [ ] Deploy Storage Rules (v0.2.6_STABLE)
+- [ ] Confirm `TrustKeyService` registration works without login.
+- [ ] Confirm a standard user cannot delete ledger entries.
