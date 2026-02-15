@@ -1,15 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
 import { getFirestore, doc, getDoc, setDoc } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
-
-const firebaseConfig = {
-  apiKey: "AIzaSyDXHnrdOHS_sGtUH5YIwo3uiw_OKQjYLP0",
-  authDomain: "fir-cfb5e.firebaseapp.com",
-  projectId: "fir-cfb5e",
-  storageBucket: "fir-cfb5e.firebasestorage.app",
-  messagingSenderId: "604425155000",
-  appId: "1:604425155000:web:c27c1a6dab98fc01b4df4d"
-};
+import { firebaseConfig } from '../private_keys';
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
