@@ -1,3 +1,4 @@
+
 import React from 'react';
 
 export const Hero: React.FC<{ onOpenPortal: () => void }> = ({ onOpenPortal }) => {
@@ -6,7 +7,7 @@ export const Hero: React.FC<{ onOpenPortal: () => void }> = ({ onOpenPortal }) =
       <div className="space-y-6">
         <div className="flex items-center gap-4 mb-2">
           <span className="w-10 h-px bg-[var(--trust-blue)]"></span>
-          <span className="font-mono text-[10px] uppercase tracking-[0.4em] text-[var(--trust-blue)] font-bold">Standard 0.2.5_ACTIVE</span>
+          <span className="font-mono text-[10px] uppercase tracking-[0.4em] text-[var(--trust-blue)] font-bold">Standard 0.2.6_ACTIVE</span>
         </div>
         <h1 className="text-5xl md:text-7xl tracking-tighter leading-[0.9] mb-8 text-[var(--text-header)] font-bold">
           Verifiable Proof <br />

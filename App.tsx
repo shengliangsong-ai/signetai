@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Hero } from './components/Hero';
 import { Architecture } from './components/Architecture';
@@ -25,7 +26,7 @@ const Sidebar: React.FC<{ currentView: string; isOpen: boolean }> = ({ currentVi
     <div className="p-8">
       <div className="flex items-center gap-3 mb-12">
         <div className="cr-badge text-[var(--trust-blue)]">cr</div>
-        <span className="font-bold tracking-tight text-xl text-[var(--text-header)]">Signet v0.2.5</span>
+        <span className="font-bold tracking-tight text-xl text-[var(--text-header)]">Signet v0.2.6</span>
       </div>
 
       <nav className="space-y-1">
@@ -98,7 +99,6 @@ const App: React.FC = () => {
       const hash = window.location.hash;
       const path = window.location.pathname;
       
-      // Handle /apps/[app-name] subdirectory
       if (path.startsWith('/apps/')) {
         const parts = path.split('/');
         if (parts[2]) {
@@ -109,7 +109,6 @@ const App: React.FC = () => {
         }
       }
 
-      // Handle Anchors & Main Site Views
       if (hash === '#verifier') {
         setIsPortalOpen(true);
         setView('home');
@@ -127,7 +126,6 @@ const App: React.FC = () => {
         setView('branding');
       } else if (hash === '#identity' || hash === '#developers' || hash === '#contact') {
         setView('home');
-        // Let the browser handle native scroll or trigger a smooth scroll
         setTimeout(() => {
           const el = document.querySelector(hash);
           if (el) el.scrollIntoView({ behavior: 'smooth' });
