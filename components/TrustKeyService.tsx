@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { initializeApp, getApps, getApp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
-import { getFirestore, doc, getDoc, setDoc } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
+import { getFirestore, doc, getDoc, setDoc, collection, query, where, getDocs } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
+import { getAuth, signInWithPopup, GoogleAuthProvider, TwitterAuthProvider, FacebookAuthProvider, OAuthProvider, onAuthStateChanged, User } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js';
 import { firebaseConfig } from '../private_keys';
 import { PersistenceService, VaultRecord } from '../services/PersistenceService';
 
@@ -13,11 +14,11 @@ const initSignetFirebase = () => {
 
 const app = initSignetFirebase();
 const db = app ? getFirestore(app, "signetai") : null;
+const auth = app ? getAuth(app) : null;
 
 const PROTOCOL_AUTHORITY = "signetai.io";
 const SEPARATOR = ":";
 
-// BIP-39 English Wordlist
 const BIP39_WORDS = [
   "abandon", "ability", "able", "about", "above", "absent", "absorb", "abstract", "absurd", "abuse", "access", "accident",
   "account", "accuse", "achieve", "acid", "acoustic", "acquire", "across", "act", "action", "actor", "actress", "actual",
@@ -81,17 +82,47 @@ export const TrustKeyService: React.FC = () => {
   const [identityInput, setIdentityInput] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
 
   useEffect(() => {
     loadVault();
+    if (auth) {
+      const unsubscribe = onAuthStateChanged(auth, (user) => {
+        setCurrentUser(user);
+        if (user && !identityInput) {
+          const suggestedId = (user.email?.split('@')[0] || user.displayName?.toLowerCase().replace(/\s+/g, '.') || '').replace(/[^a-z0-9.]/g, '');
+          setIdentityInput(suggestedId);
+        }
+      });
+      return () => unsubscribe();
+    }
   }, []);
 
   const loadVault = async () => {
     try {
       const vault = await PersistenceService.getActiveVault();
       setActiveVault(vault);
-    } catch (e) {
-      console.error("Vault Load Error:", e);
+    } catch (e) { console.error("Vault Load Error:", e); }
+  };
+
+  const handleSocialLogin = async (providerName: 'google' | 'x' | 'facebook' | 'linkedin') => {
+    if (!auth) return;
+    let provider;
+    switch(providerName) {
+      case 'google': provider = new GoogleAuthProvider(); break;
+      case 'x': provider = new TwitterAuthProvider(); break;
+      case 'facebook': provider = new FacebookAuthProvider(); break;
+      case 'linkedin': 
+        provider = new OAuthProvider('oidc.linkedin'); 
+        break;
+      default: return;
+    }
+    try {
+      setStatus(`Connecting to ${providerName.toUpperCase()} IdP...`);
+      await signInWithPopup(auth, provider);
+      setStatus(`Authenticated with ${providerName.toUpperCase()}. Suggesting identity.`);
+    } catch (err: any) {
+      setStatus(`Auth Failure: ${err.message}`);
     }
   };
 
@@ -110,38 +141,49 @@ export const TrustKeyService: React.FC = () => {
       const anchor = `${PROTOCOL_AUTHORITY}${SEPARATOR}${identity}`;
       const pubKey = deriveMockKey(identity);
 
-      const newVault: VaultRecord = {
-        anchor,
-        identity,
-        publicKey: pubKey,
-        mnemonic,
-        timestamp: Date.now()
-      };
-
       try {
-        // Step 1: Save to local IndexedDB (SOP Compliant)
-        await PersistenceService.saveVault(newVault);
-        
-        // Step 2: Attempt remote Registry Sync (Firestore)
         if (db) {
-          try {
-            await setDoc(doc(db, "identities", anchor), {
-              identity,
-              publicKey: pubKey,
-              entropyBits: securityGrade * 11,
-              timestamp: Date.now()
-            });
-          } catch (syncErr) {
-            console.warn("Registry Sync Bypass (Local Storage Intact):", syncErr);
-            // We proceed even if Firestore fails to ensure user has their seed
+          // Check for existing anchor
+          const docSnap = await getDoc(doc(db, "identities", anchor));
+          if (docSnap.exists()) {
+            throw new Error(`Anchor ${anchor} is already claimed by another curator.`);
           }
+
+          // Enforce 1:1 Sovereign identity for social users
+          if (currentUser && securityGrade === 24) {
+            const q = query(collection(db, "identities"), where("ownerUid", "==", currentUser.uid), where("entropyBits", "==", 264));
+            const existing = await getDocs(q);
+            if (!existing.empty) {
+               throw new Error("Protocol Policy: Only one Sovereign identity per social account is permitted.");
+            }
+          }
+
+          // Step 1: Remote Registry Sync
+          await setDoc(doc(db, "identities", anchor), {
+            identity,
+            publicKey: pubKey,
+            entropyBits: securityGrade * 11,
+            ownerUid: currentUser?.uid || 'UNLINKED',
+            provider: currentUser?.providerData[0]?.providerId || 'SOVEREIGN_SEED',
+            timestamp: Date.now()
+          });
         }
+
+        const newVault: VaultRecord = {
+          anchor,
+          identity,
+          publicKey: pubKey,
+          mnemonic,
+          timestamp: Date.now()
+        };
+
+        // Step 2: Local Storage
+        await PersistenceService.saveVault(newVault);
         
         setActiveVault(newVault);
         setStatus(`Vault Sealed: ${securityGrade * 11}-bit Sovereign Entropy established.`);
       } catch (err: any) {
-        console.error("Storage Fault Details:", err);
-        setStatus(`Storage Fault: ${err.message || 'Check SOP Policy'}`);
+        setStatus(`Storage Fault: ${err.message}`);
       }
       setIsGenerating(false);
     }, 1500);
@@ -159,13 +201,9 @@ export const TrustKeyService: React.FC = () => {
 
   const handlePurge = async () => {
     if (activeVault && confirm("DANGER: This will remove your keys. Recovery requires your seed manifest. Continue?")) {
-      try {
-        await PersistenceService.purgeVault(activeVault.anchor);
-        setActiveVault(null);
-        setStatus("Vault Purged.");
-      } catch (e) {
-        setStatus("Purge Operation Failed.");
-      }
+      await PersistenceService.purgeVault(activeVault.anchor);
+      setActiveVault(null);
+      setStatus("Vault Purged.");
     }
   };
 
@@ -180,14 +218,35 @@ export const TrustKeyService: React.FC = () => {
             <h2 className="text-4xl font-bold italic text-[var(--text-header)]">Sovereign Grade Identity.</h2>
             <p className="text-lg leading-relaxed text-[var(--text-body)] opacity-80">
               Signet replaces deprecated standards with 264-bit industrial-grade entropy. 
-              Each word represents <span className="text-[var(--trust-blue)] font-bold">11 bits of index</span> ($2^{11} = 2048$).
+              Authentication sources provide curatorial accountability across 8 billion users.
             </p>
           </div>
 
           {!activeVault ? (
             <div className="space-y-8 animate-in fade-in duration-500">
+              {/* Social Auth Layer */}
               <div className="space-y-4">
-                <label className="font-mono text-[10px] uppercase font-bold opacity-40">Choose Curatorial ID</label>
+                <label className="font-mono text-[10px] uppercase font-bold opacity-40">Attestation Source (Optional)</label>
+                <div className="grid grid-cols-4 gap-3">
+                  {[
+                    { id: 'google', label: 'G', color: 'hover:border-red-500' },
+                    { id: 'x', label: 'X', color: 'hover:border-neutral-500' },
+                    { id: 'linkedin', label: 'In', color: 'hover:border-blue-700' },
+                    { id: 'facebook', label: 'F', color: 'hover:border-blue-600' }
+                  ].map(p => (
+                    <button 
+                      key={p.id}
+                      onClick={() => handleSocialLogin(p.id as any)}
+                      className={`h-10 border border-[var(--border-light)] rounded font-mono font-bold text-xs flex items-center justify-center transition-all bg-white ${p.color}`}
+                    >
+                      {currentUser?.providerData[0]?.providerId.includes(p.id) ? '✓' : p.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <label className="font-mono text-[10px] uppercase font-bold opacity-40">Curatorial ID Anchor</label>
                 <div className="flex gap-2 p-2 border border-[var(--border-light)] rounded bg-white">
                    <span className="font-mono text-sm opacity-30 px-2 flex items-center">{PROTOCOL_AUTHORITY}:</span>
                    <input 
@@ -197,6 +256,11 @@ export const TrustKeyService: React.FC = () => {
                      placeholder="e.g. shengliang.song"
                      className="flex-1 bg-transparent outline-none font-mono text-sm text-[var(--trust-blue)]"
                    />
+                   {currentUser && (
+                     <div className="flex items-center gap-1 px-2 bg-blue-50 border-l border-blue-100">
+                        <span className="text-[8px] font-mono text-blue-500 uppercase font-bold">Verified</span>
+                     </div>
+                   )}
                 </div>
               </div>
 
@@ -217,13 +281,11 @@ export const TrustKeyService: React.FC = () => {
 
               <div className="p-10 border border-dashed border-[var(--border-light)] rounded-lg text-center space-y-8 bg-[var(--table-header)]/50">
                 <div className="space-y-2">
-                  <h3 className="font-serif text-2xl font-bold italic">Seal Authority</h3>
+                  <h3 className="font-serif text-2xl font-bold italic">Seal Registry Anchor</h3>
                   <div className="flex items-center justify-center gap-2 font-mono text-[10px] text-emerald-600 font-bold uppercase tracking-widest">
-                    <span>{securityGrade} words</span>
-                    <span className="opacity-20">×</span>
-                    <span>11 bits</span>
-                    <span className="opacity-20">=</span>
-                    <span className="bg-emerald-500 text-white px-2 py-0.5 rounded">{securityGrade * 11} bits</span>
+                    <span>{securityGrade * 11} bits</span>
+                    <span className="opacity-20">/</span>
+                    <span className="bg-emerald-500 text-white px-2 py-0.5 rounded">{currentUser ? 'Linked' : 'Unlinked'}</span>
                   </div>
                 </div>
                 
@@ -289,8 +351,9 @@ export const TrustKeyService: React.FC = () => {
             <h4 className="font-mono text-[11px] opacity-40 uppercase tracking-widest mb-6 font-bold">Seed Manifest (VRP-R Target)</h4>
             
             {!activeVault ? (
-              <div className="h-48 border border-dashed border-[var(--border-light)] flex items-center justify-center italic opacity-20 text-sm font-serif">
-                Awaiting curatorial identity anchor...
+              <div className="h-48 border border-dashed border-[var(--border-light)] flex flex-col items-center justify-center italic opacity-20 text-sm font-serif">
+                <span className="text-4xl mb-4">🔑</span>
+                <p>Awaiting curatorial identity anchor...</p>
               </div>
             ) : (
               <div className="space-y-6">
@@ -313,19 +376,23 @@ export const TrustKeyService: React.FC = () => {
           </div>
 
           <div className="p-10 glass-card space-y-6">
-            <h4 className="font-mono text-[11px] opacity-40 uppercase tracking-widest font-bold">2026 Entropy Benchmarks</h4>
+            <h4 className="font-mono text-[11px] opacity-40 uppercase tracking-widest font-bold">Identity Sovereignty Policy</h4>
             <div className="space-y-4">
               <div className="flex justify-between items-end border-b border-[var(--border-light)] pb-2">
-                 <span className="font-serif italic text-sm">Consumer Standard</span>
-                 <span className="font-mono text-[10px] opacity-40">132-bit (MINIMUM)</span>
+                 <span className="font-serif italic text-sm">One User, One Sovereign Signet</span>
+                 <span className="font-mono text-[10px] opacity-40 text-green-500 font-bold">ENFORCED</span>
               </div>
-              <div className="flex justify-between items-end border-b border-[var(--trust-blue)]/30 pb-2">
-                 <span className="font-serif italic text-sm font-bold text-[var(--trust-blue)]">Signet Sovereign</span>
-                 <span className="font-mono text-[10px] text-[var(--trust-blue)] font-bold">264-bit (RELIABLE)</span>
+              <div className="flex justify-between items-end border-b border-[var(--border-light)] pb-2">
+                 <span className="font-serif italic text-sm">Consumer Sub-Identities</span>
+                 <span className="font-mono text-[10px] opacity-40">UNLIMITED</span>
+              </div>
+              <div className="flex justify-between items-end border-b border-[var(--border-light)] pb-2">
+                 <span className="font-serif italic text-sm">Anonymous Registration</span>
+                 <span className="font-mono text-[10px] opacity-40">PERMITTED</span>
               </div>
             </div>
             <p className="text-[11px] opacity-60 leading-relaxed font-serif italic">
-              Signet achieves 264 bits of entropy ($24 \times 11$), ensuring collision resistance across the 8 billion user registry.
+              Signet Protocol allows "Sovereign-Only" registration for maximum privacy, but Social-Linked identities enjoy faster verification by third-party auditors.
             </p>
           </div>
         </div>
