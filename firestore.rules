@@ -12,7 +12,6 @@ service cloud.firestore {
     }
 
     function isAdmin() {
-      // PRIMARY DEFENSE: Admin status is now physically tied to the architect's verified email.
       return isAuthenticated() && request.auth.token.email == 'shengliang.song.ai@gmail.com';
     }
 
@@ -20,17 +19,19 @@ service cloud.firestore {
     // SIGNET IDENTITY REGISTRY (TKS)
     // ----------------------------------------------------------------------
     match /identities/{anchorId} {
-      // Registry is public for verification
+      // Single lookups and collection queries are allowed for everyone
       allow read: if true;
       
-      // Allow creation of new unique identities
-      // Constraints: 10-256 chars (accounts for 'signetai.io:' prefix)
-      allow create: if anchorId.size() >= 10 && anchorId.size() <= 256;
+      // Allow creation ONLY if the anchor does not already exist
+      // This prevents the "Insufficient Permissions" error when trying to overwrite someone else
+      allow create: if !exists(/databases/$(database)/documents/identities/$(anchorId))
+                    && anchorId.size() >= 10 
+                    && anchorId.size() <= 256;
       
-      // Allow owners to update their own registry entry
+      // Allow updates only by the owner or an admin
       allow update: if isAdmin() || (isAuthenticated() && resource.data.ownerUid == request.auth.uid);
       
-      // Only admins can purge from the global registry
+      // Deletions reserved for administration
       allow delete: if isAdmin();
     }
 
@@ -59,7 +60,7 @@ service cloud.firestore {
     }
 
     // ----------------------------------------------------------------------
-    // Global Default
+    // Global Default (Strict)
     // ----------------------------------------------------------------------
     match /{document=**} {
       allow read: if isAdmin();
