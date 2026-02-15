@@ -17,7 +17,8 @@ const initSignetFirebase = () => {
 };
 
 const app = initSignetFirebase();
-const db = app ? getFirestore(app) : null;
+// CRITICAL: Targeting the named database 'signetai' as specified in your console configuration
+const db = app ? getFirestore(app, "signetai") : null;
 
 const PROTOCOL_AUTHORITY = "signetai.io";
 const SEPARATOR = ":";
@@ -106,8 +107,9 @@ export const TrustKeyService: React.FC = () => {
         } else {
           setAvailability('available');
         }
-      } catch (e) {
-        console.warn("Project Unreachable - Check domain restrictions in GCP Console.");
+      } catch (e: any) {
+        console.warn("Registry Probe:", e.message);
+        // If the named database isn't ready, we default to available to allow the 'setDoc' attempt
         setAvailability('available'); 
       }
     };
@@ -126,8 +128,14 @@ export const TrustKeyService: React.FC = () => {
   };
 
   const handleCommit = async () => {
-    if (availability === 'taken' || !publicKey || !db) return;
+    if (availability === 'taken' || !publicKey || !db) {
+      if (!db) setNetworkError("Registry Node Offline. Verify Console Setup.");
+      return;
+    }
+    
     setIsRegistering(true);
+    setNetworkError(null);
+
     const record = {
       readableIdentity,
       systemAnchor,
@@ -137,8 +145,16 @@ export const TrustKeyService: React.FC = () => {
       namespace: namespace || "ROOT",
       authority: PROTOCOL_AUTHORITY
     };
+
+    // Reduced timeout since DB is confirmed created
+    const timeoutPromise = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error("Registry Timeout: Ensure the 'signetai' database is active and Rules are deployed.")), 6000)
+    );
+
     try {
-      await setDoc(doc(db, "identities", systemAnchor), record);
+      const commitPromise = setDoc(doc(db, "identities", systemAnchor), record);
+      await Promise.race([commitPromise, timeoutPromise]);
+      
       setIsRegistering(false);
       setIsActivated(true);
     } catch (e: any) {
@@ -230,7 +246,7 @@ export const TrustKeyService: React.FC = () => {
                   </div>
                   <div className="flex items-start gap-3">
                     <span className="text-blue-500 font-bold text-xs mt-1">02</span>
-                    <p className="text-[11px] leading-relaxed opacity-70 italic">Independent billing and quota management for the 8 billion scale.</p>
+                    <p className="text-[11px] leading-relaxed opacity-70 italic">Targeting the named database <strong>'signetai'</strong> for high-performance registry operations.</p>
                   </div>
                   <div className="pt-2 border-t border-white/10">
                     <span className="font-mono text-[8px] text-green-500 uppercase font-bold">Status: Authoritative Production Node</span>
@@ -316,10 +332,15 @@ export const TrustKeyService: React.FC = () => {
 
                     <div className="space-y-4">
                       {networkError && (
-                        <p className="text-[10px] font-mono text-red-500 animate-pulse text-center">{networkError}</p>
+                        <div className="p-4 bg-red-500/10 border border-red-500/30 rounded">
+                           <p className="text-[10px] font-mono text-red-500 text-center leading-relaxed">
+                            <strong>SETTLEMENT FAILURE</strong><br/>
+                            {networkError}
+                           </p>
+                        </div>
                       )}
                       <button onClick={handleCommit} disabled={isRegistering || isActivated} className={`w-full py-6 font-mono text-[11px] uppercase tracking-widest font-bold rounded shadow-lg transition-all ${isActivated ? 'bg-green-600 text-white shadow-[0_0_20px_rgba(22,163,74,0.3)]' : isRegistering ? 'bg-neutral-500 opacity-50' : 'bg-[var(--trust-blue)] text-white hover:brightness-110'}`}>
-                        {isActivated ? '✓ BINDING_SETTLED_IN_REGISTRY' : isRegistering ? 'COMMITING_SYSTEM_UUID_...' : 'Seal Mainnet Identity'}
+                        {isActivated ? '✓ IDENTITY_SETTLED' : isRegistering ? 'COMMITTING_TO_REGISTRY_...' : 'Seal Mainnet Identity'}
                       </button>
                       {isActivated && (
                         <button onClick={exportSeedManifest} className="w-full py-4 font-mono text-[10px] uppercase tracking-[0.2em] font-bold border-2 border-[var(--trust-blue)] text-[var(--trust-blue)] rounded hover:bg-[var(--trust-blue)] hover:text-white transition-all animate-in slide-in-from-bottom-2">
