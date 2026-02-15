@@ -27,54 +27,40 @@ export const ManualView: React.FC = () => {
       <header className="mb-20 space-y-4">
         <h1 className="text-6xl font-bold tracking-tighter italic text-[var(--text-header)]">Operator's Manual</h1>
         <p className="text-xl text-[var(--text-body)] opacity-60 font-serif leading-relaxed italic">
-          v0.2.6 — Standardized Guidance for the Signet Accountability Layer.
+          v0.2.7 — Standardized Guidance for the Signet Accountability Layer.
         </p>
       </header>
 
-      <ManualSection title="01. Identity Lifecycle (Registry)">
+      <ManualSection title="01. Identity & Vault Recovery">
         <div className="space-y-4 text-lg leading-loose text-[var(--text-body)] opacity-80 font-serif">
-          <p>The <strong>TrustKey Registry</strong> is the authoritative root for all Signet-enabled nodes. Follow these steps to establish your cryptographic presence:</p>
-          <ol className="list-decimal pl-6 space-y-4">
-            <li><strong>Define Subject:</strong> Enter your unique handle (e.g., <code>shengliang.song</code>). The system checks for "Anchor Availability" in real-time.</li>
-            <li><strong>Namespace Binding:</strong> Optionally bind your identity to an organization (e.g., <code>signetai.io</code>). This creates a hierarchical system anchor.</li>
-            <li><strong>Establish Anchor:</strong> Generate your Ed25519 keypair. <strong>Crucial:</strong> Secure your 12-word mnemonic. Signet AI Labs never stores your private key.</li>
-            <li><strong>Registry Settlement:</strong> Click "Seal Mainnet Identity" to commit your public key to the global database. This creates a permanent, immutable record for verifiers.</li>
-          </ol>
+          <p>Signet uses a <strong>Non-Custodial</strong> trust model. This means you alone hold the keys to your curatorial authority.</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 my-10">
+            <div className="p-6 bg-red-500/5 border border-red-500/20 rounded">
+               <h5 className="font-bold text-red-600 mb-2">If you lose your Seed Manifest:</h5>
+               <p className="text-sm opacity-70">Use the <strong>12-Word Mnemonic</strong> in the "Vault Recovery" section to re-derive your signing keys. This resets your local session without changing your Registry Anchor.</p>
+            </div>
+            <div className="p-6 bg-amber-500/5 border border-amber-500/20 rounded">
+               <h5 className="font-bold text-amber-600 mb-2">If you lose both Seed & Mnemonic:</h5>
+               <p className="text-sm opacity-70">The identity is <strong>Orphaned</strong>. It remains in the registry for accountability (others can still verify old assets), but no new assets can ever be signed by this ID.</p>
+            </div>
+          </div>
         </div>
       </ManualSection>
 
-      <ManualSection title="02. The Signing Pipeline (Lab)">
-        <p className="text-lg leading-loose text-[var(--text-body)] opacity-80 font-serif">
-          Once your identity is settled, you can transition to the <strong>Provenance Lab</strong> to attest to digital assets.
+      <ManualSection title="02. Manifest Delivery Strategies">
+        <p className="text-lg leading-loose text-[var(--text-body)] opacity-80 font-serif mb-8">
+          The Signet Protocol supports two primary methods for delivering content credentials, aligned with C2PA 2.3 standards.
         </p>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-10">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           <FeatureCard 
-            icon="Σ" 
-            title="Asset Hashing" 
-            desc="Signet computes a SHA-256 digest of your file. This 'Vision Substrate' hash is the immutable DNA of the asset, ensuring any future modification breaks the signature." 
+            icon="⚓" 
+            title="Embedded (JUMBF)" 
+            desc="The manifest is injected directly into the asset binary (e.g., JPEG APP11). Best for social sharing and mobile portability, as the proof travels 'inside' the pixels." 
           />
           <FeatureCard 
-            icon="✓" 
-            title="Attestation & Verification" 
-            desc="Signing creates a VPR Manifest (org.signetai.vpr). Verifiers upload this manifest, which then triggers a live registry lookup to cross-check your public key and validate the signature." 
-          />
-        </div>
-      </ManualSection>
-
-      <ManualSection title="03. Understanding Trace IDs">
-        <p className="text-lg leading-loose text-[var(--text-body)]">
-          The Verifier SDK is your interface into the **Neural Lens**. It provides a real-time window into the cryptographic attestation process.
-        </p>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-10">
-          <FeatureCard 
-            icon="ID" 
-            title="Logic Fingerprints" 
-            desc="Every row in the Live Audit table represents a specific 'Logic Node' in the AI's reasoning path. The ID is a unique SHA-256 fingerprint." 
-          />
-          <FeatureCard 
-            icon="∞" 
-            title="Continuous Heartbeat" 
-            desc="Signet uses 'Continuous Attestation'. The stream monitors for 'State Drift' — ensuring the asset hasn't been tampered with since the first ingredient was added." 
+            icon="📄" 
+            title="Sidecar (.json)" 
+            desc="A separate file containing the VPR assertions. Preferred for enterprise cloud pipelines and LLM context windows where binary modification is restricted." 
           />
         </div>
       </ManualSection>
@@ -83,7 +69,7 @@ export const ManualView: React.FC = () => {
         <a href="#" onClick={(e) => { e.preventDefault(); window.location.hash = ''; }} className="text-[var(--trust-blue)] hover:underline font-mono text-[10px] uppercase tracking-widest font-bold">
           &larr; Return to Dashboard
         </a>
-        <p className="font-mono text-[9px] opacity-30 uppercase tracking-[0.2em]">Certified by Signet Standards Group | v0.2.6</p>
+        <p className="font-mono text-[9px] opacity-30 uppercase tracking-[0.2em]">Certified by Signet Standards Group | v0.2.7</p>
       </div>
     </div>
   );
