@@ -19,19 +19,18 @@ service cloud.firestore {
     // SIGNET IDENTITY REGISTRY (TKS)
     // ----------------------------------------------------------------------
     match /identities/{anchorId} {
-      // Single lookups and collection queries are allowed for everyone
       allow read: if true;
       
-      // Allow creation ONLY if the anchor does not already exist
-      // This prevents the "Insufficient Permissions" error when trying to overwrite someone else
-      allow create: if !exists(/databases/$(database)/documents/identities/$(anchorId))
-                    && anchorId.size() >= 10 
-                    && anchorId.size() <= 256;
+      // Allow creation of any unique anchor (10-256 chars)
+      allow create: if anchorId.size() >= 10 && anchorId.size() <= 256;
       
-      // Allow updates only by the owner or an admin
-      allow update: if isAdmin() || (isAuthenticated() && resource.data.ownerUid == request.auth.uid);
+      // Allow update if:
+      // 1. User is the admin
+      // 2. User is the current owner
+      // 3. User is authenticated and the current owner is 'ANONYMOUS' (Claim Logic)
+      allow update: if isAdmin() 
+                    || (isAuthenticated() && (resource.data.ownerUid == request.auth.uid || resource.data.ownerUid == 'ANONYMOUS'));
       
-      // Deletions reserved for administration
       allow delete: if isAdmin();
     }
 

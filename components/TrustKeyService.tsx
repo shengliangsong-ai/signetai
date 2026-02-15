@@ -173,13 +173,16 @@ export const TrustKeyService: React.FC = () => {
         
         if (docSnap.exists()) {
           const data = docSnap.data();
-          // If we aren't the owner, we can't overwrite it due to rules
-          if (!currentUser || data.ownerUid !== currentUser.uid) {
+          // Allow authenticated users to reclaim 'ANONYMOUS' anchors
+          if (data.ownerUid !== 'ANONYMOUS' && (!currentUser || data.ownerUid !== currentUser.uid)) {
              throw new Error(`The Curatorial ID "${identity}" is already claimed by another user. Please choose a different anchor.`);
+          }
+          if (data.ownerUid === 'ANONYMOUS' && currentUser) {
+             setStatus("STEP 2/4: Anchor found (Unclaimed). Preparing attribution...");
           }
         }
 
-        // Only enforce uniqueness if the user is authenticated
+        // Only enforce uniqueness if the user is authenticated and not reclaiming the same anchor
         if (currentUser && securityGrade === 24) {
           setStatus("STEP 3/4: Enforcing Protocol Policies...");
           const q = query(collection(db, "identities"), where("ownerUid", "==", currentUser.uid), where("entropyBits", "==", 264));
@@ -189,12 +192,10 @@ export const TrustKeyService: React.FC = () => {
              throw new Error("Sovereign Policy: You already own a different 264-bit Signet anchor. Use your existing identity.");
           }
         } else {
-          setStatus("STEP 3/4: Skipping Uniqueness Audit (Anonymous)...");
+          setStatus("STEP 3/4: Skipping Uniqueness Audit...");
         }
 
         setStatus("STEP 4/4: Sealing Registry Block...");
-        // If it doesn't exist, this is a 'create' in the rules
-        // If it does, and we got here, it's an 'update' (we verified ownership above)
         await withTimeout(setDoc(doc(db, "identities", anchor), {
           identity,
           publicKey: pubKey,
@@ -226,7 +227,7 @@ export const TrustKeyService: React.FC = () => {
       let errMsg = err.message || "Unknown fault.";
       
       if (errMsg.includes("permission-denied") || errMsg.includes("PERMISSION_DENIED")) {
-        errMsg = "Permission Denied: This Curatorial ID belongs to another user. If you previously registered this name, ensure you are logged in with the same social account.";
+        errMsg = "Permission Denied: This ID is protected. If you registered it previously, ensure you are logged in with the same social account.";
       } else if (errMsg.includes("index") || errMsg.includes("FAILED_PRECONDITION")) {
         setStatus("CRITICAL: Missing Registry Index.");
         const match = errMsg.match(/https:\/\/console\.firebase\.google\.com[^\s]*/);
