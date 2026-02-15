@@ -9,8 +9,6 @@ const initSignetFirebase = () => {
     if (getApps().length === 0) {
       return initializeApp(firebaseConfig);
     }
-    // If multiple apps are needed in the future, use: 
-    // return initializeApp(firebaseConfig, "SIGNET_PROD");
     return getApp();
   } catch (e) {
     console.error("Firebase Initialization Error:", e);
@@ -109,7 +107,7 @@ export const TrustKeyService: React.FC = () => {
           setAvailability('available');
         }
       } catch (e) {
-        console.warn("Project Unreachable - Check config");
+        console.warn("Project Unreachable - Check domain restrictions in GCP Console.");
         setAvailability('available'); 
       }
     };
@@ -143,12 +141,10 @@ export const TrustKeyService: React.FC = () => {
       await setDoc(doc(db, "identities", systemAnchor), record);
       setIsRegistering(false);
       setIsActivated(true);
-    } catch (e) {
-      setNetworkError("New Project Configuration Required.");
-      setTimeout(() => {
-        setIsRegistering(false);
-        setIsActivated(true);
-      }, 1000);
+    } catch (e: any) {
+      console.error("Settlement Error:", e);
+      setNetworkError(e.message || "Settlement failed. Check Referrer restrictions.");
+      setIsRegistering(false);
     }
   };
 
@@ -220,7 +216,7 @@ export const TrustKeyService: React.FC = () => {
             <div className="flex items-center gap-2">
               <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse shadow-[0_0_8px_rgba(59,130,246,0.5)]"></div>
               <span className="font-mono text-[9px] opacity-40 uppercase tracking-widest">
-                INFRASTRUCTURE: PROJECT_DECOUPLING_ACTIVE
+                INFRASTRUCTURE: SIGNETAI_PROD_NODE_ACTIVE
               </span>
             </div>
 
@@ -237,7 +233,7 @@ export const TrustKeyService: React.FC = () => {
                     <p className="text-[11px] leading-relaxed opacity-70 italic">Independent billing and quota management for the 8 billion scale.</p>
                   </div>
                   <div className="pt-2 border-t border-white/10">
-                    <span className="font-mono text-[8px] text-green-500 uppercase font-bold">Status: Isolated Production Node</span>
+                    <span className="font-mono text-[8px] text-green-500 uppercase font-bold">Status: Authoritative Production Node</span>
                   </div>
                 </div>
               </div>
@@ -319,6 +315,9 @@ export const TrustKeyService: React.FC = () => {
                     </div>
 
                     <div className="space-y-4">
+                      {networkError && (
+                        <p className="text-[10px] font-mono text-red-500 animate-pulse text-center">{networkError}</p>
+                      )}
                       <button onClick={handleCommit} disabled={isRegistering || isActivated} className={`w-full py-6 font-mono text-[11px] uppercase tracking-widest font-bold rounded shadow-lg transition-all ${isActivated ? 'bg-green-600 text-white shadow-[0_0_20px_rgba(22,163,74,0.3)]' : isRegistering ? 'bg-neutral-500 opacity-50' : 'bg-[var(--trust-blue)] text-white hover:brightness-110'}`}>
                         {isActivated ? '✓ BINDING_SETTLED_IN_REGISTRY' : isRegistering ? 'COMMITING_SYSTEM_UUID_...' : 'Seal Mainnet Identity'}
                       </button>
