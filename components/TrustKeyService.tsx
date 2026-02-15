@@ -63,6 +63,7 @@ export const TrustKeyService: React.FC = () => {
   const [lookupResult, setLookupResult] = useState<{ id: string, anchor: string, key: string, date: string } | null>(null);
   const [isActivated, setIsActivated] = useState(false);
   const [networkError, setNetworkError] = useState<string | null>(null);
+  const [showShieldDetail, setShowShieldDetail] = useState(false);
 
   const getFullIdentity = (sub: string, ns: string) => {
     const cleanSub = sub.toLowerCase().trim();
@@ -193,14 +194,39 @@ export const TrustKeyService: React.FC = () => {
     <section id="identity" className="py-32 px-6 max-w-7xl mx-auto border-v bg-[var(--bg-sidebar)]/30 relative">
       <div className="flex flex-col lg:flex-row gap-24">
         <div className="flex-1 space-y-10">
-          <div className="flex items-center gap-4">
-            <span className="font-mono text-[10px] uppercase bg-[var(--trust-blue)] text-white px-3 py-1 tracking-[0.2em] font-bold rounded-sm">FIREBASE_MAINNET</span>
+          <div className="flex items-center gap-4 relative">
+            <span 
+              onMouseEnter={() => setShowShieldDetail(true)}
+              onMouseLeave={() => setShowShieldDetail(false)}
+              className="cursor-help font-mono text-[10px] uppercase bg-blue-600 text-white px-3 py-1 tracking-[0.2em] font-bold rounded-sm"
+            >
+              SHIELDED_DOMAIN_MODE
+            </span>
             <div className="flex items-center gap-2">
-              <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse"></div>
+              <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse shadow-[0_0_8px_rgba(59,130,246,0.5)]"></div>
               <span className="font-mono text-[9px] opacity-40 uppercase tracking-widest">
-                REFERRER_SHIELD: CLOUD_RUN_WILDCARD_ACTIVE
+                INFRASTRUCTURE: REFERRER_RESTRICTION_ENFORCED
               </span>
             </div>
+
+            {showShieldDetail && (
+              <div className="absolute top-full left-0 mt-4 w-80 p-6 bg-black text-white rounded-lg shadow-2xl border border-blue-500/30 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                <h5 className="font-mono text-[10px] uppercase text-blue-400 font-bold mb-4 tracking-widest">Shield Topology</h5>
+                <div className="space-y-4">
+                  <div className="flex items-start gap-3">
+                    <span className="text-blue-500 font-bold text-xs mt-1">01</span>
+                    <p className="text-[11px] leading-relaxed opacity-70 italic">GCP API Gateway rejects any request without a verified <strong>signetai.io</strong> or <strong>aivoicecast.com</strong> header.</p>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <span className="text-blue-500 font-bold text-xs mt-1">02</span>
+                    <p className="text-[11px] leading-relaxed opacity-70 italic">Cross-Origin Resource Sharing (CORS) policies are strictly scoped to verified production subdomains.</p>
+                  </div>
+                  <div className="pt-2 border-t border-white/10">
+                    <span className="font-mono text-[8px] text-green-500 uppercase font-bold">Status: Authoritative Shield Active</span>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
           <h2 className="font-serif text-7xl italic leading-none text-[var(--text-header)] font-bold">TrustKey<br/>Registry.</h2>
           <p className="text-[var(--text-body)] opacity-70 text-xl leading-relaxed max-w-md font-serif">
