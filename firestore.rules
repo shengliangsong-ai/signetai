@@ -2,39 +2,30 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // --- HELPER FUNCTIONS ---
+    // --- AUTH HELPERS ---
     function isAuthenticated() {
       return request.auth != null;
     }
     
-    function isOwner(userId) {
-      return isAuthenticated() && request.auth.uid == userId;
+    function getUserEmail() {
+      return request.auth.token.get('email', '').lower();
     }
 
     function isAdmin() {
-      return isAuthenticated() && 
-             request.auth.token.get('email', '').lower() in [
-               'shengliang.song.ai@gmail.com',
-               'shengliang.song@gmail.com'
-             ];
+      return isAuthenticated() && (
+        getUserEmail() == 'shengliang.song.ai@gmail.com' ||
+        getUserEmail() == 'shengliang.song@gmail.com'
+      );
     }
 
-    // Safely retrieve existing ownership data
-    function getExistingOwnerUid() {
-      return resource.data.get('ownerUid', '');
-    }
-    
-    function getExistingOwnerEmail() {
-      return resource.data.get('ownerEmail', '').lower();
-    }
-
-    // ----------------------------------------------------------------------
-    // SIGNET IDENTITY REGISTRY (TKS)
-    // ----------------------------------------------------------------------
+    // --- IDENTITY REGISTRY (TKS) ---
     match /identities/{anchorId} {
       allow read: if true;
       
-      // Allow creation for any authenticated user who sets themselves as owner
+      // Allow creation if:
+      // 1. User is authenticated
+      // 2. anchorId is valid size (signetai.io:xxxx)
+      // 3. The user sets themselves as the owner
       allow create: if isAuthenticated() 
                     && anchorId.size() >= 5 
                     && anchorId.size() <= 256 
@@ -42,28 +33,24 @@ service cloud.firestore {
       
       // Allow update if:
       // 1. User is an Admin
-      // 2. Identity is unclaimed (ownerUid is empty or 'ANONYMOUS')
-      // 3. Current authenticated user is the existing owner (matching UID or Email)
-      allow update: if isAdmin() 
-                    || (isAuthenticated() && (
-                        getExistingOwnerUid() == '' || 
-                        getExistingOwnerUid() == 'ANONYMOUS' ||
-                        getExistingOwnerUid() == request.auth.uid ||
-                        getExistingOwnerEmail() == request.auth.token.get('email', 'NONE').lower()
-                    ) && (
-                        request.resource.data.ownerUid == request.auth.uid
-                    ));
+      // 2. OR User is the verified owner (matching UID or matching lowercase Email)
+      // 3. OR The document exists but has no ownerUid/Email (orphaned)
+      allow update: if isAdmin() || (
+        isAuthenticated() && (
+          resource.data.get('ownerUid', '') == request.auth.uid ||
+          resource.data.get('ownerEmail', '').lower() == getUserEmail() ||
+          resource.data.get('ownerUid', '') == '' ||
+          resource.data.get('ownerUid', '') == 'ANONYMOUS'
+        ) && (
+          request.resource.data.ownerUid == request.auth.uid
+        )
+      );
       
       allow delete: if isAdmin();
     }
 
-    // ----------------------------------------------------------------------
-    // USERS & PROFILE
-    // ----------------------------------------------------------------------
     match /users/{userId} {
-      allow read: if isOwner(userId) || isAdmin(); 
-      allow create: if isOwner(userId);
-      allow update: if isAdmin() || isOwner(userId);
+      allow read, write: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
     }
 
     match /{document=**} {

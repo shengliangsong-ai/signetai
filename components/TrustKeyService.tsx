@@ -107,7 +107,8 @@ export const TrustKeyService: React.FC = () => {
             });
           }
         }
-      } catch (e) {
+      } catch (e: any) {
+        console.error("DEBUG: Availability Error", e);
         setAvailability({ status: 'idle' });
       }
     };
@@ -190,12 +191,23 @@ export const TrustKeyService: React.FC = () => {
         const docRef = doc(db, "identities", anchor);
         const docSnap = await getDoc(docRef);
         
+        const payload = {
+          identity,
+          publicKey: pubKey,
+          entropyBits: securityGrade * 11,
+          ownerUid: currentUser.uid,
+          ownerEmail: currentUser.email?.toLowerCase() || '',
+          provider: currentUser.providerData[0]?.providerId || 'GOOGLE',
+          timestamp: Date.now()
+        };
+
         if (docSnap.exists()) {
           const data = docSnap.data();
           const isOwnerByUid = data.ownerUid === currentUser.uid;
           const isOwnerByEmail = data.ownerEmail && currentUser.email && data.ownerEmail.toLowerCase() === currentUser.email.toLowerCase();
+          const isUnclaimed = !data.ownerUid || data.ownerUid === 'ANONYMOUS';
           
-          if (!isOwnerByUid && !isOwnerByEmail && !isAdmin) {
+          if (!isOwnerByUid && !isOwnerByEmail && !isUnclaimed && !isAdmin) {
              throw new Error(`PERMISSIONS FAULT: Identity "${identity}" is already locked by another curator.`);
           }
           setStatus("STEP 3/4: Updating Authority Manifest...");
@@ -204,16 +216,6 @@ export const TrustKeyService: React.FC = () => {
         }
 
         setStatus(`STEP 4/4: Sealing Global Registry Block...`);
-        const payload = {
-          identity,
-          publicKey: pubKey,
-          entropyBits: securityGrade * 11,
-          ownerUid: currentUser.uid,
-          ownerEmail: currentUser.email || '',
-          provider: currentUser.providerData[0]?.providerId || 'GOOGLE',
-          timestamp: Date.now()
-        };
-        
         await setDoc(docRef, payload);
       } else {
         setStatus(`STEP 4/4: Finalizing local-only vault (No Cloud Sync)...`);
@@ -244,7 +246,7 @@ export const TrustKeyService: React.FC = () => {
       console.error("DEBUG: Registry Exception", err);
       let errMsg = err.message || "Unknown fault.";
       if (err.code === 'permission-denied' || errMsg.toLowerCase().includes("permission-denied") || errMsg.toLowerCase().includes("insufficient permissions")) {
-        errMsg = `CRITICAL: Permission denied. Access to ID "${identity}" is restricted.`;
+        errMsg = `CRITICAL: Permission denied. Firestore rejected the update. Ensure you are signed into the CORRECT Google account that originally registered "${identity}".`;
       }
       setStatus(`${errMsg}`);
     } finally {
@@ -465,7 +467,12 @@ export const TrustKeyService: React.FC = () => {
                            <p className="font-serif text-lg font-bold italic">{v.identity}</p>
                            <p className="font-mono text-[9px] opacity-40 uppercase tracking-tighter">{v.type} | {v.provider || 'ANONYMOUS'}</p>
                         </button>
-                        <button onClick={() => handlePurgeLocal(v.anchor)} className="p-3 opacity-0 group-hover:opacity-100 text-red-500 hover:scale-110 transition-all">✕</button>
+                        <button onClick={async () => {
+                           if (confirm("Remove local vault? Registry record is immutable.")) {
+                             await PersistenceService.purgeVault(v.anchor);
+                             await refreshVaults();
+                           }
+                        }} className="p-3 opacity-0 group-hover:opacity-100 text-red-500 hover:scale-110 transition-all">✕</button>
                       </div>
                     ))}
                   </div>
