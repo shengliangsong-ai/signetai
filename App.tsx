@@ -17,6 +17,7 @@ import { ProvenanceLab } from './components/ProvenanceLab';
 import { SecurityIntegrityMonitor } from './components/SecurityIntegrityMonitor';
 import { ComplianceDashboard } from './components/ComplianceDashboard';
 import { VerifyView } from './components/VerifyView';
+import { EcosystemView } from './components/EcosystemView';
 
 export type Theme = 'standard' | 'midnight';
 
@@ -46,6 +47,7 @@ const Sidebar: React.FC<{ currentView: string; isOpen: boolean }> = ({ currentVi
         <a href="#auditor" className={`sidebar-link ${currentView === 'auditor' ? 'active' : ''}`}>7. Provenance Lab (Sign)</a>
         <a href="#branding" className={`sidebar-link ${currentView === 'branding' ? 'active' : ''}`}>8. Branding Kit</a>
         <a href="#manual" className={`sidebar-link ${currentView === 'manual' ? 'active' : ''}`}>9. Operator's Manual</a>
+        <a href="#ecosystem" className={`sidebar-link ${currentView === 'ecosystem' ? 'active' : ''}`}>10. Ecosystem Repositories</a>
       </nav>
 
       <div className="pt-8 mt-8 border-t border-[var(--border-light)] space-y-6">
@@ -95,7 +97,7 @@ const Header: React.FC<{ onToggleSidebar: () => void; theme: Theme; onToggleThem
 );
 
 const App: React.FC = () => {
-  const [view, setView] = useState<'home' | 'spec' | 'standards' | 'schema' | 'branding' | 'manual' | 'auditor' | 'identity' | 'compliance' | 'verify'>('home');
+  const [view, setView] = useState<'home' | 'spec' | 'standards' | 'schema' | 'branding' | 'manual' | 'auditor' | 'identity' | 'compliance' | 'verify' | 'ecosystem'>('home');
   const [theme, setTheme] = useState<Theme>('standard');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isPortalOpen, setIsPortalOpen] = useState(false);
@@ -129,6 +131,8 @@ const App: React.FC = () => {
         setView('compliance');
       } else if (hash === '#verify') {
         setView('verify');
+      } else if (hash === '#ecosystem') {
+        setView('ecosystem');
       } else {
         setView('home');
       }
@@ -174,6 +178,7 @@ const App: React.FC = () => {
           {view === 'manual' && <ManualView />}
           {view === 'compliance' && <ComplianceDashboard />}
           {view === 'verify' && <VerifyView />}
+          {view === 'ecosystem' && <EcosystemView />}
 
           <footer className="mt-24 pt-12 border-t border-[var(--border-light)] flex flex-wrap justify-between items-center gap-6 text-[10px] font-mono opacity-50 uppercase tracking-widest text-[var(--text-body)]">
             <div className="flex items-center gap-4">
