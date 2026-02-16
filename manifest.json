@@ -4,16 +4,24 @@
   "description": "The TrustKeyService for the 8 billion. Cryptographic attestation for AI reasoning.",
   "id": "/",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#000000",
   "theme_color": "#0055FF",
   "orientation": "portrait",
+  "prefer_related_applications": false,
   "icons": [
     {
       "src": "/icon.svg",
       "type": "image/svg+xml",
       "sizes": "192x192",
       "purpose": "any"
+    },
+    {
+      "src": "/icon.svg",
+      "type": "image/svg+xml",
+      "sizes": "192x192",
+      "purpose": "maskable"
     },
     {
       "src": "/icon.svg",
