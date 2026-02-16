@@ -37,7 +37,7 @@ export const ManualView: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 my-10">
             <div className="p-6 bg-red-500/5 border border-red-500/20 rounded">
                <h5 className="font-bold text-red-600 mb-2">If you lose your Seed Manifest:</h5>
-               <p className="text-sm opacity-70">Use the <strong>12-Word Mnemonic</strong> in the "Vault Recovery" section to re-derive your signing keys. This resets your local session without changing your Registry Anchor.</p>
+               <p className="text-sm opacity-70">Use the <strong>24-Word Mnemonic</strong> in the "Vault Recovery" section to re-derive your signing keys. This resets your local session without changing your Registry Anchor.</p>
             </div>
             <div className="p-6 bg-amber-500/5 border border-amber-500/20 rounded">
                <h5 className="font-bold text-amber-600 mb-2">If you lose both Seed & Mnemonic:</h5>
@@ -69,7 +69,7 @@ export const ManualView: React.FC = () => {
         <a href="#" onClick={(e) => { e.preventDefault(); window.location.hash = ''; }} className="text-[var(--trust-blue)] hover:underline font-mono text-[10px] uppercase tracking-widest font-bold">
           &larr; Return to Dashboard
         </a>
-        <p className="font-mono text-[9px] opacity-30 uppercase tracking-[0.2em]">Certified by Signet Standards Group | v0.2.7</p>
+        <p className="font-mono text-[9px] opacity-30 uppercase tracking-[0.2em]">Certified by signetai.io:ssl | v0.2.7</p>
       </div>
     </div>
   );

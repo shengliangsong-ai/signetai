@@ -59,7 +59,7 @@ export const VerificationBadge: React.FC = () => {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-neutral-500">PROVENANCE_ROOT</span>
-                    <span className="text-emerald-500">/apps/root</span>
+                    <span className="text-emerald-500">signetai.io:ssl</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-neutral-500">VPR_PARITY_SCORE</span>
@@ -72,7 +72,7 @@ export const VerificationBadge: React.FC = () => {
                 </div>
 
                 <p>
-                  By clicking the badge, you are interacting with the **Neural Lens** verifier interface. The integrity of this application is verified via the unified `signetai.io` origin.
+                  By clicking the badge, you are interacting with the **Neural Lens** verifier interface. The integrity of this application is verified via the unified `signetai.io` origin and attested by the master signatory.
                 </p>
               </div>
 

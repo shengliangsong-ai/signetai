@@ -17,7 +17,7 @@ export const SecurityIntegrityMonitor: React.FC = () => {
   const securityChecks = [
     { label: "Referrer Shield", status: "ENFORCED", detail: "signetai.io only" },
     { label: "Local Vault", status: vaultActive ? "SEALED" : "EMPTY", detail: "IndexedDB isolated" },
-    { label: "Admin Lock", status: "LOCKED", detail: "shengliang.song.ai" },
+    { label: "Master Signatory", status: "LOCKED", detail: "signetai.io:ssl" },
     { label: "Project Isolation", status: "ACTIVE", detail: "signetai_prod" }
   ];
 

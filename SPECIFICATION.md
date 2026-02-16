@@ -18,10 +18,8 @@ To ensure the accountability of the 8 billion human curators, the protocol manda
 ### 2.3 Sovereign Grade Entropy (VPR-S)
 As of 2026, the protocol deprecates 160-bit (SHA-1) security for curatorial anchors. Signet implements **Sovereign Grade Entropy** to match the security levels of 256-bit elliptic curves.
 - **BIP-39 Math**: The protocol uses a standard dictionary of 2,048 words. Each word provides **11 bits of entropy** ($\log_2(2048) = 11$).
-- **Consumer Grade**: 12 words = 132 bits of entropy ($12 \times 11$). Suitable for ephemeral or low-value attestation.
 - **Sovereign Grade**: 24 words = **264 bits of entropy** ($24 \times 11$). Required for high-stakes institutional or master curatorial roles. 
 - **Key Parity**: Public keys MUST be 256-bit (represented as a 64-character hex string).
-- **Security Parity**: 264-bit entropy provides a safety margin above the 256-bit security floor of SHA-256 and Ed25519, ensuring the seed manifest is the strongest link in the provenance chain.
 
 ## 3. Manifest Delivery & Strategies
 Compliance with C2PA 2.3 requires support for two primary transport modes.
@@ -41,3 +39,9 @@ Compliance with C2PA 2.3 requires support for two primary transport modes.
 
 ## 5. The X-Signet-VPR Header
 All Signet-compliant API responses MUST include the `X-Signet-VPR` header.
+
+---
+**Official Master Signatory (v0.2.7):**
+**Anchor:** `signetai.io:ssl`
+**Public Key:** `ed25519:signet_v2.7_sovereign_5b9878a8583b7b38d719c7c8498f8981adc17bec0c311d76269e1275e4a8bdf9`
+**Attested By:** Signet Protocol Labs Authority

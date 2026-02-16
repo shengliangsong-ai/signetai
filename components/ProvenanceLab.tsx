@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { Admonition } from './Admonition';
-import { PersistenceService } from '../services/PersistenceService';
+import { PersistenceService, VaultRecord } from '../services/PersistenceService';
 
 export const ProvenanceLab: React.FC = () => {
   const [file, setFile] = useState<File | null>(null);
@@ -33,11 +33,20 @@ export const ProvenanceLab: React.FC = () => {
     setIsSigning(true);
     setStatus("Computing substrate hash (SHA-256)...");
 
-    const vault = await PersistenceService.getActiveVault();
+    let vault = await PersistenceService.getActiveVault();
+    let usingDefault = false;
+
     if (!vault) {
-      setStatus("ERROR: No curatorial vault found. Please register in the 'Identity' section.");
-      setIsSigning(false);
-      return;
+      // System Default Fallback: Site Authority ssl
+      vault = {
+        identity: 'ssl',
+        anchor: 'signetai.io:ssl',
+        publicKey: 'ed25519:signet_v2.7_sovereign_5b9878a8583b7b38d719c7c8498f8981adc17bec0c311d76269e1275e4a8bdf9',
+        mnemonic: '',
+        timestamp: Date.now(),
+        type: 'SOVEREIGN'
+      };
+      usingDefault = true;
     }
 
     setTimeout(() => {
@@ -55,14 +64,14 @@ export const ProvenanceLab: React.FC = () => {
           "trace_id": "0x" + Math.random().toString(16).slice(2, 10).toUpperCase()
         },
         "signature": {
-          "identity": vault.identity,
-          "publicKey": vault.publicKey,
-          "attestedBy": "shengliang.song.ai:gmail.com",
+          "identity": vault!.identity,
+          "publicKey": vault!.publicKey,
+          "attestedBy": "signetai.io:ssl",
           "timestamp": Date.now()
         }
       };
       setManifest(mockManifest);
-      setStatus("Asset Sealed. Manifest v0.2.7 produced.");
+      setStatus(usingDefault ? "Demo Mode: Signed by Site Authority (ssl)." : "Asset Sealed. Manifest v0.2.7 produced.");
       setIsSigning(false);
     }, 2000);
   };
@@ -86,7 +95,7 @@ export const ProvenanceLab: React.FC = () => {
       setVerifyResult({
         success: isMatch,
         msg: isMatch 
-          ? "AUTHENTIC: Cryptographic parity match. Asset integrity confirmed by shengliang.song.ai:gmail.com."
+          ? "AUTHENTIC: Cryptographic parity match. Asset integrity confirmed by signetai.io:ssl."
           : "FAILURE: Parity mismatch. The manifest does not correspond to this asset substrate."
       });
       setIsVerifying(false);

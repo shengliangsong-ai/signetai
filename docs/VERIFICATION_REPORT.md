@@ -3,6 +3,7 @@
 **Subject:** Migration to C2PA-Native Cognitive Provenance  
 **Sprint Duration:** 40 Days (Re-alignment Day 41)  
 **Lead Architect:** Neural Prism Implementation Group  
+**Master Signatory:** signetai.io:ssl  
 **Status:** [C2PA-COMPLIANT]  
 **Standards:** ISO/TC 290, C2PA v2.2, ISO/IEC 19566-5
 
@@ -27,9 +28,9 @@ Neural Prism now operates as a specialized **Cognitive Assertion Provider**. Whi
 3.  **Soft-Binding Audit (L3)**: Verifying output parity against the manifest assertions.
 4.  **Identity Signing (L4)**: Final Ed25519 signature in the C2PA signature box.
 
-## 5. Roadmap Updates
-- **Standard Interop**: Verification of Signet assets via `contentcredentials.org/verify`.
-- **Manifest SDK**: Release of the Signet-C2PA JUMBF injector for Python/Rust.
+## 5. Attestation Signature
+**Anchor**: `signetai.io:ssl`  
+**Public Key**: `ed25519:signet_v2.7_sovereign_5b9878a8583b7b38d719c7c8498f8981adc17bec0c311d76269e1275e4a8bdf9`
 
 ---
 *Signed: Lead Architect, Neural Prism Implementation*

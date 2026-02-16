@@ -159,7 +159,7 @@ const App: React.FC = () => {
           <footer className="mt-24 pt-12 border-t border-[var(--border-light)] flex flex-wrap justify-between items-center gap-6 text-[10px] font-mono opacity-50 uppercase tracking-widest text-[var(--text-body)]">
             <div className="flex items-center gap-4">
               <div className="cr-badge">cr</div>
-              <span>Signet Protocol Group © 2026 | Signed by shengliang.song.ai:gmail.com</span>
+              <span>Signet Protocol Group © 2026 | Master Signatory: signetai.io:ssl</span>
             </div>
           </footer>
         </div>

@@ -84,7 +84,7 @@ const SPEC_PAGES = [
   },
   {
     title: "VPR Header & Signing",
-    text: "All protocol nodes MUST emit an X-Signet-VPR header containing the deterministic reasoning chain hash.\n\nThis specification is authorized for public release under ISO/TC 290 guidelines.\n\nOfficial Signatory:\nshengliang.song.ai:gmail.com\n\nProvenance Root: SHA256:7B8C...44A2",
+    text: "All protocol nodes MUST emit an X-Signet-VPR header containing the deterministic reasoning chain hash.\n\nThis specification is authorized for public release under ISO/TC 290 guidelines.\n\nOfficial Signatory:\nsignetai.io:ssl\n\nProvenance Root: SHA256:7B8C...44A2",
     content: (
       <div className="space-y-8 animate-in fade-in duration-500">
         <h2 className="text-[var(--text-header)] font-serif text-2xl font-bold mb-6 italic">5. The X-Signet-VPR Header</h2>
@@ -94,7 +94,7 @@ const SPEC_PAGES = [
         <div className="p-10 border border-dashed border-[var(--border-light)] text-center space-y-4">
            <p className="font-serif italic opacity-50">This document is formally attested and sealed.</p>
            <p className="font-mono text-xs font-bold text-[var(--trust-blue)] uppercase tracking-widest">
-             Signed by Master Curator:<br/>shengliang.song.ai:gmail.com
+             Signed by Master Curator:<br/>signetai.io:ssl
            </p>
         </div>
       </div>
@@ -171,7 +171,7 @@ export const SpecView: React.FC = () => {
         doc.setFont("times", "italic");
         doc.setFontSize(10);
         doc.setTextColor(0, 0, 0);
-        doc.text("Authorized by: shengliang.song.ai:gmail.com", margin + 10, sealY + 14);
+        doc.text("Authorized by: signetai.io:ssl", margin + 10, sealY + 14);
         
         doc.setFont("courier", "normal");
         doc.setFontSize(6);
@@ -199,8 +199,9 @@ export const SpecView: React.FC = () => {
         "size": 158000
       },
       "signature": {
-        "identity": "shengliang.song.ai:gmail.com",
-        "publicKey": "ed25519:master_authority_key_2026",
+        "identity": "ssl",
+        "anchor": "signetai.io:ssl",
+        "publicKey": "ed25519:signet_v2.7_sovereign_5b9878a8583b7b38d719c7c8498f8981adc17bec0c311d76269e1275e4a8bdf9",
         "attestedBy": "Signet Protocol Labs",
         "timestamp": Date.now()
       }

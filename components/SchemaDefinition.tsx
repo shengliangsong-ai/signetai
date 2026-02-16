@@ -10,7 +10,7 @@ export const SchemaDefinition: React.FC = () => {
       "chain": [
         { "entity": "MODEL", "id": "gemini-3-pro", "hash": "sha256:45ea..." },
         { "entity": "TOOL", "id": "podcast-oracle-v2", "hash": "sha256:88bc..." },
-        { "entity": "HUMAN", "id": "curator-09", "sig": "ed25519:f9a1..." }
+        { "entity": "HUMAN", "id": "ssl", "anchor": "signetai.io:ssl", "sig": "ed25519:5b98..." }
       ]
     }
   };
