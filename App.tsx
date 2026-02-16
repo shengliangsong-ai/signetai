@@ -22,6 +22,22 @@ import { EcosystemView } from './components/EcosystemView';
 
 export type Theme = 'standard' | 'midnight';
 
+// Inline SVG to ensure it always renders without 404s
+const SignetLogo: React.FC<{ className?: string }> = ({ className }) => (
+  <svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" className={className}>
+    <defs>
+      <linearGradient id="logo_grad" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stopColor="#2a2f35"/>
+        <stop offset="100%" stopColor="#000000"/>
+      </linearGradient>
+    </defs>
+    <rect width="512" height="512" rx="128" fill="url(#logo_grad)"/>
+    <path d="M0 440h512v72H0z" fill="#0055FF" fillOpacity="0.9"/>
+    <text x="50%" y="55%" textAnchor="middle" dominantBaseline="central" fontFamily="Arial, sans-serif" fontWeight="900" fontSize="280" fill="#FFFFFF" letterSpacing="-14">SA</text>
+    <circle cx="400" cy="110" r="28" fill="#0055FF" stroke="#1B1F23" strokeWidth="20"/>
+  </svg>
+);
+
 const Sidebar: React.FC<{ currentView: string; isOpen: boolean }> = ({ currentView, isOpen }) => (
   <aside 
     className={`fixed left-0 top-0 h-screen w-72 bg-[var(--bg-sidebar)] border-r border-[var(--border-light)] z-40 transition-transform duration-300 transform 
@@ -29,7 +45,7 @@ const Sidebar: React.FC<{ currentView: string; isOpen: boolean }> = ({ currentVi
   >
     <div className="p-8 h-full flex flex-col">
       <div className="flex items-center gap-3 mb-12 cursor-pointer" onClick={() => window.location.hash = ''}>
-        <img src="/icon.svg" alt="Signet Logo" className="w-8 h-8 rounded-lg shadow-sm" />
+        <SignetLogo className="w-8 h-8 rounded-lg shadow-sm" />
         <span className="font-bold tracking-tight text-xl text-[var(--text-header)]">Signet v0.2.7</span>
       </div>
 
@@ -80,10 +96,10 @@ const Header: React.FC<{
       {installPrompt && (
         <button 
           onClick={onInstall}
-          className="flex items-center gap-2 px-3 py-1.5 bg-[var(--bg-sidebar)] border border-[var(--border-light)] rounded hover:bg-[var(--admonition-bg)] transition-all"
+          className="flex items-center gap-2 px-3 py-1.5 bg-[var(--bg-sidebar)] border border-[var(--trust-blue)] rounded hover:bg-[var(--admonition-bg)] transition-all animate-pulse"
         >
-          <img src="/icon.svg" className="w-3 h-3" alt="" />
-          <span className="text-[10px] font-mono uppercase font-bold text-[var(--text-header)] tracking-wider">Install App</span>
+          <SignetLogo className="w-3 h-3" />
+          <span className="text-[10px] font-mono uppercase font-bold text-[var(--trust-blue)] tracking-wider">Install App</span>
         </button>
       )}
       <a 
@@ -165,7 +181,10 @@ const App: React.FC = () => {
   // PWA Install Prompt Listener
   useEffect(() => {
     const handler = (e: any) => {
+      // Prevent the mini-infobar from appearing on mobile
       e.preventDefault();
+      // Stash the event so it can be triggered later.
+      console.log("Signet PWA: Install Prompt Captured");
       setInstallPrompt(e);
     };
     window.addEventListener('beforeinstallprompt', handler);
@@ -174,11 +193,16 @@ const App: React.FC = () => {
 
   const handleInstall = () => {
     if (!installPrompt) return;
+    // Show the install prompt
     installPrompt.prompt();
+    // Wait for the user to respond to the prompt
     installPrompt.userChoice.then((choiceResult: any) => {
       if (choiceResult.outcome === 'accepted') {
-        setInstallPrompt(null);
+        console.log('User accepted the install prompt');
+      } else {
+        console.log('User dismissed the install prompt');
       }
+      setInstallPrompt(null);
     });
   };
 
