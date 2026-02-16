@@ -9,7 +9,7 @@ interface Message {
 
 type ConnectionStatus = 'OFFLINE' | 'CONNECTING' | 'CONNECTED' | 'ERROR';
 
-// Audio Utils
+// --- Manual Encoding/Decoding (Instruction mandated) ---
 function encode(bytes: Uint8Array) {
   let binary = '';
   const len = bytes.byteLength;
@@ -90,7 +90,7 @@ export const LiveAssistant: React.FC = () => {
       streamRef.current = null;
     }
     if (inputAudioContextRef.current) {
-      inputAudioContextRef.current.close();
+      inputAudioContextRef.current.close().catch(() => {});
       inputAudioContextRef.current = null;
     }
     if (outputAudioContextRef.current) {
@@ -98,7 +98,7 @@ export const LiveAssistant: React.FC = () => {
         try { source.stop(); } catch(e) {}
       }
       audioSourcesRef.current.clear();
-      outputAudioContextRef.current.close();
+      outputAudioContextRef.current.close().catch(() => {});
       outputAudioContextRef.current = null;
     }
     setStatus('OFFLINE');
@@ -114,19 +114,18 @@ export const LiveAssistant: React.FC = () => {
 
     setStatus('CONNECTING');
 
-    // 1. Initialize Audio Contexts immediately to satisfy browser gesture requirements
+    // 1. Setup Audio Contexts
     inputAudioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 16000 });
     outputAudioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
     
-    await inputAudioContextRef.current.resume();
-    await outputAudioContextRef.current.resume();
-
-    // 2. Check API Key
+    // 2. Resolve API Key selection (Race condition handling)
     const hasKey = await (window as any).aistudio?.hasSelectedApiKey();
     if (!hasKey) {
-      await (window as any).aistudio?.openSelectKey();
+      // Per instructions: assume selection successful after trigger and proceed
+      (window as any).aistudio?.openSelectKey();
     }
 
+    // Always create new instance for the most up-to-date key
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
     try {
@@ -143,14 +142,12 @@ export const LiveAssistant: React.FC = () => {
             scriptProcessor.onaudioprocess = (e) => {
               const inputData = e.inputBuffer.getChannelData(0);
               
-              // Local Volume Check
+              // Volume visualization
               let sum = 0;
               for(let i=0; i<inputData.length; i++) sum += inputData[i] * inputData[i];
-              const vol = Math.sqrt(sum / inputData.length);
-              setVolume(vol);
+              setVolume(Math.sqrt(sum / inputData.length));
 
-              if (status === 'OFFLINE') return; // Don't send if we just cleaned up
-
+              // PCM Blob preparation
               const l = inputData.length;
               const int16 = new Int16Array(l);
               for (let i = 0; i < l; i++) {
@@ -161,29 +158,33 @@ export const LiveAssistant: React.FC = () => {
                 mimeType: 'audio/pcm;rate=16000',
               };
               
+              // Rely solely on sessionPromise to prevent stale closure issues
               sessionPromise.then(session => {
                 session.sendRealtimeInput({ media: pcmBlob });
-              });
+              }).catch(() => {});
             };
             
             source.connect(scriptProcessor);
             scriptProcessor.connect(inputAudioContextRef.current!.destination);
           },
           onmessage: async (message: LiveServerMessage) => {
+            // 1. Process Transcriptions
             if (message.serverContent?.outputTranscription) {
               currentOutputTranscription.current += message.serverContent.outputTranscription.text;
             } else if (message.serverContent?.inputTranscription) {
               currentInputTranscription.current += message.serverContent.inputTranscription.text;
             }
 
+            // 2. Handle Turn Completion (Capture local variables to avoid async loss)
             if (message.serverContent?.turnComplete) {
-              const userMsg = currentInputTranscription.current;
-              const assistantMsg = currentOutputTranscription.current;
-              if (userMsg || assistantMsg) {
+              const fullInput = currentInputTranscription.current;
+              const fullOutput = currentOutputTranscription.current;
+              
+              if (fullInput || fullOutput) {
                 setMessages(prev => {
                   const next = [...prev];
-                  if (userMsg) next.push({ role: 'user', text: userMsg });
-                  if (assistantMsg) next.push({ role: 'assistant', text: assistantMsg });
+                  if (fullInput) next.push({ role: 'user', text: fullInput });
+                  if (fullOutput) next.push({ role: 'assistant', text: fullOutput });
                   return next;
                 });
               }
@@ -191,27 +192,39 @@ export const LiveAssistant: React.FC = () => {
               currentOutputTranscription.current = '';
             }
 
+            // 3. Process Model Audio Output
             const base64Audio = message.serverContent?.modelTurn?.parts[0]?.inlineData?.data;
             if (base64Audio && outputAudioContextRef.current) {
               const ctx = outputAudioContextRef.current;
               nextStartTimeRef.current = Math.max(nextStartTimeRef.current, ctx.currentTime);
+              
               const audioBuffer = await decodeAudioData(decode(base64Audio), ctx, 24000, 1);
               const source = ctx.createBufferSource();
               source.buffer = audioBuffer;
               source.connect(ctx.destination);
               source.addEventListener('ended', () => audioSourcesRef.current.delete(source));
+              
               source.start(nextStartTimeRef.current);
               nextStartTimeRef.current += audioBuffer.duration;
               audioSourcesRef.current.add(source);
             }
+
+            // 4. Handle Interruptions
+            if (message.serverContent?.interrupted) {
+              for (const s of audioSourcesRef.current) {
+                try { s.stop(); } catch(e) {}
+              }
+              audioSourcesRef.current.clear();
+              nextStartTimeRef.current = 0;
+            }
           },
           onerror: (e: any) => {
-            console.error('Live session error:', e);
+            console.error('Signet Live Error:', e);
             if (e.message?.includes('Requested entity was not found')) {
-              setMessages(prev => [...prev, { role: 'assistant', text: "⚠️ **API Key Mismatch.** Please re-select your paid API key via the microphone button." }]);
+              setMessages(prev => [...prev, { role: 'assistant', text: "⚠️ **Auth Fault:** API Key requires re-verification. Please re-select via the mic button." }]);
               (window as any).aistudio?.openSelectKey();
             } else {
-              setMessages(prev => [...prev, { role: 'assistant', text: `⚠️ **Connection Error:** ${e.message || 'Unknown error'}` }]);
+              setMessages(prev => [...prev, { role: 'assistant', text: `⚠️ **Sync Error:** ${e.message || 'Logic drift detected'}` }]);
             }
             cleanupAudio();
           },
@@ -224,23 +237,24 @@ export const LiveAssistant: React.FC = () => {
           speechConfig: {
             voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Zephyr' } },
           },
-          systemInstruction: `You are Signet-Alpha, Technical Support for Signet Protocol. 
-          Respond naturally to voice input. 
+          systemInstruction: `You are Signet-Alpha, the technical attestation assistant for Signet Protocol.
+          Your role is to guide users through the v0.2.7 specification and verify reasoning chains.
           
-          FULL SPEC V0.2.7 INDEXED:
-          - SECTION 1: Intro. Reasoning is signed, not just output.
-          - SECTION 2: Sovereign Entropy. 24 words = 264 bits entropy.
-          - SECTION 3: Delivery. Sidecar (.json) vs Embedded (JUMBF Tail-wrap).
-          - SECTION 5: Headers. X-Signet-VPR header format.
-          - SIGNATORY: shengliang.song.ai:gmail.com
+          IDENTITY RECOGNITION:
+          Master Signatory is signetai.io:ssl.
           
-          STYLE: Technical, authoritative, helpful.`,
+          V0.2.7 KEY SPECIFICS:
+          - Reasoning is signed, process provenance.
+          - 264-bit entropy required for Sovereign Grade.
+          - C2PA 2.3 JUMBF tail-wrap strategy.
+          
+          Respond conversationally and with technical precision.`,
         }
       });
       sessionRef.current = await sessionPromise;
     } catch (err: any) {
-      console.error('Microphone access or connection failed:', err);
-      setMessages(prev => [...prev, { role: 'assistant', text: "⚠️ **System Offline:** Could not access microphone or reach the Neural Lens servers." }]);
+      console.error('Session failed:', err);
+      setMessages(prev => [...prev, { role: 'assistant', text: "⚠️ **System Offline:** Handshake failed." }]);
       cleanupAudio();
     }
   };
@@ -258,12 +272,12 @@ export const LiveAssistant: React.FC = () => {
         model: 'gemini-3-flash-preview',
         contents: userText,
         config: {
-          systemInstruction: `Signet-Alpha Technical Assistant. Expert on Spec v0.2.7. Signatory shengliang.song.ai:gmail.com.`,
+          systemInstruction: `Signet-Alpha AI Support. Spec v0.2.7. Authority: signetai.io:ssl.`,
         }
       });
-      setMessages(prev => [...prev, { role: 'assistant', text: response.text || "Connection drift detected." }]);
+      setMessages(prev => [...prev, { role: 'assistant', text: response.text || "Neural link timeout." }]);
     } catch (error) {
-      setMessages(prev => [...prev, { role: 'assistant', text: "Neural link timeout." }]);
+      setMessages(prev => [...prev, { role: 'assistant', text: "Logic drift detected. Link dropped." }]);
     } finally {
       setIsLoading(false);
     }
@@ -292,7 +306,7 @@ export const LiveAssistant: React.FC = () => {
                       <div 
                         key={i} 
                         className="w-1 bg-blue-500 transition-all duration-75" 
-                        style={{ height: `${Math.max(20, volume * 400 * (0.8 + Math.random() * 0.4))}%` }}
+                        style={{ height: `${Math.max(20, volume * 500 * (0.8 + Math.random() * 0.4))}%` }}
                       ></div>
                     ))
                   ) : (
@@ -306,7 +320,6 @@ export const LiveAssistant: React.FC = () => {
             <div className="flex gap-2">
               <button 
                 onClick={initVoiceChat} 
-                title={status !== 'OFFLINE' ? "Stop Session" : "Start Voice Assistant"}
                 className={`p-2 rounded transition-colors ${status !== 'OFFLINE' ? 'bg-red-500 text-white shadow-inner' : 'text-[var(--trust-blue)] hover:bg-blue-50'}`}
               >
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -321,7 +334,7 @@ export const LiveAssistant: React.FC = () => {
           <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-[var(--code-bg)]">
             {messages.map((m, i) => (
               <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                <div className={`max-w-[90%] p-4 rounded-lg text-sm shadow-sm ${m.role === 'user' ? 'bg-[var(--trust-blue)] text-white' : 'bg-white border border-[var(--border-light)]'}`}>
+                <div className={`max-w-[90%] p-4 rounded-lg text-sm shadow-sm ${m.role === 'user' ? 'bg-[var(--trust-blue)] text-white shadow-blue-500/20' : 'bg-white border border-[var(--border-light)]'}`}>
                   <div className="prose-signet">
                     <ReactMarkdown>{m.text}</ReactMarkdown>
                   </div>
@@ -335,7 +348,7 @@ export const LiveAssistant: React.FC = () => {
             <input 
               type="text" value={input} onChange={(e) => setInput(e.target.value)} 
               onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
-              placeholder={status !== 'OFFLINE' ? "Voice active..." : "Ask about v0.2.7..."} 
+              placeholder={status !== 'OFFLINE' ? "Mic active..." : "Ask about v0.2.7..."} 
               className="flex-1 text-sm bg-transparent outline-none py-2"
               disabled={status !== 'OFFLINE'}
             />
@@ -352,11 +365,9 @@ export const LiveAssistant: React.FC = () => {
             <div className={`px-4 py-2 border-t flex justify-between items-center ${status === 'CONNECTED' ? 'bg-blue-50 border-blue-100' : 'bg-amber-50 border-amber-100'}`}>
                <p className={`font-mono text-[8px] uppercase tracking-widest font-bold flex items-center gap-2 ${status === 'CONNECTED' ? 'text-blue-600' : 'text-amber-600'}`}>
                  <span className={`w-1.5 h-1.5 rounded-full animate-pulse ${status === 'CONNECTED' ? 'bg-blue-500' : 'bg-amber-500'}`}></span>
-                 {status === 'CONNECTED' ? 'Neural Link Established' : 'Synchronizing Signal...'}
+                 {status === 'CONNECTED' ? 'Neural Link: Deterministic' : 'Establishing Handshake...'}
                </p>
-               {volume > 0.01 && (
-                 <span className="font-mono text-[7px] text-blue-400 animate-pulse">MIC_INPUT_DETECTED</span>
-               )}
+               <span className="font-mono text-[7px] opacity-40 uppercase tracking-widest font-bold">HEARTBEAT_SYNC</span>
             </div>
           )}
         </div>
