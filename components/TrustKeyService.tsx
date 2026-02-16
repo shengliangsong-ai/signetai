@@ -57,11 +57,6 @@ export const TrustKeyService: React.FC = () => {
     if (auth) {
       const unsubscribe = onAuthStateChanged(auth, (user) => {
         setCurrentUser(user);
-        console.log("DEBUG: Auth Hook Triggered", { 
-          isAuthenticated: !!user,
-          uid: user?.uid,
-          email: user?.email
-        });
         if (user && !identityInput) {
           const suggestedId = (user.email?.split('@')[0] || user.displayName?.toLowerCase().replace(/\s+/g, '.') || '').replace(/[^a-z0-9.]/g, '');
           setIdentityInput(suggestedId);
@@ -98,7 +93,7 @@ export const TrustKeyService: React.FC = () => {
     try {
       setStatus(`Connecting to ${providerName.toUpperCase()}...`);
       await signInWithPopup(auth, provider);
-      setStatus(`Authenticated. Suggesting identity.`);
+      setStatus(`Authenticated. Identity suggested.`);
     } catch (err: any) {
       setStatus(`Auth Error: ${err.message}`);
     }
@@ -113,7 +108,8 @@ export const TrustKeyService: React.FC = () => {
   };
 
   const handleGenerate = async () => {
-    if (!identityInput.trim()) {
+    const identity = identityInput.trim().toLowerCase().replace(/\s+/g, '-');
+    if (!identity) {
       setStatus("ERROR: Identity Anchor required.");
       return;
     }
@@ -122,20 +118,12 @@ export const TrustKeyService: React.FC = () => {
     setIndexUrl(null);
     setStatus(`STEP 1/4: Generating Entropy...`);
     
+    // Safety delay for visual feedback
     await new Promise(r => setTimeout(r, 600));
 
-    const identity = identityInput.trim().toLowerCase().replace(/\s+/g, '-');
     const anchor = `${PROTOCOL_AUTHORITY}${SEPARATOR}${identity}`;
     const pubKey = deriveMockKey(identity);
     const mnemonic = generateMnemonic(securityGrade);
-
-    console.log("DEBUG: handleGenerate State", {
-      isAuthenticated: !!currentUser,
-      uid: currentUser?.uid,
-      email: currentUser?.email,
-      anchor,
-      securityGrade
-    });
 
     const withTimeout = (promise: Promise<any>, timeoutMs: number) => {
       return Promise.race([
@@ -145,19 +133,23 @@ export const TrustKeyService: React.FC = () => {
     };
 
     try {
-      // ONLY attempt Global Registry if authenticated
+      // 1. CONDITIONAL FIREBASE SYNC (ONLY if authenticated)
       if (db && currentUser) {
-        setStatus(`STEP 2/4: Verifying Global Ownership (UID: ${currentUser.uid.slice(0, 6)}...)...`);
+        setStatus(`STEP 2/4: Verifying Global Ownership...`);
         const docRef = doc(db, "identities", anchor);
         const docSnap = await withTimeout(getDoc(docRef), 10000);
         
         if (docSnap.exists()) {
           const data = docSnap.data();
           const ownerUid = data.ownerUid;
-          console.log("DEBUG: Existing Record Found", { ownerUid, currentUid: currentUser.uid });
+          const ownerEmail = data.ownerEmail || '';
           
-          // Claimable if owned by 'ANONYMOUS', null, or the same UID
-          const isClaimable = !ownerUid || ownerUid === 'ANONYMOUS' || ownerUid === currentUser.uid || ownerUid === "";
+          // Claimable if owned by 'ANONYMOUS', null, the same UID, or the same Email
+          const isClaimable = !ownerUid || 
+                             ownerUid === 'ANONYMOUS' || 
+                             ownerUid === currentUser.uid || 
+                             ownerUid === "" ||
+                             (currentUser.email && ownerEmail.toLowerCase() === currentUser.email.toLowerCase());
           
           if (!isClaimable) {
              throw new Error(`The Curatorial ID "${identity}" is already claimed by another owner. Please choose a unique anchor.`);
@@ -167,25 +159,23 @@ export const TrustKeyService: React.FC = () => {
           setStatus("STEP 3/4: Creating Global Anchor...");
         }
 
-        setStatus(`STEP 4/4: Sealing Global Registry Block (UID: ${currentUser.uid.slice(0, 6)}...)...`);
+        setStatus(`STEP 4/4: Sealing Global Registry Block...`);
         const payload = {
           identity,
           publicKey: pubKey,
           entropyBits: securityGrade * 11,
           ownerUid: currentUser.uid,
+          ownerEmail: currentUser.email || '',
           provider: currentUser.providerData[0]?.providerId || 'GOOGLE',
           timestamp: Date.now()
         };
-        console.log("DEBUG: Final Firestore Payload", payload);
         await withTimeout(setDoc(docRef, payload), 15000);
-        console.log("DEBUG: Firestore Sync Complete.");
       } else {
-        console.log("DEBUG: Guest Mode - Skipping Global Sync.");
-        // We set this status temporarily
-        setStatus("STEP 4/4: Finalizing local-only vault...");
+        // GUEST MODE: Skip Step 2 & 3 completely
+        setStatus(`STEP 4/4: Finalizing local-only vault...`);
       }
 
-      // ALWAYS Save locally to IndexedDB
+      // 2. ALWAYS SAVE TO LOCAL INDEXEDDB
       const newVault: VaultRecord = {
         anchor,
         identity,
@@ -199,11 +189,11 @@ export const TrustKeyService: React.FC = () => {
       await PersistenceService.saveVault(newVault);
       await PersistenceService.setActiveVault(newVault.anchor);
       
+      // 3. REFRESH AND FINALIZE
       await refreshVaults();
       setIsRegistering(false);
       
       if (!currentUser) {
-        // Success message for guest mode
         setStatus(`∑ STEP 4/4: Skipping Global Registry (Guest Mode)... saved in local indexedDB. you may download it to your local disk.`);
       } else {
         setStatus(`SUCCESS: Vault Sealed for ${identity}. Identity successfully synchronized with the Global Signet Registry.`);
@@ -212,15 +202,14 @@ export const TrustKeyService: React.FC = () => {
       console.error("DEBUG: Registry Exception", err);
       let errMsg = err.message || "Unknown fault.";
       
+      // Handle Firebase specific error codes
       if (errMsg.includes("permission-denied") || errMsg.includes("PERMISSION_DENIED")) {
-        errMsg = `CRITICAL: Missing or insufficient permissions. Authenticated as: ${currentUser?.email || 'NONE'} (UID: ${currentUser?.uid || 'N/A'}). Access to document "${anchor}" was denied. This usually means the ID is claimed by another user in the global database.`;
-      } else if (errMsg.includes("index") || errMsg.includes("FAILED_PRECONDITION")) {
-        setStatus("CRITICAL: Missing Registry Index.");
-        const match = errMsg.match(/https:\/\/console\.firebase\.google\.com[^\s]*/);
-        if (match) setIndexUrl(match[0]);
-      } else {
-        setStatus(`CRITICAL: ${errMsg}`);
+        errMsg = `CRITICAL: Permission denied. The ID "${identity}" is already registered by another user in the global registry. If you believe you own this identity, please ensure you are signed in with the correct account.`;
+      } else if (errMsg.includes("not-found") || errMsg.includes("NOT_FOUND")) {
+        errMsg = `CRITICAL: Registry connection error. The global authority could not be reached.`;
       }
+
+      setStatus(`${errMsg}`);
     } finally {
       setIsGenerating(false);
     }
@@ -403,9 +392,9 @@ export const TrustKeyService: React.FC = () => {
           )}
           
           {status && (
-            <div className={`p-6 border-l-4 rounded-r-lg animate-in fade-in shadow-sm ${status.includes('SUCCESS') || status.includes('saved in local') ? 'bg-green-50 border-green-500' : status.includes('CRITICAL') ? 'bg-red-50 border-red-500' : 'bg-blue-50 border-[var(--trust-blue)]'}`}>
-              <p className={`font-mono text-[11px] font-bold ${status.includes('SUCCESS') || status.includes('saved in local') ? 'text-green-700' : status.includes('CRITICAL') ? 'text-red-700' : 'text-[var(--trust-blue)]'}`}>
-                {status.includes('SUCCESS') || status.includes('saved in local') ? '✓ ' : status.includes('CRITICAL') ? '⚠️ ' : '∑ '}
+            <div className={`p-6 border-l-4 rounded-r-lg animate-in fade-in shadow-sm ${status.includes('SUCCESS') || status.includes('saved in local') ? 'bg-green-50 border-green-500' : (status.includes('CRITICAL') || status.includes('denied')) ? 'bg-red-50 border-red-500' : 'bg-blue-50 border-[var(--trust-blue)]'}`}>
+              <p className={`font-mono text-[11px] font-bold ${status.includes('SUCCESS') || status.includes('saved in local') ? 'text-green-700' : (status.includes('CRITICAL') || status.includes('denied')) ? 'text-red-700' : 'text-[var(--trust-blue)]'}`}>
+                {status.includes('SUCCESS') || status.includes('saved in local') ? '✓ ' : (status.includes('CRITICAL') || status.includes('denied')) ? '⚠️ ' : '∑ '}
                 {status}
               </p>
               {indexUrl && (
