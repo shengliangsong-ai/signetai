@@ -47,20 +47,33 @@ export const ManualView: React.FC = () => {
         </div>
       </ManualSection>
 
-      <ManualSection title="02. Manifest Delivery Strategies">
+      <ManualSection title="02. Unstructured Text Embedding (C2PA 2.3)">
         <p className="text-lg leading-loose text-[var(--text-body)] opacity-80 font-serif mb-8">
-          The Signet Protocol supports two primary methods for delivering content credentials, aligned with C2PA 2.3 standards.
+          The Dec 2025 C2PA update introduces a specialized method for embedding provenance in text without binary containers.
         </p>
+        <div className="p-8 bg-[var(--code-bg)] border border-[var(--border-light)] rounded font-mono text-xs space-y-4">
+           <p className="text-[var(--trust-blue)] font-bold">// C2PATextManifestWrapper (Section A.7)</p>
+           <p className="opacity-60 leading-relaxed">
+             Signet encodes the JUMBF manifest into a sequence of <strong>Unicode Variation Selectors</strong> (U+FE00-U+FE0F). 
+             These characters are invisible to human readers but parsed by Signet-compliant LLMs and editors.
+           </p>
+           <div className="bg-black/5 p-4 rounded border border-black/10">
+             <code className="text-[var(--text-header)]">"The reasoning starts here.[SIGNET_VPR_WRAPPER]"</code>
+           </div>
+        </div>
+      </ManualSection>
+
+      <ManualSection title="03. Live Video Provenance">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           <FeatureCard 
-            icon="⚓" 
-            title="Embedded (JUMBF)" 
-            desc="The manifest is injected directly into the asset binary (e.g., JPEG APP11). Best for social sharing and mobile portability, as the proof travels 'inside' the pixels." 
+            icon="📹" 
+            title="Segmented Info" 
+            desc="C2PA 2.3 Section 19.4 support. Each frame segment is signed independently using session keys, preventing stream manipulation or replay attacks." 
           />
           <FeatureCard 
-            icon="📄" 
-            title="Sidecar (.json)" 
-            desc="A separate file containing the VPR assertions. Preferred for enterprise cloud pipelines and LLM context windows where binary modification is restricted." 
+            icon="🛡️" 
+            title="Actions v2" 
+            desc="The protocol has moved exclusively to the v2 Actions schema. This includes fine-grained watermarking and proportional resizing attestation." 
           />
         </div>
       </ManualSection>

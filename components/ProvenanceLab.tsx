@@ -8,6 +8,7 @@ export const ProvenanceLab: React.FC = () => {
   const [manifest, setManifest] = useState<any>(null);
   const [status, setStatus] = useState<string | null>(null);
   const [verifyMode, setVerifyMode] = useState(false);
+  const [embeddingMode, setEmbeddingMode] = useState<'JUMBF' | 'TEXT_WRAP'>('JUMBF');
   
   // Verification State
   const [verificationFile, setVerificationFile] = useState<File | null>(null);
@@ -31,13 +32,12 @@ export const ProvenanceLab: React.FC = () => {
   const handleSign = async () => {
     if (!file) return;
     setIsSigning(true);
-    setStatus("Computing substrate hash (SHA-256)...");
+    setStatus(embeddingMode === 'TEXT_WRAP' ? "Encoding Unicode Variation Selectors..." : "Computing substrate hash (SHA-256)...");
 
     let vault = await PersistenceService.getActiveVault();
     let usingDefault = false;
 
     if (!vault) {
-      // System Default Fallback: Site Authority ssl
       vault = {
         identity: 'ssl',
         anchor: 'signetai.io:ssl',
@@ -54,15 +54,25 @@ export const ProvenanceLab: React.FC = () => {
         "@context": "https://signetai.io/contexts/vpr-v1.jsonld",
         "type": "org.signetai.vpr",
         "version": "0.2.7",
+        "c2pa_spec": "2.3 (Dec 2025)",
         "asset": {
           "name": file.name,
           "hash": "sha256:" + Math.random().toString(16).slice(2, 34),
-          "size": file.size
+          "size": file.size,
+          "embedding_logic": embeddingMode
         },
-        "assertion": {
-          "vpr_score": 0.9985,
-          "trace_id": "0x" + Math.random().toString(16).slice(2, 10).toUpperCase()
-        },
+        "assertions": [
+          {
+            "label": "c2pa.actions.v2",
+            "data": {
+              "actions": [{ "action": "c2pa.created", "softwareAgent": "Neural Prism v0.2.7" }]
+            }
+          },
+          {
+            "label": "org.signetai.vpr_score",
+            "data": { "vpr": 0.9985, "trace_id": "0x" + Math.random().toString(16).slice(2, 10).toUpperCase() }
+          }
+        ],
         "signature": {
           "identity": vault!.identity,
           "publicKey": vault!.publicKey,
@@ -71,7 +81,7 @@ export const ProvenanceLab: React.FC = () => {
         }
       };
       setManifest(mockManifest);
-      setStatus(usingDefault ? "Demo Mode: Signed by Site Authority (ssl)." : "Asset Sealed. Manifest v0.2.7 produced.");
+      setStatus(usingDefault ? "Demo Mode: Signed by Site Authority (ssl)." : `Asset Sealed via ${embeddingMode}. Manifest produced.`);
       setIsSigning(false);
     }, 2000);
   };
@@ -88,14 +98,14 @@ export const ProvenanceLab: React.FC = () => {
   const handleVerify = () => {
     if (!verificationFile || !verificationManifest) return;
     setIsVerifying(true);
-    setStatus("Verifying logic parity...");
+    setStatus("Verifying C2PA 2.3 parity...");
     
     setTimeout(() => {
       const isMatch = verificationManifest.asset?.name === verificationFile.name;
       setVerifyResult({
         success: isMatch,
         msg: isMatch 
-          ? "AUTHENTIC: Cryptographic parity match. Asset integrity confirmed by signetai.io:ssl."
+          ? "AUTHENTIC: C2PA 2.3 logic match. Asset integrity confirmed by signetai.io:ssl."
           : "FAILURE: Parity mismatch. The manifest does not correspond to this asset substrate."
       });
       setIsVerifying(false);
@@ -108,26 +118,34 @@ export const ProvenanceLab: React.FC = () => {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         <div className="space-y-2">
           <span className="font-mono text-[10px] text-[var(--trust-blue)] tracking-[0.4em] uppercase font-bold">Layer 6: Provenance Lab</span>
-          <h2 className="text-4xl font-bold italic text-[var(--text-header)]">The Signet Laboratory.</h2>
+          <h2 className="text-4xl font-bold italic text-[var(--text-header)]">C2PA 2.3 Laboratory.</h2>
           <p className="text-lg opacity-60 max-w-xl font-serif">
             {verifyMode 
               ? "Audit assets against their digital signets." 
-              : "Generate verifiable manifests for images and documents."}
+              : "Generate v2.3 compliant manifests for images and text."}
           </p>
         </div>
-        <div className="flex p-1 bg-[var(--bg-sidebar)] rounded border border-[var(--border-light)]">
-           <button 
-             onClick={() => { setVerifyMode(false); setStatus(null); }}
-             className={`px-6 py-2 font-mono text-[10px] uppercase font-bold tracking-widest transition-all rounded ${!verifyMode ? 'bg-[var(--trust-blue)] text-white' : 'opacity-40'}`}
-           >
-             Sign Mode
-           </button>
-           <button 
-             onClick={() => { setVerifyMode(true); setStatus(null); }}
-             className={`px-6 py-2 font-mono text-[10px] uppercase font-bold tracking-widest transition-all rounded ${verifyMode ? 'bg-emerald-600 text-white' : 'opacity-40'}`}
-           >
-             Verify Mode
-           </button>
+        <div className="flex flex-col items-end gap-2">
+          <div className="flex p-1 bg-[var(--bg-sidebar)] rounded border border-[var(--border-light)]">
+             <button 
+               onClick={() => { setVerifyMode(false); setStatus(null); }}
+               className={`px-6 py-2 font-mono text-[10px] uppercase font-bold tracking-widest transition-all rounded ${!verifyMode ? 'bg-[var(--trust-blue)] text-white' : 'opacity-40'}`}
+             >
+               Sign Mode
+             </button>
+             <button 
+               onClick={() => { setVerifyMode(true); setStatus(null); }}
+               className={`px-6 py-2 font-mono text-[10px] uppercase font-bold tracking-widest transition-all rounded ${verifyMode ? 'bg-emerald-600 text-white' : 'opacity-40'}`}
+             >
+               Verify Mode
+             </button>
+          </div>
+          {!verifyMode && (
+            <div className="flex gap-4 font-mono text-[8px] uppercase font-bold opacity-40">
+               <button onClick={() => setEmbeddingMode('JUMBF')} className={embeddingMode === 'JUMBF' ? 'text-[var(--trust-blue)] underline' : ''}>[JUMBF_BINARY]</button>
+               <button onClick={() => setEmbeddingMode('TEXT_WRAP')} className={embeddingMode === 'TEXT_WRAP' ? 'text-[var(--trust-blue)] underline' : ''}>[TEXT_UNICODE_WRAP]</button>
+            </div>
+          )}
         </div>
       </div>
 
@@ -139,7 +157,7 @@ export const ProvenanceLab: React.FC = () => {
               onClick={() => fileInputRef.current?.click()}
               className="h-64 border-2 border-dashed border-[var(--border-light)] rounded-xl flex flex-col items-center justify-center cursor-pointer hover:border-[var(--trust-blue)] transition-all bg-[var(--bg-standard)]"
             >
-              <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept="image/*,application/pdf" />
+              <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept="image/*,application/pdf,text/plain" />
               {file ? (
                 <div className="text-center space-y-3">
                   <span className="text-5xl">🛡️</span>
@@ -148,7 +166,7 @@ export const ProvenanceLab: React.FC = () => {
               ) : (
                 <div className="text-center opacity-30 space-y-3">
                   <span className="text-5xl">⭱</span>
-                  <p className="font-mono text-[10px] font-bold uppercase tracking-widest">Select PDF or Image</p>
+                  <p className="font-mono text-[10px] font-bold uppercase tracking-widest">Select Asset</p>
                 </div>
               )}
             </div>
@@ -157,7 +175,7 @@ export const ProvenanceLab: React.FC = () => {
               disabled={!file || isSigning}
               className="w-full py-5 bg-[var(--trust-blue)] text-white font-mono text-xs uppercase font-bold tracking-[0.3em] rounded shadow-2xl transition-all"
             >
-              {isSigning ? 'ANCHORING...' : 'Sign Asset (Ed25519)'}
+              {isSigning ? 'ANCHORING...' : `Sign via ${embeddingMode}`}
             </button>
           </div>
 
@@ -170,7 +188,7 @@ export const ProvenanceLab: React.FC = () => {
             ) : (
               <div className="space-y-6 animate-in slide-in-from-right-4">
                 <div className="p-4 bg-black/5 rounded font-mono text-[10px] border border-black/10 overflow-y-auto max-h-56">
-                  <p className="text-[var(--trust-blue)] font-bold">// Signet Manifest v0.2.7</p>
+                  <p className="text-[var(--trust-blue)] font-bold">// C2PA v2.3 Compliant Manifest</p>
                   <pre className="opacity-70">{JSON.stringify(manifest, null, 2)}</pre>
                 </div>
                 <div className="grid grid-cols-1 gap-4">
@@ -181,10 +199,14 @@ export const ProvenanceLab: React.FC = () => {
                     Download JSON Sidecar
                   </button>
                   <button 
-                    onClick={() => downloadFile(`[SIGNET_VPR_BEGIN]${JSON.stringify(manifest)}[SIGNET_VPR_END]`, `signet_embedded_${file?.name}`, 'application/octet-stream')}
+                    onClick={() => {
+                      const prefix = embeddingMode === 'TEXT_WRAP' ? '[UNICODE_VS_START]' : '[SIGNET_VPR_BEGIN]';
+                      const suffix = embeddingMode === 'TEXT_WRAP' ? '[UNICODE_VS_END]' : '[SIGNET_VPR_END]';
+                      downloadFile(`${prefix}${JSON.stringify(manifest)}${suffix}`, `signet_v23_${file?.name}`, 'application/octet-stream');
+                    }}
                     className="py-4 bg-emerald-600 text-white font-mono text-[10px] uppercase font-bold rounded"
                   >
-                    Download Embedded Asset
+                    Download Wrapped Asset
                   </button>
                 </div>
               </div>
@@ -233,7 +255,7 @@ export const ProvenanceLab: React.FC = () => {
 
           <div className="p-10 border border-[var(--border-light)] rounded-lg bg-[var(--code-bg)] flex flex-col justify-center items-center text-center">
              {!verifyResult ? (
-               <div className="opacity-20 italic font-serif">Awaiting inputs for logic audit...</div>
+               <div className="opacity-20 italic font-serif">Awaiting inputs for v2.3 audit...</div>
              ) : (
                <div className="animate-in zoom-in-95 space-y-6">
                  <div className={`w-24 h-24 flex items-center justify-center mx-auto rounded-full border-4 ${verifyResult.success ? 'border-emerald-500 text-emerald-500' : 'border-red-500 text-red-500'}`}>

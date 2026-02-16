@@ -15,6 +15,7 @@ import { ManualView } from './components/ManualView';
 import { LiveAssistant } from './components/LiveAssistant';
 import { ProvenanceLab } from './components/ProvenanceLab';
 import { SecurityIntegrityMonitor } from './components/SecurityIntegrityMonitor';
+import { ComplianceDashboard } from './components/ComplianceDashboard';
 
 export type Theme = 'standard' | 'midnight';
 
@@ -33,6 +34,7 @@ const Sidebar: React.FC<{ currentView: string; isOpen: boolean }> = ({ currentVi
         <p className="px-4 text-[10px] uppercase tracking-widest font-bold text-[var(--text-body)] opacity-40 mb-4">Core Specification</p>
         <a href="#" onClick={(e) => { e.preventDefault(); window.location.hash = ''; }} className={`sidebar-link ${currentView === 'home' ? 'active' : ''}`}>0. Introduction</a>
         <a href="#standards" className={`sidebar-link ${currentView === 'standards' ? 'active' : ''}`}>1. Standards & C2PA</a>
+        <a href="#compliance" className={`sidebar-link ${currentView === 'compliance' ? 'active' : ''}`}>1.5. v2.3 Compliance</a>
         <a href="#developers" className="sidebar-link">2. Neural Prism Pipeline</a>
         <a href="#schema" className={`sidebar-link ${currentView === 'schema' ? 'active' : ''}`}>3. VPR JSON Manifest</a>
         <a href="#spec" className={`sidebar-link ${currentView === 'spec' ? 'active' : ''}`}>4. Technical Draft</a>
@@ -42,7 +44,6 @@ const Sidebar: React.FC<{ currentView: string; isOpen: boolean }> = ({ currentVi
         <a href="#auditor" className={`sidebar-link ${currentView === 'auditor' ? 'active' : ''}`}>6. Provenance Lab (Verify)</a>
         <a href="#branding" className={`sidebar-link ${currentView === 'branding' ? 'active' : ''}`}>7. Branding Kit</a>
         <a href="#manual" className={`sidebar-link ${currentView === 'manual' ? 'active' : ''}`}>8. Operator's Manual</a>
-        <a href="#contact" className="sidebar-link">9. Technical Inquiries</a>
       </nav>
 
       <div className="pt-8 mt-8 border-t border-[var(--border-light)] space-y-6">
@@ -81,11 +82,10 @@ const Header: React.FC<{ onToggleSidebar: () => void; theme: Theme; onToggleThem
 );
 
 const App: React.FC = () => {
-  const [view, setView] = useState<'home' | 'spec' | 'standards' | 'schema' | 'branding' | 'apps' | 'manual' | 'auditor' | 'identity'>('home');
+  const [view, setView] = useState<'home' | 'spec' | 'standards' | 'schema' | 'branding' | 'manual' | 'auditor' | 'identity' | 'compliance'>('home');
   const [theme, setTheme] = useState<Theme>('standard');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isPortalOpen, setIsPortalOpen] = useState(false);
-  const [activeApp, setActiveApp] = useState<string | null>(null);
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
@@ -112,6 +112,8 @@ const App: React.FC = () => {
         setView('branding');
       } else if (hash === '#manual') {
         setView('manual');
+      } else if (hash === '#compliance') {
+        setView('compliance');
       } else {
         setView('home');
       }
@@ -155,6 +157,7 @@ const App: React.FC = () => {
           {view === 'schema' && <SchemaView />}
           {view === 'branding' && <BrandingView />}
           {view === 'manual' && <ManualView />}
+          {view === 'compliance' && <ComplianceDashboard />}
 
           <footer className="mt-24 pt-12 border-t border-[var(--border-light)] flex flex-wrap justify-between items-center gap-6 text-[10px] font-mono opacity-50 uppercase tracking-widest text-[var(--text-body)]">
             <div className="flex items-center gap-4">

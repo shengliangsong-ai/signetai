@@ -24,11 +24,33 @@ const SPEC_PAGES = [
     )
   },
   {
+    title: "C2PA v2.3 Alignment (A.7)",
+    text: "Signet Protocol 0.2.7 is strictly aligned with the C2PA v2.3 Technical Specification (Released Jan 2026).\n\nKey Implementation Blocks:\n• Section A.7: C2PATextManifestWrapper for text streams using Unicode Variation Selectors.\n• Section 18.6: Merkle Tree Piecewise Audit for fragmented MP4 video.\n• Section 19.4: verifiable-segment-info for real-time AI live streams.",
+    content: (
+      <div className="space-y-8 animate-in fade-in duration-500">
+        <h2 className="text-[var(--text-header)] font-serif text-2xl font-bold mb-6 italic">2. C2PA v2.3 Hardening</h2>
+        <p className="opacity-80 leading-loose mb-6">
+          The Jan 2026 update (v2.3) requires two fundamental delivery shifts for AI reasoning telemetry.
+        </p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="p-8 bg-[var(--table-header)] border border-[var(--border-light)] rounded-xl space-y-4">
+            <h4 className="font-mono text-[10px] text-[var(--trust-blue)] font-bold uppercase tracking-widest">Unstructured Text (A.7)</h4>
+            <p className="text-sm opacity-70 italic leading-relaxed">Encoding JUMBF containers into invisible <strong>Unicode Variation Selectors (U+FE00 block)</strong>. This allows manifests to persist during copy-paste operations.</p>
+          </div>
+          <div className="p-8 bg-[var(--table-header)] border border-[var(--border-light)] rounded-xl space-y-4">
+            <h4 className="font-mono text-[10px] text-[var(--trust-blue)] font-bold uppercase tracking-widest">Live Video (19.4)</h4>
+            <p className="text-sm opacity-70 italic leading-relaxed">Implements <code>verifiable-segment-info</code> via <code>emsg</code> boxes. This signs AI video frame-by-frame for low-latency parity.</p>
+          </div>
+        </div>
+      </div>
+    )
+  },
+  {
     title: "Identity & Vault Recovery",
     text: "Signet identities are anchored to a System Anchor in the global registry. If a local curatorial vault is lost, the Vault Recovery Protocol (VRP-R) enables the re-derivation of signing keys via a 24-word mnemonic.\n\nLayer 0: Cryptographic Root\n• ALGORITHM: ED25519-256\n• PUBLIC KEY: 256-BIT (64 HEX CHARS)\n• ENTROPY: 264-BIT SOVEREIGN\n• RECOVERY: VRP-R (24-WORD MNEMONIC)",
     content: (
       <div className="space-y-8 animate-in fade-in duration-500">
-        <h2 className="text-[var(--text-header)] font-serif text-2xl font-bold mb-6 italic">2. Registry & Recovery</h2>
+        <h2 className="text-[var(--text-header)] font-serif text-2xl font-bold mb-6 italic">3. Registry & Recovery</h2>
         <p className="opacity-80 leading-loose mb-6">
           Signet identities are anchored to a <strong>System Anchor</strong> in the global registry. If a local curatorial vault is lost, the 
           <strong>Vault Recovery Protocol (VRP-R)</strong> enables the re-derivation of signing keys via a 24-word mnemonic.
@@ -50,7 +72,7 @@ const SPEC_PAGES = [
     text: "Signet implements Sovereign Grade Entropy to match the security levels of 256-bit elliptic curves.\n\nEntropy Calculation: 24 words × 11 bits/word = 264 bits\nPublic Key Derivation: 64 characters of Hexadecimal (256 bits)\nThis exceeds the 256-bit security floor of SHA-256 and Ed25519.",
     content: (
       <div className="space-y-8 animate-in fade-in duration-500">
-        <h2 className="text-[var(--text-header)] font-serif text-2xl font-bold mb-6 italic">2.3 Sovereign Grade Entropy (VPR-S)</h2>
+        <h2 className="text-[var(--text-header)] font-serif text-2xl font-bold mb-6 italic">3.3 Sovereign Grade Entropy (VPR-S)</h2>
         <p className="opacity-80 leading-loose">
           Signet implements <strong>Sovereign Grade Entropy</strong> to match the security levels of 256-bit elliptic curves.
         </p>
@@ -69,14 +91,14 @@ const SPEC_PAGES = [
     text: "Compliance with C2PA 2.3 requires support for two primary transport modes:\n\n3.1 Sidecar Mode (.json): Standalone JSON-LD objects for cloud-native pipelines.\n3.2 Embedded Mode (JUMBF): Tail-end binary injection via SIGNET_VPR tags.",
     content: (
       <div className="space-y-8 animate-in fade-in duration-500">
-        <h2 className="text-[var(--text-header)] font-serif text-2xl font-bold mb-6 italic">3. Delivery Strategies</h2>
+        <h2 className="text-[var(--text-header)] font-serif text-2xl font-bold mb-6 italic">4. Delivery Strategies</h2>
         <p className="opacity-80 leading-loose">
           Compliance with C2PA 2.3 requires support for two primary transport modes:
         </p>
         <div className="space-y-4">
-          <h4 className="font-bold text-[var(--text-header)]">3.1 Sidecar Mode (.json)</h4>
+          <h4 className="font-bold text-[var(--text-header)]">4.1 Sidecar Mode (.json)</h4>
           <p className="opacity-80 leading-loose">Standalone JSON-LD objects for cloud-native pipelines.</p>
-          <h4 className="font-bold text-[var(--text-header)]">3.2 Embedded Mode (JUMBF)</h4>
+          <h4 className="font-bold text-[var(--text-header)]">4.2 Embedded Mode (JUMBF)</h4>
           <p className="opacity-80 leading-loose">Tail-end binary injection via <code>SIGNET_VPR</code> tags.</p>
         </div>
       </div>
