@@ -96,7 +96,7 @@ const Header: React.FC<{
       {installPrompt && (
         <button 
           onClick={onInstall}
-          className="flex items-center gap-2 px-3 py-1.5 bg-[var(--bg-sidebar)] border border-[var(--trust-blue)] rounded hover:bg-[var(--admonition-bg)] transition-all animate-pulse"
+          className="flex items-center gap-2 px-3 py-1.5 bg-[var(--bg-sidebar)] border border-[var(--trust-blue)] rounded hover:bg-[var(--admonition-bg)] transition-all animate-pulse shadow-[0_0_10px_rgba(0,85,255,0.3)]"
         >
           <SignetLogo className="w-3 h-3" />
           <span className="text-[10px] font-mono uppercase font-bold text-[var(--trust-blue)] tracking-wider">Install App</span>
