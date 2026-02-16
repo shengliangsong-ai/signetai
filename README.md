@@ -11,6 +11,11 @@ As AI moves from "Chat" to "Reasoning," current watermarking standards (C2PA) ar
 - **2.2. Neural Lens Engine**: A deterministic verifier that probes AI telemetry for logic drift and symbolic parity.
 - **2.3. The Signet**: A nested cryptographic object containing the VPR Payload (Reasoning Hash, Scores, Metadata) and Multi-layer signatures (Agent, Tool, Human).
 
+## 3. Security Standards (v0.2.7)
+- **Public Keys**: Professional-grade **256-bit** Ed25519 (64 hex characters).
+- **Entropy Floor**: **264-bit Sovereign Grade** (24-word mnemonics).
+- **Hashing**: SHA-256 mandatory for all content and identity anchors.
+
 ## The 4-Layer Execution Pipeline
 Every AI asset produced under the Signet standard MUST pass:
 1. **Vision Substrate (L1)**: Immutable DNA/Thesis.

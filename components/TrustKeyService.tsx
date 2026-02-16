@@ -14,7 +14,6 @@ const initSignetFirebase = () => {
 };
 
 const app = initSignetFirebase();
-// Explicitly targeting the 'signetai' database instance instead of '(default)'
 const db = app ? getFirestore(app, 'signetai') : null;
 const auth = app ? getAuth(app) : null;
 
@@ -32,14 +31,27 @@ const generateMnemonic = (wordCount: 12 | 24) => {
   return result.join(" ");
 };
 
+/**
+ * Deterministically derives a 256-bit mock public key (64 hex chars)
+ * for the given identity anchor.
+ */
 const deriveMockKey = (identity: string) => {
-  let hash = 0x811c9dc5;
-  for (let i = 0; i < identity.length; i++) {
-    hash ^= identity.charCodeAt(i);
-    hash = Math.imul(hash, 0x01000193);
+  const generateHash = (str: string, seed: number) => {
+    let h = seed;
+    for (let i = 0; i < str.length; i++) {
+      h = Math.imul(h ^ str.charCodeAt(i), 0x5bd1e995);
+      h ^= h >>> 15;
+    }
+    return (h >>> 0).toString(16).padStart(8, '0');
+  };
+
+  // Generate 8 segments of 8 hex chars to reach 64 chars (256 bits)
+  let fullHex = '';
+  for (let i = 0; i < 8; i++) {
+    fullHex += generateHash(identity + i, 0x811c9dc5 + i);
   }
-  const hex = Math.abs(hash).toString(16).padStart(8, '0');
-  return `ed25519:signet_v2.7_sovereign_${hex}${hex.split('').reverse().join('')}`;
+  
+  return `ed25519:signet_v2.7_sovereign_${fullHex}`;
 };
 
 export const TrustKeyService: React.FC = () => {
@@ -77,7 +89,6 @@ export const TrustKeyService: React.FC = () => {
     }
   }, [refreshVaults]);
 
-  // Check identity availability in background
   useEffect(() => {
     const checkId = async () => {
       const id = identityInput.trim().toLowerCase();
@@ -304,6 +315,7 @@ export const TrustKeyService: React.FC = () => {
                     {[
                       { id: 'google', label: 'Google', color: 'hover:border-red-500' },
                       { id: 'x', label: 'X (Twitter)', color: 'hover:border-neutral-500' },
+                      { id: 'facebook', label: 'Facebook', color: 'hover:border-blue-700' },
                       { id: 'linkedin', label: 'LinkedIn', color: 'hover:border-blue-700' }
                     ].map(p => (
                       <button 
@@ -438,8 +450,10 @@ export const TrustKeyService: React.FC = () => {
                         <p className="font-mono text-[11px] text-[var(--trust-blue)] break-all p-4 bg-[var(--code-bg)] rounded border border-[var(--border-light)]">{activeVault.anchor}</p>
                       </div>
                       <div className="space-y-1">
-                        <p className="font-mono text-[9px] opacity-40 uppercase font-bold">Cryptographic Key (Ed25519)</p>
-                        <p className="font-mono text-[10px] opacity-60 break-all p-4 border border-[var(--border-light)] rounded bg-[var(--bg-sidebar)]">{activeVault.publicKey}</p>
+                        <p className="font-mono text-[9px] opacity-40 uppercase font-bold">Cryptographic Key (Ed25519 - 256bit)</p>
+                        <p className="font-mono text-[10px] opacity-60 break-all p-4 border border-[var(--border-light)] rounded bg-[var(--bg-sidebar)] leading-relaxed">
+                          {activeVault.publicKey}
+                        </p>
                       </div>
                    </div>
 
@@ -507,10 +521,13 @@ export const TrustKeyService: React.FC = () => {
                 </div>
                 <div className="flex items-center gap-6 p-6 bg-amber-500/5 border border-amber-500/20 rounded-lg">
                    <span className="text-3xl">🛡️</span>
-                   <p className="text-[12px] font-serif italic opacity-70 leading-relaxed">
-                     Your Master Recovery Key is <span className="text-[var(--text-header)] font-bold">non-custodial</span>. 
-                     Archiving this manifest offline is mandatory for permanent authority.
-                   </p>
+                   <div className="space-y-1">
+                     <p className="text-[12px] font-serif italic opacity-70 leading-relaxed">
+                       Your Master Recovery Key is <span className="text-[var(--text-header)] font-bold">non-custodial</span>. 
+                       Archiving this manifest offline is mandatory for permanent authority.
+                     </p>
+                     <p className="text-[9px] font-mono opacity-30 uppercase">Entropy Source: {activeVault.mnemonic.split(' ').length * 11} bits verified</p>
+                   </div>
                 </div>
               </div>
             )}

@@ -20,6 +20,7 @@ As of 2026, the protocol deprecates 160-bit (SHA-1) security for curatorial anch
 - **BIP-39 Math**: The protocol uses a standard dictionary of 2,048 words. Each word provides **11 bits of entropy** ($\log_2(2048) = 11$).
 - **Consumer Grade**: 12 words = 132 bits of entropy ($12 \times 11$). Suitable for ephemeral or low-value attestation.
 - **Sovereign Grade**: 24 words = **264 bits of entropy** ($24 \times 11$). Required for high-stakes institutional or master curatorial roles. 
+- **Key Parity**: Public keys MUST be 256-bit (represented as a 64-character hex string).
 - **Security Parity**: 264-bit entropy provides a safety margin above the 256-bit security floor of SHA-256 and Ed25519, ensuring the seed manifest is the strongest link in the provenance chain.
 
 ## 3. Manifest Delivery & Strategies
@@ -34,7 +35,8 @@ Compliance with C2PA 2.3 requires support for two primary transport modes.
 - **Tail-End Injection**: Signet utilizes a "Tail-End Wrap" for browser-based delivery, where the manifest is appended after the standard EOI (End of Image) marker, enclosed in `SIGNET_VPR_BEGIN` and `SIGNET_VPR_END` tags.
 
 ## 4. Cryptographic Requirements
-- **Algorithm**: MUST use Ed25519 for all signatures.
+- **Algorithm**: MUST use Ed25519-256 for all signatures. 
+- **Public Key Representation**: 256-bit keys MUST be encoded as 64-character hexadecimal strings.
 - **Hashing**: SHA-256 MUST be used for generating system anchors and content hashes.
 
 ## 5. The X-Signet-VPR Header

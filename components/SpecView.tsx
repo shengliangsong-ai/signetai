@@ -25,7 +25,7 @@ const SPEC_PAGES = [
   },
   {
     title: "Identity & Vault Recovery",
-    text: "Signet identities are anchored to a System Anchor in the global registry. If a local curatorial vault is lost, the Vault Recovery Protocol (VRP-R) enables the re-derivation of signing keys via a 24-word mnemonic.\n\nLayer 0: Cryptographic Root\n• ALGORITHM: ED25519-256\n• ENTROPY: 264-BIT SOVEREIGN\n• RECOVERY: VRP-R (24-WORD MNEMONIC)",
+    text: "Signet identities are anchored to a System Anchor in the global registry. If a local curatorial vault is lost, the Vault Recovery Protocol (VRP-R) enables the re-derivation of signing keys via a 24-word mnemonic.\n\nLayer 0: Cryptographic Root\n• ALGORITHM: ED25519-256\n• PUBLIC KEY: 256-BIT (64 HEX CHARS)\n• ENTROPY: 264-BIT SOVEREIGN\n• RECOVERY: VRP-R (24-WORD MNEMONIC)",
     content: (
       <div className="space-y-8 animate-in fade-in duration-500">
         <h2 className="text-[var(--text-header)] font-serif text-2xl font-bold mb-6 italic">2. Registry & Recovery</h2>
@@ -37,6 +37,7 @@ const SPEC_PAGES = [
           <p className="font-mono text-[10px] uppercase font-bold tracking-widest text-[var(--trust-blue)]">Layer 0: Cryptographic Root</p>
           <ul className="text-xs font-mono opacity-60 space-y-1">
             <li>• ALGORITHM: ED25519-256</li>
+            <li>• PUBLIC KEY: 256-BIT (64 HEX CHARS)</li>
             <li>• ENTROPY: 264-BIT SOVEREIGN</li>
             <li>• RECOVERY: VRP-R (24-WORD MNEMONIC)</li>
           </ul>
@@ -46,7 +47,7 @@ const SPEC_PAGES = [
   },
   {
     title: "Sovereign Entropy (Section 2.3)",
-    text: "Signet implements Sovereign Grade Entropy to match the security levels of 256-bit elliptic curves.\n\nEntropy Calculation: 24 words × 11 bits/word = 264 bits\nThis exceeds the 256-bit security floor of SHA-256 and Ed25519.",
+    text: "Signet implements Sovereign Grade Entropy to match the security levels of 256-bit elliptic curves.\n\nEntropy Calculation: 24 words × 11 bits/word = 264 bits\nPublic Key Derivation: 64 characters of Hexadecimal (256 bits)\nThis exceeds the 256-bit security floor of SHA-256 and Ed25519.",
     content: (
       <div className="space-y-8 animate-in fade-in duration-500">
         <h2 className="text-[var(--text-header)] font-serif text-2xl font-bold mb-6 italic">2.3 Sovereign Grade Entropy (VPR-S)</h2>
@@ -56,6 +57,8 @@ const SPEC_PAGES = [
         <div className="p-6 bg-[var(--code-bg)] border border-[var(--border-light)] rounded font-mono text-[11px] space-y-2">
           <p className="text-[var(--trust-blue)] font-bold">Entropy Calculation:</p>
           <code className="block p-2 bg-black/5 rounded">24 words × 11 bits/word = 264 bits</code>
+          <p className="text-[var(--trust-blue)] font-bold mt-4">Key Derivation Standard:</p>
+          <code className="block p-2 bg-black/5 rounded">64-char Hex Public Key = 256 bits</code>
           <p className="opacity-40 italic mt-4">This exceeds the 256-bit security floor of SHA-256 and Ed25519.</p>
         </div>
       </div>

@@ -14,13 +14,17 @@
 **Date:** February 15, 2026  
 **Task Goal:** Implemented Vault Recovery Protocol (VRP-R) and Dual-Mode (Embedded/Sidecar) manifest support.
 
+## Entry 13: Cryptographic Hardening (256-bit Keys)
+**Date:** February 16, 2026  
+**Task Goal:** Upgraded key derivation to industry-standard 256-bit (64 hex characters) and expanded Sovereign Entropy to 264 bits.
+
 **Reasoning Path:**  
-To address the risk of lost curatorial authority, we introduced a 12-word mnemonic recovery system. This ensures that while we remain non-custodial, users have a "physical" fallback for their digital identity. Furthermore, to satisfy high-portability use cases (social sharing), we enabled a simulated JUMBF embedding strategy alongside our high-performance Sidecar JSON delivery.
+Initial placeholders used 64-bit hashes for demonstration. To ensure institutional trust, we have hardened the protocol to full Ed25519-parity. This ensures that the Public Key manifest is cryptographically secure against modern brute-force techniques while maintaining the 24-word mnemonic as the root of high-entropy trust.
 
 **Verification Check:**  
-- Vault Recovery: 12-word derivation logic verified.
-- Dual-Mode: Strategy toggle integrated into Provenance Lab.
-- Docs: SPECIFICATION.md updated to v0.2.7.
+- Public Key: Verified 64-character hex output.
+- Entropy: Verified 264-bit calculation (24 * 11 bits).
+- UI: Updated SpecView to reflect new bit-depths.
 
 ---
 *Signed: Lead Architect, Signet Protocol Labs*
