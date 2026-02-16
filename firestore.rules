@@ -19,44 +19,38 @@ service cloud.firestore {
              ];
     }
 
-    // Safely retrieves existing owner info
+    // Safely retrieve existing ownership data
     function getExistingOwnerUid() {
-      return resource.data.get('ownerUid', 'ANONYMOUS');
+      return resource.data.get('ownerUid', '');
     }
     
     function getExistingOwnerEmail() {
-      return resource.data.get('ownerEmail', 'NONE');
+      return resource.data.get('ownerEmail', '').lower();
     }
 
     // ----------------------------------------------------------------------
     // SIGNET IDENTITY REGISTRY (TKS)
     // ----------------------------------------------------------------------
     match /identities/{anchorId} {
-      // Identity lookups are always public
       allow read: if true;
       
-      // Creation requirements:
-      // 1. Authenticated
-      // 2. ID length constraints
-      // 3. User must set themselves as owner
+      // Allow creation for any authenticated user who sets themselves as owner
       allow create: if isAuthenticated() 
                     && anchorId.size() >= 10 
                     && anchorId.size() <= 256 
                     && request.resource.data.ownerUid == request.auth.uid;
       
-      // Update requirements:
-      // 1. Admin bypass
-      // 2. OR User is authenticated AND:
-      //    a. They already own it (UID or Email match)
-      //    b. OR it's unclaimed (ANONYMOUS, null, or empty)
-      //    c. AND they are setting themselves as the new owner (ownerUid must match auth.uid)
+      // Allow update if:
+      // 1. User is an Admin
+      // 2. Identity is unclaimed (ownerUid is empty or 'ANONYMOUS')
+      // 3. Current authenticated user is the existing owner (matching UID or Email)
+      // AND they are preserving their ownership in the update.
       allow update: if isAdmin() 
                     || (isAuthenticated() && (
-                        getExistingOwnerUid() == 'ANONYMOUS' || 
-                        getExistingOwnerUid() == null ||
-                        getExistingOwnerUid() == "" ||
+                        getExistingOwnerUid() == '' || 
+                        getExistingOwnerUid() == 'ANONYMOUS' ||
                         getExistingOwnerUid() == request.auth.uid ||
-                        getExistingOwnerEmail().lower() == request.auth.token.get('email', 'NONE').lower()
+                        getExistingOwnerEmail() == request.auth.token.get('email', 'NONE').lower()
                     ) && (
                         request.resource.data.ownerUid == request.auth.uid
                     ));
@@ -65,7 +59,7 @@ service cloud.firestore {
     }
 
     // ----------------------------------------------------------------------
-    // USERS & PROFILE (Private Sandboxes)
+    // USERS & PROFILE
     // ----------------------------------------------------------------------
     match /users/{userId} {
       allow read: if isOwner(userId) || isAdmin(); 
@@ -73,9 +67,6 @@ service cloud.firestore {
       allow update: if isAdmin() || isOwner(userId);
     }
 
-    // ----------------------------------------------------------------------
-    // Global Default (Strict Lockdown)
-    // ----------------------------------------------------------------------
     match /{document=**} {
       allow read: if isAdmin();
       allow write: if isAdmin();

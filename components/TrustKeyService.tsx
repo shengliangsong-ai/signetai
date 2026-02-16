@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { initializeApp, getApps, getApp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
-import { getFirestore, doc, getDoc, setDoc, collection, query, where, getDocs } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
+import { getFirestore, doc, getDoc, setDoc } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
 import { getAuth, signInWithPopup, GoogleAuthProvider, TwitterAuthProvider, FacebookAuthProvider, OAuthProvider, onAuthStateChanged, signOut, User } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js';
 import { firebaseConfig } from '../private_keys';
 import { PersistenceService, VaultRecord } from '../services/PersistenceService';
@@ -49,8 +49,16 @@ export const TrustKeyService: React.FC = () => {
   const [identityInput, setIdentityInput] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
-  const [indexUrl, setIndexUrl] = useState<string | null>(null);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [availability, setAvailability] = useState<{ status: 'loading' | 'available' | 'owned' | 'taken' | 'idle', owner?: string } | null>(null);
+
+  const refreshVaults = useCallback(async () => {
+    const vaults = await PersistenceService.getAllVaults();
+    const active = await PersistenceService.getActiveVault();
+    setAllVaults(vaults);
+    setActiveVault(active);
+    if (vaults.length === 0) setIsRegistering(true);
+  }, []);
 
   useEffect(() => {
     refreshVaults();
@@ -64,15 +72,40 @@ export const TrustKeyService: React.FC = () => {
       });
       return () => unsubscribe();
     }
-  }, []);
+  }, [refreshVaults]);
 
-  const refreshVaults = async () => {
-    const vaults = await PersistenceService.getAllVaults();
-    const active = await PersistenceService.getActiveVault();
-    setAllVaults(vaults);
-    setActiveVault(active);
-    if (vaults.length === 0) setIsRegistering(true);
-  };
+  // Check identity availability in background
+  useEffect(() => {
+    const checkId = async () => {
+      const id = identityInput.trim().toLowerCase();
+      if (id.length < 3) {
+        setAvailability({ status: 'idle' });
+        return;
+      }
+      if (!db) return;
+      
+      setAvailability({ status: 'loading' });
+      const anchor = `${PROTOCOL_AUTHORITY}${SEPARATOR}${id}`;
+      try {
+        const docSnap = await getDoc(doc(db, "identities", anchor));
+        if (!docSnap.exists()) {
+          setAvailability({ status: 'available' });
+        } else {
+          const data = docSnap.data();
+          const isOwner = currentUser && (data.ownerUid === currentUser.uid || (data.ownerEmail && data.ownerEmail.toLowerCase() === currentUser.email?.toLowerCase()));
+          setAvailability({ 
+            status: isOwner ? 'owned' : 'taken',
+            owner: data.ownerEmail || 'Unknown' 
+          });
+        }
+      } catch (e) {
+        setAvailability({ status: 'idle' });
+      }
+    };
+
+    const timer = setTimeout(checkId, 500);
+    return () => clearTimeout(timer);
+  }, [identityInput, currentUser]);
 
   const handleSwitchVault = async (anchor: string) => {
     await PersistenceService.setActiveVault(anchor);
@@ -115,48 +148,30 @@ export const TrustKeyService: React.FC = () => {
     }
     
     setIsGenerating(true);
-    setIndexUrl(null);
     setStatus(`STEP 1/4: Generating Entropy...`);
     
-    // Safety delay for visual feedback
     await new Promise(r => setTimeout(r, 600));
 
     const anchor = `${PROTOCOL_AUTHORITY}${SEPARATOR}${identity}`;
     const pubKey = deriveMockKey(identity);
     const mnemonic = generateMnemonic(securityGrade);
 
-    const withTimeout = (promise: Promise<any>, timeoutMs: number) => {
-      return Promise.race([
-        promise,
-        new Promise((_, reject) => setTimeout(() => reject(new Error("Registry connection timeout.")), timeoutMs))
-      ]);
-    };
-
     try {
-      // 1. CONDITIONAL FIREBASE SYNC (ONLY if authenticated)
       if (db && currentUser) {
-        setStatus(`STEP 2/4: Verifying Global Ownership...`);
+        setStatus(`STEP 2/4: Verifying Global Registry...`);
         const docRef = doc(db, "identities", anchor);
-        const docSnap = await withTimeout(getDoc(docRef), 10000);
+        const docSnap = await getDoc(docRef);
         
         if (docSnap.exists()) {
           const data = docSnap.data();
-          const ownerUid = data.ownerUid;
-          const ownerEmail = data.ownerEmail || '';
+          const isOwner = data.ownerUid === currentUser.uid || (data.ownerEmail && data.ownerEmail.toLowerCase() === currentUser.email?.toLowerCase());
           
-          // Claimable if owned by 'ANONYMOUS', null, the same UID, or the same Email
-          const isClaimable = !ownerUid || 
-                             ownerUid === 'ANONYMOUS' || 
-                             ownerUid === currentUser.uid || 
-                             ownerUid === "" ||
-                             (currentUser.email && ownerEmail.toLowerCase() === currentUser.email.toLowerCase());
-          
-          if (!isClaimable) {
-             throw new Error(`The Curatorial ID "${identity}" is already claimed by another owner. Please choose a unique anchor.`);
+          if (!isOwner) {
+             throw new Error(`The Curatorial ID "${identity}" is already locked by another user.`);
           }
-          setStatus("STEP 3/4: Enforcing Protocol Policies...");
+          setStatus("STEP 3/4: Updating Existing Global Anchor...");
         } else {
-          setStatus("STEP 3/4: Creating Global Anchor...");
+          setStatus("STEP 3/4: Creating New Global Anchor...");
         }
 
         setStatus(`STEP 4/4: Sealing Global Registry Block...`);
@@ -170,21 +185,11 @@ export const TrustKeyService: React.FC = () => {
           timestamp: Date.now()
         };
         
-        try {
-          await withTimeout(setDoc(docRef, payload), 15000);
-        } catch (setErr: any) {
-          // If Firestore permission denied, the rules disagreed with our client check
-          if (setErr.code === 'permission-denied' || setErr.message?.toLowerCase().includes('permissions')) {
-             throw new Error(`CRITICAL: Access Denied. The Curatorial ID "${identity}" is already locked in the global registry. Ensure you have not previously claimed this name with a different account.`);
-          }
-          throw setErr;
-        }
+        await setDoc(docRef, payload);
       } else {
-        // GUEST MODE: Skip Step 2 & 3 completely
-        setStatus(`STEP 4/4: Finalizing local-only vault...`);
+        setStatus(`STEP 4/4: Finalizing local vault...`);
       }
 
-      // 2. ALWAYS SAVE TO LOCAL INDEXEDDB
       const newVault: VaultRecord = {
         anchor,
         identity,
@@ -198,26 +203,20 @@ export const TrustKeyService: React.FC = () => {
       await PersistenceService.saveVault(newVault);
       await PersistenceService.setActiveVault(newVault.anchor);
       
-      // 3. REFRESH AND FINALIZE
       await refreshVaults();
       setIsRegistering(false);
       
       if (!currentUser) {
-        setStatus(`∑ STEP 4/4: Skipping Global Registry (Guest Mode)... saved in local indexedDB. you may download it to your local disk.`);
+        setStatus(`SUCCESS: Local vault sealed for ${identity}. (Guest Mode - Not synced to registry)`);
       } else {
-        setStatus(`SUCCESS: Vault Sealed for ${identity}. Identity successfully synchronized with the Global Signet Registry.`);
+        setStatus(`SUCCESS: Vault Sealed for ${identity}. Global Registry synchronized.`);
       }
     } catch (err: any) {
       console.error("DEBUG: Registry Exception", err);
       let errMsg = err.message || "Unknown fault.";
-      
-      // Handle Firebase specific error codes or message fragments
-      if (err.code === 'permission-denied' || errMsg.toLowerCase().includes("permission-denied") || errMsg.toLowerCase().includes("permissions")) {
-        errMsg = `CRITICAL: Permission denied. The ID "${identity}" is already registered in the global registry. If you believe you own this identity, please ensure you are signed in with the correct account.`;
-      } else if (err.code === 'not-found' || errMsg.includes("not-found") || errMsg.includes("NOT_FOUND")) {
-        errMsg = `CRITICAL: Registry connection error. The global authority could not be reached.`;
+      if (err.code === 'permission-denied' || errMsg.toLowerCase().includes("permission-denied") || errMsg.toLowerCase().includes("insufficient permissions")) {
+        errMsg = `CRITICAL: Access Denied. The ID "${identity}" is already claimed by another account. If this is your ID, please sign in with the correct credentials.`;
       }
-
       setStatus(`${errMsg}`);
     } finally {
       setIsGenerating(false);
@@ -235,7 +234,7 @@ export const TrustKeyService: React.FC = () => {
   };
 
   const handlePurge = async (anchor: string) => {
-    if (confirm("DANGER: Remove locally? Ensure you have your mnemonic. Registry record will remain public.")) {
+    if (confirm("DANGER: Remove locally? Ensure you have your mnemonic or JSON backup. Registry record will remain public.")) {
       await PersistenceService.purgeVault(anchor);
       await refreshVaults();
       setStatus("Local vault purged.");
@@ -287,13 +286,24 @@ export const TrustKeyService: React.FC = () => {
                       <button onClick={handleLogout} className="px-4 py-2 text-[10px] font-mono text-red-500 opacity-50 hover:opacity-100 font-bold">Sign Out</button>
                     )}
                   </div>
-                  <p className="text-[9px] font-serif italic opacity-40">
-                    {currentUser ? `Authenticated as ${currentUser.email}. Identity will be synced globally.` : `Guest mode: Identity will be saved in local IndexedDB only. Global sync disabled.`}
-                  </p>
                 </div>
 
                 <div className="space-y-3">
-                  <label className="font-mono text-[10px] uppercase font-bold opacity-40">Unique Curatorial ID</label>
+                  <div className="flex justify-between items-center">
+                    <label className="font-mono text-[10px] uppercase font-bold opacity-40">Unique Curatorial ID</label>
+                    {availability && (
+                      <span className={`font-mono text-[9px] font-bold uppercase ${
+                        availability.status === 'available' ? 'text-green-500' : 
+                        availability.status === 'owned' ? 'text-blue-500' : 
+                        availability.status === 'taken' ? 'text-red-500' : 'opacity-20'
+                      }`}>
+                        {availability.status === 'loading' ? 'Checking...' : 
+                         availability.status === 'available' ? 'Available' : 
+                         availability.status === 'owned' ? 'Owned by you' : 
+                         availability.status === 'taken' ? 'Already Taken' : ''}
+                      </span>
+                    )}
+                  </div>
                   <div className="flex gap-2 p-4 border border-[var(--border-light)] rounded-lg bg-white shadow-sm focus-within:ring-2 focus-within:ring-[var(--trust-blue)]/20 transition-all">
                      <span className="font-mono text-sm opacity-30 flex items-center">{PROTOCOL_AUTHORITY}:</span>
                      <input 
@@ -305,6 +315,11 @@ export const TrustKeyService: React.FC = () => {
                        className="flex-1 bg-transparent outline-none font-mono text-sm text-[var(--trust-blue)] font-bold"
                      />
                   </div>
+                  {availability?.status === 'owned' && (
+                    <p className="text-[9px] font-serif italic text-blue-500 opacity-80">
+                      You already own this ID in the Global Registry. Generating now will update it with new entropy.
+                    </p>
+                  )}
                 </div>
 
                 <div className="p-1 border border-[var(--border-light)] rounded-lg flex bg-[var(--bg-sidebar)]">
@@ -327,11 +342,17 @@ export const TrustKeyService: React.FC = () => {
                 <div className="pt-4">
                   <button 
                     onClick={handleGenerate}
-                    disabled={isGenerating || !identityInput}
-                    className={`w-full py-5 text-white font-mono text-xs uppercase font-bold tracking-[0.3em] rounded shadow-2xl transition-all relative overflow-hidden group ${securityGrade === 24 ? 'bg-emerald-600' : 'bg-[var(--trust-blue)]'}`}
+                    disabled={isGenerating || !identityInput || availability?.status === 'taken'}
+                    className={`w-full py-5 text-white font-mono text-xs uppercase font-bold tracking-[0.3em] rounded shadow-2xl transition-all relative overflow-hidden group ${
+                      availability?.status === 'taken' ? 'bg-neutral-400' :
+                      securityGrade === 24 ? 'bg-emerald-600' : 'bg-[var(--trust-blue)]'
+                    }`}
                   >
                     <div className="absolute inset-0 bg-white/20 -translate-x-full group-hover:translate-x-0 transition-transform duration-500"></div>
-                    <span className="relative z-10">{isGenerating ? 'SYNCING_PROTOCOL...' : `Seal & Register Signet`}</span>
+                    <span className="relative z-10">
+                      {isGenerating ? 'SYNCING_PROTOCOL...' : 
+                       availability?.status === 'owned' ? 'Re-claim & Sync Anchor' : 'Seal & Register Signet'}
+                    </span>
                   </button>
                 </div>
               </div>
@@ -401,16 +422,11 @@ export const TrustKeyService: React.FC = () => {
           )}
           
           {status && (
-            <div className={`p-6 border-l-4 rounded-r-lg animate-in fade-in shadow-sm ${status.includes('SUCCESS') || status.includes('saved in local') ? 'bg-green-50 border-green-500' : (status.includes('CRITICAL') || status.toLowerCase().includes('permissions')) ? 'bg-red-50 border-red-500' : 'bg-blue-50 border-[var(--trust-blue)]'}`}>
-              <p className={`font-mono text-[11px] font-bold ${status.includes('SUCCESS') || status.includes('saved in local') ? 'text-green-700' : (status.includes('CRITICAL') || status.toLowerCase().includes('permissions')) ? 'text-red-700' : 'text-[var(--trust-blue)]'}`}>
-                {status.includes('SUCCESS') || status.includes('saved in local') ? '✓ ' : (status.includes('CRITICAL') || status.toLowerCase().includes('permissions')) ? '⚠️ ' : '∑ '}
+            <div className={`p-6 border-l-4 rounded-r-lg animate-in fade-in shadow-sm ${status.includes('SUCCESS') ? 'bg-green-50 border-green-500' : (status.includes('CRITICAL') || status.toLowerCase().includes('permissions')) ? 'bg-red-50 border-red-500' : 'bg-blue-50 border-[var(--trust-blue)]'}`}>
+              <p className={`font-mono text-[11px] font-bold ${status.includes('SUCCESS') ? 'text-green-700' : (status.includes('CRITICAL') || status.toLowerCase().includes('permissions')) ? 'text-red-700' : 'text-[var(--trust-blue)]'}`}>
+                {status.includes('SUCCESS') ? '✓ ' : (status.includes('CRITICAL') || status.toLowerCase().includes('permissions')) ? '⚠️ ' : '∑ '}
                 {status}
               </p>
-              {indexUrl && (
-                <div className="mt-4">
-                   <a href={indexUrl} target="_blank" className="text-[10px] font-mono font-bold text-red-600 underline hover:text-red-800">[ ACTION REQUIRED: CREATE INDEX ]</a>
-                </div>
-              )}
             </div>
           )}
         </div>
@@ -420,9 +436,9 @@ export const TrustKeyService: React.FC = () => {
             <h4 className="font-mono text-[11px] opacity-40 uppercase tracking-widest mb-8 font-bold">Mnemonic Recovery Manifest</h4>
             
             {!activeVault ? (
-              <div className="flex-1 border border-dashed border-[var(--border-light)] flex flex-col items-center justify-center italic opacity-20 text-sm font-serif">
+              <div className="flex-1 border border-dashed border-[var(--border-light)] flex flex-col items-center justify-center italic opacity-20 text-sm font-serif text-center">
                 <span className="text-5xl mb-6">🔑</span>
-                <p>Vault initialization required...</p>
+                <p>Vault initialization required.<br/>Claim your identity anchor to generate your secret key.</p>
               </div>
             ) : (
               <div className="space-y-8">
