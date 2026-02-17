@@ -5,38 +5,37 @@ const app = express();
 
 /**
  * SignetAI Subdomain Router
- * Detects if the request is coming from a subdomain (e.g., verify.signetai.io)
- * and serves the bridge.html file for centralized routing.
  */
 app.use((req, res, next) => {
     const host = req.get('host');
     const domainParts = host.split('.');
-    
-    // Check if there is a subdomain and it's not 'www'
     if (domainParts.length > 2 && domainParts[0] !== 'www') {
-        // Serve the bridge for all subdomain requests
         return res.sendFile(path.join(__dirname, 'bridge.html'));
     }
-    
-    // Otherwise, proceed to main app
     next();
 });
 
-// --- 1. STATIC ASSETS (High Priority) ---
-// Serve files from 'public' and 'dist' first. 
-// This handles standard file serving efficiently for any static asset.
+// --- 1. DUAL STATIC MOUNT STRATEGY ---
+
+// A. Serve 'public' folder at '/public' URL 
+// (Fixes: https://signetai.io/public/signed_signetai-solar-system.svg)
+app.use('/public', express.static(path.join(__dirname, 'public')));
+
+// B. Serve 'public' & 'dist' at Root URL 
+// (Standard: https://signetai.io/signed_signetai-solar-system.svg)
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.static(path.join(__dirname, 'dist')));
 
-// --- 2. SPECIFIC ASSET FALLBACKS ---
-// If static middleware missed them (e.g. deployment path issues where public isn't copied to dist),
-// we manually look in all possible directories to ensure availability.
+
+// --- 2. ROBUST FALLBACK FOR CRITICAL ASSETS ---
+// Even if static middleware fails (e.g. file is in root but requested via /public),
+// these handlers manually hunt for the file in all possible locations.
 
 function serveWithFallback(res, filename, contentType) {
     const locations = [
-        path.join(__dirname, 'public', filename),
-        path.join(__dirname, 'dist', filename),
-        path.join(__dirname, filename)
+        path.join(__dirname, 'public', filename), // 1. Source Public
+        path.join(__dirname, 'dist', filename),   // 2. Build Output
+        path.join(__dirname, filename)            // 3. Project Root
     ];
 
     // Find the first location that actually exists on disk
@@ -51,16 +50,21 @@ function serveWithFallback(res, filename, contentType) {
     }
 }
 
-app.get('/signed_signetai-solar-system.svg', (req, res) => {
-    serveWithFallback(res, 'signed_signetai-solar-system.svg', 'image/svg+xml');
+// Critical Signed Assets (Allow access via root or /public/*)
+const criticalAssets = [
+    'signed_signetai-solar-system.svg',
+    'signetai-solar-system.svg'
+];
+
+criticalAssets.forEach(file => {
+    // Handle root access
+    app.get(`/${file}`, (req, res) => serveWithFallback(res, file, 'image/svg+xml'));
+    // Handle /public/ access manually as backup
+    app.get(`/public/${file}`, (req, res) => serveWithFallback(res, file, 'image/svg+xml'));
 });
 
-app.get('/signetai-solar-system.svg', (req, res) => {
-    serveWithFallback(res, 'signetai-solar-system.svg', 'image/svg+xml');
-});
 
 // --- 3. SPA FALLBACK ---
-// If no static file or specific route matched, serve index.html for React routing.
 app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, 'dist/index.html'));
 });

@@ -2,62 +2,6 @@ import React, { useState, useRef, useEffect } from 'react';
 import { PersistenceService } from '../services/PersistenceService';
 import { Admonition } from './Admonition';
 
-// The demo file uploaded by the user
-const SOLAR_SYSTEM_SVG = `<svg width="1000" height="1000" viewBox="-500 -500 1000 1000" xmlns="http://www.w3.org/2000/svg">
-  <defs>
-    <style>
-      .orbit { stroke: #ececec; stroke-dasharray: 2 6; fill: none; stroke-width: 1.2; }
-      text { font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
-      .banner-bg { fill: #1A3A5F; stroke: #00FFFF; stroke-width: 2; }
-      .banner-text { font-size: 40px; font-weight: 900; fill: white; }
-      .verified-check { fill: #00FFFF; }
-      .comet-pulse { fill: #00FFFF; filter: blur(1px); }
-    </style>
-    
-    <linearGradient id="cometTail" x1="100%" y1="0%" x2="0%" y2="0%">
-      <stop offset="0%" style="stop-color:#00FFFF; stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#00FFFF; stop-opacity:0" />
-    </linearGradient>
-  </defs>
-
-  <rect x="-500" y="-500" width="1000" height="1000" fill="#ffffff"/>
-
-  <circle class="orbit" r="60"/>  <circle class="orbit" r="95"/>  <circle class="orbit" r="135"/> <circle class="orbit" r="185"/> <circle class="orbit" r="300"/> <circle class="orbit" r="420"/> <circle cx="0" cy="0" r="30" fill="#FFD700">
-    <animate attributeName="r" values="30;31.5;30" dur="8s" repeatCount="indefinite" />
-  </circle>
-
-  <g><animateTransform attributeName="transform" type="rotate" from="0" to="360" dur="20s" repeatCount="indefinite"/><circle cx="60" cy="0" r="5" fill="#FF7F50"/></g>
-  <g><animateTransform attributeName="transform" type="rotate" from="0" to="360" dur="45s" repeatCount="indefinite"/><circle cx="95" cy="0" r="7" fill="#FFBF00"/></g>
-  <g><animateTransform attributeName="transform" type="rotate" from="0" to="360" dur="70s" repeatCount="indefinite"/><circle cx="135" cy="0" r="8" fill="#98FB98"/></g>
-  <g><animateTransform attributeName="transform" type="rotate" from="0" to="360" dur="100s" repeatCount="indefinite"/><circle cx="185" cy="0" r="6" fill="#FF4500"/></g>
-  <g><animateTransform attributeName="transform" type="rotate" from="0" to="360" dur="200s" repeatCount="indefinite"/><circle cx="300" cy="0" r="18" fill="#DEB887"/></g>
-  <g><animateTransform attributeName="transform" type="rotate" from="0" to="360" dur="350s" repeatCount="indefinite"/><circle cx="420" cy="0" r="15" fill="#F4A460"/></g>
-
-  <path id="outerCometPath" d="M -450,-100 C -350,-300 350,-300 450,-100 C 350,100 -350,100 -450,-100" fill="none" />
-  <g>
-    <animateMotion dur="25s" repeatCount="indefinite" rotate="auto">
-      <mpath href="#outerCometPath"/>
-    </animateMotion>
-    <rect x="-40" y="-1.5" width="40" height="3" fill="url(#cometTail)" rx="1" />
-    <circle class="comet-pulse" cx="0" cy="0" r="3.5" />
-  </g>
-
-  <g>
-    <animateTransform 
-      attributeName="transform" 
-      type="translate"
-      values="-1500,0; 0,0; 0,0; 1500,0; 1500,0"
-      keyTimes="0; 0.25; 0.7; 0.9; 1"
-      dur="20s" 
-      repeatCount="indefinite" />
-    
-    <rect x="-320" y="-60" width="640" height="120" rx="60" class="banner-bg" opacity="0.98" />
-    <text x="0" y="18" text-anchor="middle" class="banner-text">
-      signetai.io <tspan class="verified-check">✓ VERIFIED</tspan>
-    </text>
-  </g>
-</svg>`;
-
 const calculateHash = async (message: string) => {
   const msgBuffer = new TextEncoder().encode(message);
   const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
@@ -69,6 +13,7 @@ export const SvgSigner: React.FC = () => {
   const [originalSvg, setOriginalSvg] = useState<string>('');
   const [signedSvg, setSignedSvg] = useState<string>('');
   const [isSigning, setIsSigning] = useState(false);
+  const [isLoadingDemo, setIsLoadingDemo] = useState(false);
   const [activeTab, setActiveTab] = useState<'PREVIEW' | 'CODE' | 'DIFF'>('PREVIEW');
   const [verificationResult, setVerificationResult] = useState<any>(null);
   const [fileName, setFileName] = useState<string>('upload.svg');
@@ -76,11 +21,24 @@ export const SvgSigner: React.FC = () => {
   
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleLoadDemo = () => {
-    setOriginalSvg(SOLAR_SYSTEM_SVG);
-    setSignedSvg('');
-    setVerificationResult(null);
-    setFileName('signetai-solar-system.svg');
+  const handleLoadDemo = async () => {
+    setIsLoadingDemo(true);
+    try {
+      // Fetch from public directory instead of hardcoding
+      const response = await fetch('/signetai-solar-system.svg');
+      if (!response.ok) throw new Error('Failed to load demo asset');
+      
+      const svgText = await response.text();
+      setOriginalSvg(svgText);
+      setSignedSvg('');
+      setVerificationResult(null);
+      setFileName('signetai-solar-system.svg');
+    } catch (err) {
+      console.error("Demo Load Error:", err);
+      alert("Could not load demo file from /public directory.");
+    } finally {
+      setIsLoadingDemo(false);
+    }
   };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -337,8 +295,8 @@ ${JSON.stringify(manifest, null, 2)}
                     + Upload SVG
                 </button>
                 {!originalSvg && (
-                    <button onClick={handleLoadDemo} className="text-[10px] opacity-40 hover:opacity-100 font-bold uppercase">
-                        Load Demo
+                    <button onClick={handleLoadDemo} disabled={isLoadingDemo} className="text-[10px] opacity-40 hover:opacity-100 font-bold uppercase">
+                        {isLoadingDemo ? 'Fetching...' : 'Load Demo'}
                     </button>
                 )}
              </div>
