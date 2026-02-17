@@ -126,5 +126,16 @@ Verification should not require a "Download -> Upload" cycle.
 - **Network**: Added Client-side Fetch with CORS error handling.
 - **Outcome**: Users can now share verification results via `signetai.io/#verify?url=...`.
 
+## Entry 22: Auto-Verification & Blob Streaming
+**Date:** February 20, 2026
+**Task Goal:** Seamless verification of large binary assets (Zero RAM) without user intervention.
+
+**Reasoning Path:**
+The "Sign vs. Verify" dichotomy is artificial. The system should detect if a file is already signed upon selection.
+- **Challenge**: Reading a 2GB file to check for a signature crashes the browser.
+- **Solution**: Refactored `verifyBlob` to use `Blob.slice()` and `calculateStreamingHash`.
+- **Logic**: The app now scans the last 10KB of any selected file for `%SIGNET_VPR_START`. If found, it bypasses the signing flow and triggers immediate streaming verification.
+- **Outcome**: "Any Size. Zero RAM." UX is now fully realized for both Signing AND Verification.
+
 ---
 *Signed: Master Curator, signetai.io:ssl*

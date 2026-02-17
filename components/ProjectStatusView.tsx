@@ -3,7 +3,7 @@ import ReactMarkdown from 'react-markdown';
 
 const TODO_CONTENT = `# Signet AI Project Status & Roadmap
 
-**Current Version:** 0.3.3_BETA  
+**Current Version:** 0.3.4_AUTO  
 **Protocol Spec:** draft-song-02.7
 
 ## Phase 1: Core Architecture (Foundation)
@@ -29,7 +29,7 @@ const TODO_CONTENT = `# Signet AI Project Status & Roadmap
     - [x] Universal Tail-Wrap (UTW) Protocol
     - [x] **Zero-Copy Streaming Engine** (Unlimited File Size)
     - [x] Block-Chained Hashing (SHA-256)
-    - [x] UI Refinement ("Select File" vs Upload)
+    - [x] **Auto-Detection of Signed Binaries** (Blob Scanning)
 
 - [x] **Formal Specification**
     - [x] Dynamic PDF Generation of Spec
@@ -70,7 +70,7 @@ const TODO_CONTENT = `# Signet AI Project Status & Roadmap
 - **PDF Incremental Updates**: Post-EOF injection is valid, but multiple signs need a formal xref table update to be "Adobe Compliant" (currently "Signet Compliant").
 
 ---
-*Last Updated: Feb 19, 2026 (Phase III Deep-Linking Complete)*`;
+*Last Updated: Feb 20, 2026 (Phase III Auto-Detection Complete)*`;
 
 const LOG_CONTENT = `# Signet AI Evolution Log
 
@@ -199,6 +199,17 @@ Verification should not require a "Download -> Upload" cycle.
 - **UX**: Added proper HTML5 Drag-and-Drop events (\`onDrop\`) to the audit zone.
 - **Network**: Added Client-side Fetch with CORS error handling.
 - **Outcome**: Users can now share verification results via \`signetai.io/#verify?url=...\`.
+
+## Entry 22: Auto-Verification & Blob Streaming
+**Date:** February 20, 2026
+**Task Goal:** Seamless verification of large binary assets (Zero RAM) without user intervention.
+
+**Reasoning Path:**
+The "Sign vs. Verify" dichotomy is artificial. The system should detect if a file is already signed upon selection.
+- **Challenge**: Reading a 2GB file to check for a signature crashes the browser.
+- **Solution**: Refactored \`verifyBlob\` to use \`Blob.slice()\` and \`calculateStreamingHash\`.
+- **Logic**: The app now scans the last 10KB of any selected file for \`%SIGNET_VPR_START\`. If found, it bypasses the signing flow and triggers immediate streaming verification.
+- **Outcome**: "Any Size. Zero RAM." UX is now fully realized for both Signing AND Verification.
 
 ---
 *Signed: Master Curator, signetai.io:ssl*`;

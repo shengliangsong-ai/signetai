@@ -29,7 +29,11 @@ Compliance with C2PA 2.3 requires support for two primary transport modes.
 
 ### 3.2 Embedded Mode (Binary Substrate Injection)
 - **Technique**: Manifests MUST be injected into the asset binary. 
-- **Tail-End Injection**: Signet utilizes a "Tail-End Wrap" for browser-based delivery, where the manifest is appended after the standard EOI (End of Image) marker.
+- **Tail-End Injection**: Signet utilizes a "Tail-End Wrap" (UTW) for browser-based delivery, where the manifest is appended after the standard EOI (End of Image) marker.
+- **Discovery Logic**: To verify a file without reading the entire binary into memory, parsers MUST implement a **Tail-End Scan**.
+  - Read the last 10KB of the file.
+  - Search for the delimiter `%SIGNET_VPR_START`.
+  - If found, extract the JSON payload and use the `byte_length` property to isolate the original content stream for hashing.
 
 ## 4. Cryptographic Requirements
 - **Algorithm**: MUST use Ed25519-256 for all signatures. 
