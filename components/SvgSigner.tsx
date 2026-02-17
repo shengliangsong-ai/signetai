@@ -25,7 +25,7 @@ export const SvgSigner: React.FC = () => {
     setIsLoadingDemo(true);
     try {
       // Fetch from public directory instead of hardcoding
-      const response = await fetch('/signetai-solar-system.svg');
+      const response = await fetch('/public/signetai-solar-system.svg');
       if (!response.ok) throw new Error('Failed to load demo asset');
       
       const svgText = await response.text();

@@ -197,15 +197,15 @@ export const VerifyView: React.FC = () => {
   };
 
   const loadDemo = () => {
-    // Root relative path for compatibility with Vite/CRA and Custom Server
-    const demoUrl = `${window.location.origin}/signed_signetai-solar-system.svg`;
+    // UPDATED: Use /public/ prefix for reliability
+    const demoUrl = `${window.location.origin}/public/signed_signetai-solar-system.svg`;
     setUrlInput(demoUrl);
     handleUrlFetch(demoUrl);
   };
 
   const loadUnsignedDemo = () => {
-    // Root relative path
-    const demoUrl = `${window.location.origin}/signetai-solar-system.svg`;
+    // UPDATED: Use /public/ prefix
+    const demoUrl = `${window.location.origin}/public/signetai-solar-system.svg`;
     setUrlInput(demoUrl);
     handleUrlFetch(demoUrl);
   };
