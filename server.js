@@ -35,7 +35,8 @@ app.use(express.static(path.join(__dirname, 'dist')));
 function serveWithFallback(res, filename, contentType) {
     const locations = [
         path.join(__dirname, 'public', filename), 
-        path.join(__dirname, 'dist', filename),   
+        path.join(__dirname, 'dist', filename),
+        path.join(__dirname, 'dist', 'public', filename), // Add nested build path support
         path.join(__dirname, filename)            
     ];
 

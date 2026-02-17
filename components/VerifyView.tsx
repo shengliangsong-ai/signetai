@@ -81,7 +81,7 @@ export const VerifyView: React.FC = () => {
         // If we get an HTML response (like the SPA fallback), throw a specific error
         const contentType = response.headers.get('content-type');
         if (contentType && contentType.includes('text/html')) {
-             throw new Error("Target is HTML (SPA Fallback?), not a raw asset.");
+             throw new Error("Target is HTML (SPA Fallback?), not a raw asset. File may be missing from server.");
         }
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
@@ -196,22 +196,22 @@ export const VerifyView: React.FC = () => {
   };
 
   const loadDemo = () => {
-    // Use absolute path to ensure correct routing
-    const demoUrl = 'https://www.signetai.io/public/signed_signetai-solar-system.svg';
+    // Dynamic origin for local dev support
+    const demoUrl = `${window.location.origin}/public/signed_signetai-solar-system.svg`;
     setUrlInput(demoUrl);
     handleUrlFetch(demoUrl);
   };
 
   const loadUnsignedDemo = () => {
-    // Use absolute path to ensure correct routing
-    const demoUrl = 'https://www.signetai.io/public/signetai-solar-system.svg';
+    // Dynamic origin for local dev support
+    const demoUrl = `${window.location.origin}/public/signetai-solar-system.svg`;
     setUrlInput(demoUrl);
     handleUrlFetch(demoUrl);
   };
 
   const loadSignedPngDemo = () => {
-    // Use absolute path to ensure correct routing
-    const demoUrl = 'https://www.signetai.io/public/signet_512.png';
+    // Dynamic origin for local dev support
+    const demoUrl = `${window.location.origin}/public/signet_512.png`;
     setUrlInput(demoUrl);
     handleUrlFetch(demoUrl);
   };
