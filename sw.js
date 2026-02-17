@@ -1,10 +1,11 @@
-const CACHE_NAME = 'signet-v0.4.2-fix';
+const CACHE_NAME = 'signet-v0.4.3-assets';
 // Use relative paths to ensure it works on any origin (including sandboxed previews)
 const URLS_TO_CACHE = [
   './',
   './index.html',
   './manifest.json',
-  './icon.svg'
+  './192.png',
+  './512.png'
 ];
 
 self.addEventListener('install', (event) => {
