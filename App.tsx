@@ -19,6 +19,7 @@ import { ComplianceDashboard } from './components/ComplianceDashboard';
 import { VerifyView } from './components/VerifyView';
 import { EcosystemView } from './components/EcosystemView';
 import { SvgSigner } from './components/SvgSigner';
+import { PdfSigner } from './components/PdfSigner';
 
 export type Theme = 'standard' | 'midnight';
 
@@ -65,7 +66,8 @@ const Sidebar: React.FC<{ currentView: string; isOpen: boolean }> = ({ currentVi
         <a href="#branding" className={`sidebar-link ${currentView === 'branding' ? 'active' : ''}`}>8. Branding Kit</a>
         <a href="#manual" className={`sidebar-link ${currentView === 'manual' ? 'active' : ''}`}>9. Operator's Manual</a>
         <a href="#ecosystem" className={`sidebar-link ${currentView === 'ecosystem' ? 'active' : ''}`}>10. Ecosystem Repositories</a>
-        <a href="#svg-lab" className={`sidebar-link ${currentView === 'svg-lab' ? 'active' : ''}`}>11. SVG Signer (Vector)</a>
+        <a href="#svg-lab" className={`sidebar-link ${currentView === 'svg-lab' ? 'active' : ''}`}>11. Vector Lab (SVG)</a>
+        <a href="#pdf-lab" className={`sidebar-link ${currentView === 'pdf-lab' ? 'active' : ''}`}>12. Document Lab (PDF)</a>
       </nav>
 
       <div className="pt-8 mt-8 border-t border-[var(--border-light)] space-y-6">
@@ -144,7 +146,7 @@ const Header: React.FC<{
 );
 
 const App: React.FC = () => {
-  const [view, setView] = useState<'home' | 'spec' | 'standards' | 'schema' | 'branding' | 'manual' | 'auditor' | 'identity' | 'compliance' | 'verify' | 'ecosystem' | 'svg-lab'>('home');
+  const [view, setView] = useState<'home' | 'spec' | 'standards' | 'schema' | 'branding' | 'manual' | 'auditor' | 'identity' | 'compliance' | 'verify' | 'ecosystem' | 'svg-lab' | 'pdf-lab'>('home');
   const [theme, setTheme] = useState<Theme>('standard');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isPortalOpen, setIsPortalOpen] = useState(false);
@@ -183,6 +185,8 @@ const App: React.FC = () => {
         setView('ecosystem');
       } else if (hash === '#svg-lab') {
         setView('svg-lab');
+      } else if (hash === '#pdf-lab') {
+        setView('pdf-lab');
       } else {
         setView('home');
       }
@@ -260,6 +264,7 @@ const App: React.FC = () => {
           {view === 'verify' && <VerifyView />}
           {view === 'ecosystem' && <EcosystemView />}
           {view === 'svg-lab' && <SvgSigner />}
+          {view === 'pdf-lab' && <PdfSigner />}
 
           <footer className="mt-24 pt-12 border-t border-[var(--border-light)] flex flex-wrap justify-between items-center gap-6 text-[10px] font-mono opacity-50 uppercase tracking-widest text-[var(--text-body)]">
             <div className="flex items-center gap-4">

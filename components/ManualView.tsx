@@ -96,6 +96,24 @@ export const ManualView: React.FC = () => {
         </div>
       </ManualSection>
 
+      <ManualSection title="05. Document Signing (PDF)">
+        <p className="text-lg leading-loose text-[var(--text-body)] opacity-80 font-serif mb-8">
+          For PDFs, Signet uses an "Append-Only" strategy. We do not rewrite the PDF structure (which risks breaking internal xref tables). Instead, we append a signed JSON block <strong>after the EOF marker</strong>.
+        </p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <FeatureCard 
+            icon="📄" 
+            title="Post-EOF Injection" 
+            desc="Signet appends the signature block after the %%EOF tag. Standard PDF readers ignore this data, but the file remains valid and the provenance is readable as plain text." 
+          />
+          <FeatureCard 
+            icon="🔐" 
+            title="Content Body Hash" 
+            desc="The signature covers the exact byte range of the original file (0 to EOF). Any modification to the content body will invalidate the Post-EOF signature." 
+          />
+        </div>
+      </ManualSection>
+
       <div className="mt-20 pt-10 border-t border-[var(--border-light)] flex justify-between items-center">
         <a href="#" onClick={(e) => { e.preventDefault(); window.location.hash = ''; }} className="text-[var(--trust-blue)] hover:underline font-mono text-[10px] uppercase tracking-widest font-bold">
           &larr; Return to Dashboard
