@@ -115,5 +115,16 @@ The velocity of the last 40 days has rendered the original submission descriptio
 - **Focus**: Highlighting the shift to **Universal Tail-Wrap** and **Sovereign Identity**.
 - **Metric**: 100% Codebase replacement since "Neural Prism" submission.
 
+## Entry 21: Public Verifier Deep-Linking
+**Date:** February 19, 2026
+**Task Goal:** Enable frictionless verification of external assets via URL parameters and deep-linking.
+
+**Reasoning Path:**
+Verification should not require a "Download -> Upload" cycle.
+- **Feature**: Implemented `?verify_url=` parameter handling in `VerifyView`.
+- **UX**: Added proper HTML5 Drag-and-Drop events (`onDrop`) to the audit zone.
+- **Network**: Added Client-side Fetch with CORS error handling.
+- **Outcome**: Users can now share verification results via `signetai.io/#verify?url=...`.
+
 ---
 *Signed: Master Curator, signetai.io:ssl*

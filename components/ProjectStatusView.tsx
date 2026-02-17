@@ -3,7 +3,7 @@ import ReactMarkdown from 'react-markdown';
 
 const TODO_CONTENT = `# Signet AI Project Status & Roadmap
 
-**Current Version:** 0.3.2_BETA  
+**Current Version:** 0.3.3_BETA  
 **Protocol Spec:** draft-song-02.7
 
 ## Phase 1: Core Architecture (Foundation)
@@ -52,10 +52,10 @@ const TODO_CONTENT = `# Signet AI Project Status & Roadmap
 ## Phase 3: Public Verification & Ecosystem (Next)
 *Focus: Interoperability and Security*
 
-- [ ] **Public Verifier Deep-Linking**
-    - [ ] Handle URL params \`signetai.io/verify?url=...\`
-    - [ ] Drag-and-drop external URL support
-    - [ ] CORS Policy update for cross-origin fetching
+- [x] **Public Verifier Deep-Linking**
+    - [x] Handle URL params \`signetai.io/#verify?url=...\`
+    - [x] Drag-and-drop external URL support
+    - [x] CORS Policy update for cross-origin fetching
 
 - [ ] **CLI Tool Release**
     - [ ] Node.js implementation of UTW for server-side pipelines
@@ -70,7 +70,7 @@ const TODO_CONTENT = `# Signet AI Project Status & Roadmap
 - **PDF Incremental Updates**: Post-EOF injection is valid, but multiple signs need a formal xref table update to be "Adobe Compliant" (currently "Signet Compliant").
 
 ---
-*Last Updated: Feb 18, 2026 (Phase III UTW Complete)*`;
+*Last Updated: Feb 19, 2026 (Phase III Deep-Linking Complete)*`;
 
 const LOG_CONTENT = `# Signet AI Evolution Log
 
@@ -188,6 +188,17 @@ The velocity of the last 40 days has rendered the original submission descriptio
 - **Action**: Released "Post-Submission Status" report.
 - **Focus**: Highlighting the shift to **Universal Tail-Wrap** and **Sovereign Identity**.
 - **Metric**: 100% Codebase replacement since "Neural Prism" submission.
+
+## Entry 21: Public Verifier Deep-Linking
+**Date:** February 19, 2026
+**Task Goal:** Enable frictionless verification of external assets via URL parameters and deep-linking.
+
+**Reasoning Path:**
+Verification should not require a "Download -> Upload" cycle.
+- **Feature**: Implemented \`?verify_url=\` parameter handling in \`VerifyView\`.
+- **UX**: Added proper HTML5 Drag-and-Drop events (\`onDrop\`) to the audit zone.
+- **Network**: Added Client-side Fetch with CORS error handling.
+- **Outcome**: Users can now share verification results via \`signetai.io/#verify?url=...\`.
 
 ---
 *Signed: Master Curator, signetai.io:ssl*`;

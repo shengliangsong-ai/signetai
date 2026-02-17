@@ -1,6 +1,6 @@
 # Signet AI Project Status & Roadmap
 
-**Current Version:** 0.3.2_BETA  
+**Current Version:** 0.3.3_BETA  
 **Protocol Spec:** draft-song-02.7
 
 ## Phase 1: Core Architecture (Foundation)
@@ -49,10 +49,10 @@
 ## Phase 3: Public Verification & Ecosystem (Next)
 *Focus: Interoperability and Security*
 
-- [ ] **Public Verifier Deep-Linking**
-    - [ ] Handle URL params `signetai.io/verify?url=...`
-    - [ ] Drag-and-drop external URL support
-    - [ ] CORS Policy update for cross-origin fetching
+- [x] **Public Verifier Deep-Linking**
+    - [x] Handle URL params `signetai.io/#verify?url=...`
+    - [x] Drag-and-drop external URL support
+    - [x] CORS Policy update for cross-origin fetching
 
 - [ ] **CLI Tool Release**
     - [ ] Node.js implementation of UTW for server-side pipelines
@@ -67,4 +67,4 @@
 - **PDF Incremental Updates**: Post-EOF injection is valid, but multiple signs need a formal xref table update to be "Adobe Compliant" (currently "Signet Compliant").
 
 ---
-*Last Updated: Feb 18, 2026 (Phase III UTW Complete)*
+*Last Updated: Feb 19, 2026 (Phase III Deep-Linking Complete)*
