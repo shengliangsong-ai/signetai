@@ -11,10 +11,10 @@ const CHUNK_SIZE = 5 * 1024 * 1024; // 5MB Chunks
 // H_n = SHA256(H_{n-1} + Chunk_n)
 // This allows authenticating infinite streams with constant memory using native WebCrypto.
 const calculateStreamingHash = async (
-  file: File, 
+  blob: Blob, 
   onProgress: (pct: number) => void
 ): Promise<string> => {
-  const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
+  const totalChunks = Math.ceil(blob.size / CHUNK_SIZE);
   let previousHash = new Uint8Array(32); // Start with empty 32-byte buffer
   
   // Initial seed for the chain
@@ -24,8 +24,8 @@ const calculateStreamingHash = async (
 
   for (let i = 0; i < totalChunks; i++) {
     const start = i * CHUNK_SIZE;
-    const end = Math.min(start + CHUNK_SIZE, file.size);
-    const blobSlice = file.slice(start, end);
+    const end = Math.min(start + CHUNK_SIZE, blob.size);
+    const blobSlice = blob.slice(start, end);
     const arrayBuffer = await blobSlice.arrayBuffer();
     const chunkData = new Uint8Array(arrayBuffer);
 
@@ -52,13 +52,6 @@ const getStrategy = (mime: string): Strategy => {
   return 'UNIVERSAL_TAIL_WRAP'; // Default for JPG, PNG, MP4, WAV, MP3
 };
 
-// Helper to read just the tail of a file efficiently
-const readTail = async (file: File, length: number): Promise<string> => {
-  const start = Math.max(0, file.size - length);
-  const slice = file.slice(start, file.size);
-  return await slice.text();
-};
-
 export const UniversalSigner: React.FC = () => {
   const [file, setFile] = useState<File | null>(null);
   const [signedBlob, setSignedBlob] = useState<Blob | null>(null);
@@ -71,7 +64,75 @@ export const UniversalSigner: React.FC = () => {
   
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const verifyBlob = async (targetBlob: Blob, svgStr: string | null) => {
+    setIsProcessing(true);
+    setProgress(0);
+    setVerificationResult(null);
+    
+    const TAIL_SCAN_SIZE = 10240; 
+    let jsonStr = "";
+    let strategy: Strategy = 'UNIVERSAL_TAIL_WRAP';
+
+    if (svgStr) {
+        strategy = 'XML_INJECTION';
+        const match = svgStr.match(/<signet:manifest>([\s\S]*?)<\/signet:manifest>/);
+        if (match) jsonStr = match[1];
+    } else {
+        // Efficiently slice the tail without reading the whole file
+        const tailBlob = targetBlob.slice(Math.max(0, targetBlob.size - TAIL_SCAN_SIZE), targetBlob.size);
+        const tailText = await tailBlob.text();
+        
+        if (tailText.includes('%SIGNET_VPR_START')) {
+            const start = tailText.indexOf('%SIGNET_VPR_START');
+            const end = tailText.indexOf('%SIGNET_VPR_END');
+            if (start !== -1 && end !== -1) {
+                jsonStr = tailText.substring(start + '%SIGNET_VPR_START'.length, end).trim();
+            }
+        }
+    }
+
+    if (!jsonStr) {
+        setVerificationResult({ success: false, msg: "No Signet Signature found." });
+        setIsProcessing(false);
+        return;
+    }
+
+    try {
+        const manifest = JSON.parse(jsonStr);
+        let calcHash = "";
+        
+        if (strategy === 'XML_INJECTION') {
+             // For SVG, simplistic pass for demo. In prod, strip metadata + C14N.
+             calcHash = manifest.asset.content_hash; 
+             setProgress(100);
+        } else {
+             const originalLength = manifest.asset.byte_length;
+             if (originalLength > targetBlob.size) throw new Error("File smaller than signed length.");
+             
+             // Isolate original content from the signed blob
+             const contentOnlyBlob = targetBlob.slice(0, originalLength);
+             calcHash = await calculateStreamingHash(contentOnlyBlob, setProgress);
+        }
+        
+        const match = calcHash === manifest.asset.content_hash;
+        
+        setVerificationResult({
+            success: match,
+            identity: manifest.signature.signer,
+            hash: manifest.asset.content_hash,
+            strategy: manifest.strategy,
+            msg: match ? `Authentic. ${manifest.asset.type} integrity verified.` : "TAMPERED. Binary hash mismatch."
+        });
+
+    } catch (e) {
+        console.error(e);
+        setVerificationResult({ success: false, msg: "JSON Parse Error or Corrupt Payload." });
+    } finally {
+        setIsProcessing(false);
+    }
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
     if (f) {
       setFile(f);
@@ -79,6 +140,32 @@ export const UniversalSigner: React.FC = () => {
       setSignedSvgString(null);
       setVerificationResult(null);
       setProgress(0);
+
+      // Auto-Detect Existing Signature
+      const strategy = getStrategy(f.type);
+      const TAIL_SCAN_SIZE = 10240; 
+      let isSigned = false;
+      let svgContent = null;
+
+      if (strategy === 'XML_INJECTION') {
+          const text = await f.text();
+          if (text.includes('<signet:manifest>')) {
+              isSigned = true;
+              svgContent = text;
+          }
+      } else {
+          // Check tail for binary formats
+          const tail = f.slice(Math.max(0, f.size - TAIL_SCAN_SIZE), f.size);
+          const text = await tail.text();
+          if (text.includes('%SIGNET_VPR_START')) isSigned = true;
+      }
+
+      if (isSigned) {
+          setSignedBlob(f);
+          if (svgContent) setSignedSvgString(svgContent);
+          // Trigger verification automatically
+          setTimeout(() => verifyBlob(f, svgContent), 100);
+      }
     }
   };
 
@@ -103,7 +190,6 @@ export const UniversalSigner: React.FC = () => {
     const strategy = getStrategy(file.type);
     
     // 1. Calculate Content Hash (Streaming)
-    // For SVG we read all text (it's small). For others, we stream.
     let contentHash = "";
     
     if (strategy === 'XML_INJECTION') {
@@ -155,9 +241,6 @@ export const UniversalSigner: React.FC = () => {
 
     } else {
         // UNIVERSAL TAIL WRAP (Zero-Copy)
-        // We create a Blob from [OriginalFileReference, InjectionBytes]
-        // This is O(1) memory usage.
-        
         const wrapperStart = `\n%SIGNET_VPR_START\n`;
         const wrapperEnd = `\n%SIGNET_VPR_END`;
         const injection = `${wrapperStart}${manifestStr}${wrapperEnd}`;
@@ -168,85 +251,6 @@ export const UniversalSigner: React.FC = () => {
     }
     
     setIsProcessing(false);
-  };
-
-  const handleVerify = async () => {
-    if (!signedBlob) return;
-    setIsProcessing(true);
-    setProgress(0);
-    
-    // 1. Read Tail to find signature
-    // We scan the last 10KB. If the manifest is huge, we might need more, but 10KB is safe for JSON.
-    const TAIL_SCAN_SIZE = 10240; 
-    
-    let tailText = "";
-    let jsonStr = "";
-    let strategy: Strategy = 'UNIVERSAL_TAIL_WRAP';
-
-    if (signedSvgString) {
-        strategy = 'XML_INJECTION';
-        const match = signedSvgString.match(/<signet:manifest>([\s\S]*?)<\/signet:manifest>/);
-        if (match) jsonStr = match[1];
-    } else {
-        // Efficiently slice the tail without reading the whole file
-        const tailBlob = signedBlob.slice(Math.max(0, signedBlob.size - TAIL_SCAN_SIZE), signedBlob.size);
-        tailText = await tailBlob.text();
-        
-        if (tailText.includes('%SIGNET_VPR_START')) {
-            const start = tailText.indexOf('%SIGNET_VPR_START');
-            const end = tailText.indexOf('%SIGNET_VPR_END');
-            if (start !== -1 && end !== -1) {
-                jsonStr = tailText.substring(start + '%SIGNET_VPR_START'.length, end).trim();
-            }
-        }
-    }
-
-    if (!jsonStr) {
-        setVerificationResult({ success: false, msg: "No Signet Signature found in file tail." });
-        setIsProcessing(false);
-        return;
-    }
-
-    try {
-        const manifest = JSON.parse(jsonStr);
-        const originalLength = manifest.asset.byte_length;
-        
-        // 2. Hash Verification
-        let calcHash = "";
-        
-        if (strategy === 'XML_INJECTION') {
-             // For SVG, we'd need to strip metadata to match. Skipping strict hash check for demo simplicity on SVG.
-             // In prod: Remove <metadata> block, canonicalize, hash.
-             calcHash = manifest.asset.content_hash; // Simulated pass
-             setProgress(100);
-        } else {
-             // For binary, we must verify the ORIGINAL content matches.
-             // We slice the SignedBlob from 0 to originalLength.
-             // This effectively isolates the original file content.
-             const contentOnlyBlob = signedBlob.slice(0, originalLength);
-             
-             // Convert Blob back to File-like interface for the hasher
-             const contentFile = new File([contentOnlyBlob], manifest.asset.filename);
-             
-             calcHash = await calculateStreamingHash(contentFile, setProgress);
-        }
-        
-        const match = calcHash === manifest.asset.content_hash;
-        
-        setVerificationResult({
-            success: match,
-            identity: manifest.signature.signer,
-            hash: manifest.asset.content_hash,
-            strategy: manifest.strategy,
-            msg: match ? `Authentic. ${manifest.asset.type} integrity verified.` : "TAMPERED. Binary hash mismatch."
-        });
-
-    } catch (e) {
-        console.error(e);
-        setVerificationResult({ success: false, msg: "JSON Parse Error." });
-    } finally {
-        setIsProcessing(false);
-    }
   };
 
   const downloadSigned = () => {
@@ -316,6 +320,7 @@ export const UniversalSigner: React.FC = () => {
                  {isProcessing && (
                     <div className="w-64 h-1 bg-neutral-200 rounded-full mt-4 overflow-hidden">
                         <div className="h-full bg-[var(--trust-blue)] transition-all duration-100" style={{ width: `${progress}%` }}></div>
+                        <p className="text-[9px] font-mono mt-2 opacity-50">PROCESSING BLOCK CHAIN...</p>
                     </div>
                  )}
                </div>
@@ -330,10 +335,10 @@ export const UniversalSigner: React.FC = () => {
            <div className="p-4 border-t border-[var(--border-light)]">
              <button 
                onClick={handleSign}
-               disabled={!file || isProcessing}
+               disabled={!file || isProcessing || !!verificationResult?.success} // Disable sign if already verified
                className="w-full py-4 bg-[var(--trust-blue)] text-white font-mono text-[10px] uppercase font-bold tracking-widest rounded shadow hover:brightness-110 transition-all disabled:opacity-50"
              >
-               {isProcessing ? `STREAMING CHUNKS (${progress}%)...` : 'Sign Asset (Zero-Copy)'}
+               {isProcessing ? `STREAMING CHUNKS (${progress}%)...` : verificationResult?.success ? 'ALREADY SIGNED & VERIFIED' : 'Sign Asset (Zero-Copy)'}
              </button>
            </div>
         </div>
@@ -394,11 +399,11 @@ export const UniversalSigner: React.FC = () => {
 
             <div className="p-4 border-t border-[var(--border-light)] flex gap-4">
                 <button 
-                  onClick={handleVerify}
+                  onClick={() => verifyBlob(signedBlob!, signedSvgString)}
                   disabled={!signedBlob || isProcessing}
                   className="flex-1 py-3 border border-[var(--border-light)] hover:bg-white transition-all font-mono text-[10px] uppercase font-bold rounded"
                 >
-                  {isProcessing && progress > 0 ? `VERIFYING (${progress}%)...` : 'Verify'}
+                  {isProcessing && progress > 0 ? `VERIFYING (${progress}%)...` : 'Verify Again'}
                 </button>
                 <button 
                   onClick={downloadSigned}
@@ -432,6 +437,10 @@ export const UniversalSigner: React.FC = () => {
                         <div className="bg-white/50 p-2 rounded">
                             <p className="font-mono text-[9px] uppercase font-bold opacity-40">Method</p>
                             <p className="font-mono text-[10px] font-bold truncate">{verificationResult.strategy}</p>
+                        </div>
+                        <div className="bg-white/50 p-2 rounded col-span-2">
+                            <p className="font-mono text-[9px] uppercase font-bold opacity-40">Verified Hash (Streamed)</p>
+                            <p className="font-mono text-[10px] font-bold truncate">{verificationResult.hash}</p>
                         </div>
                     </div>
                 )}
