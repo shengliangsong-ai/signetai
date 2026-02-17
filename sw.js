@@ -1,7 +1,4 @@
-const CACHE_NAME = 'signet-v0.3.1-force-refresh';
-// CRITICAL: Only cache files that actually exist in the build output.
-// Removing 'index.tsx' as it is a source file, not a served asset.
-// If cache.addAll hits a 404, the entire PWA install criteria fails.
+const CACHE_NAME = 'signet-v0.3.3-stable';
 const URLS_TO_CACHE = [
   '/',
   '/index.html',
@@ -17,23 +14,30 @@ self.addEventListener('install', (event) => {
         console.log('Signet PWA: Caching critical assets');
         return cache.addAll(URLS_TO_CACHE);
       })
-      .catch((err) => {
-        console.error('Signet PWA: Cache failed', err);
-      })
   );
 });
 
 self.addEventListener('fetch', (event) => {
-  event.respondWith(
-    caches.match(event.request)
-      .then((response) => {
-        if (response) {
-          return response;
-        }
-        return fetch(event.request).catch(() => {
-          // Optional: Return a custom offline page here if needed
-          // For now, returning undefined lets the browser handle the offline error naturally
+  const request = event.request;
+  
+  // Navigation requests (HTML) should fall back to index.html for SPA routing
+  if (request.mode === 'navigate') {
+    event.respondWith(
+      caches.match('/index.html').then((response) => {
+        return response || fetch(request).catch(() => {
+             // If both cache and network fail, show offline page (or index.html from cache as last resort)
+             return caches.match('/index.html');
         });
+      })
+    );
+    return;
+  }
+
+  // Asset requests
+  event.respondWith(
+    caches.match(request)
+      .then((response) => {
+        return response || fetch(request);
       })
   );
 });

@@ -1,5 +1,5 @@
 {
-  "name": "Signet AI | Verifiable Reasoning",
+  "name": "Signet AI",
   "short_name": "Signet",
   "description": "The TrustKeyService for the 8 billion. Cryptographic attestation for AI reasoning.",
   "id": "/",
@@ -9,47 +9,12 @@
   "background_color": "#000000",
   "theme_color": "#0055FF",
   "orientation": "portrait",
-  "prefer_related_applications": false,
   "icons": [
     {
       "src": "/icon.svg",
       "type": "image/svg+xml",
-      "sizes": "192x192",
-      "purpose": "any"
-    },
-    {
-      "src": "/icon.svg",
-      "type": "image/svg+xml",
-      "sizes": "512x512",
-      "purpose": "any"
-    },
-    {
-      "src": "/icon.svg",
-      "type": "image/svg+xml",
-      "sizes": "192x192",
-      "purpose": "maskable"
-    },
-    {
-      "src": "/icon.svg",
-      "type": "image/svg+xml",
-      "sizes": "512x512",
-      "purpose": "maskable"
-    }
-  ],
-  "screenshots": [
-    {
-      "src": "/icon.svg",
-      "sizes": "512x512",
-      "type": "image/svg+xml",
-      "form_factor": "wide",
-      "label": "Signet Dashboard"
-    },
-    {
-      "src": "/icon.svg",
-      "sizes": "512x512",
-      "type": "image/svg+xml",
-      "form_factor": "narrow",
-      "label": "Mobile Verification"
+      "sizes": "192x192 512x512",
+      "purpose": "any maskable"
     }
   ]
 }
