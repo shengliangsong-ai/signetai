@@ -1,4 +1,4 @@
-const CACHE_NAME = 'signet-v0.3.3-stable';
+const CACHE_NAME = 'signet-v0.3.5-stable';
 const URLS_TO_CACHE = [
   '/',
   '/index.html',
