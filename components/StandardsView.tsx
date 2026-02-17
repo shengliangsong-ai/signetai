@@ -256,12 +256,12 @@ export const StandardsView: React.FC = () => {
                     <div className="space-y-2">
                       <span className="font-bold text-[var(--trust-blue)]">Amortized Trust Economy (Near Zero Cost)</span>
                       <p className="text-xs leading-relaxed">
-                        Signet absorbs the minimal registry OpEx. While content generation is high-value (~$3000/yr), the signing cost is negligible (~$3).
+                        Signet absorbs the minimal registry OpEx (~$3/sign). While content generation is high-value (~$3000/yr), the signing cost is negligible.
                       </p>
                       <div className="bg-[var(--bg-standard)] border border-[var(--border-light)] p-3 rounded text-[10px] font-mono shadow-sm">
                         <p className="font-bold mb-1">Effective Cost = Gen_Cost / N_Verifiers</p>
                         <p className="opacity-70">
-                          If a $3000 asset is verified by 100 people, the cost per trust-unit drops to $30. As N grows, the amortized cost approaches zero.
+                          If a $3000 asset is verified by 100 people, cost drops to $30. As N grows, amortized cost approaches zero.
                         </p>
                       </div>
                     </div>

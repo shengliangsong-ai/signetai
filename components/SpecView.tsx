@@ -24,6 +24,62 @@ const SPEC_PAGES = [
     )
   },
   {
+    title: "Economic Model & Amortization",
+    text: "Signet operates on an Amortized Trust Economy. While the value of high-quality AI content generation is significant (~$3000/year), the operational cost of signing is minimal (~$3). The protocol achieves near-zero effective cost through scale.\n\nFormula: Effective Cost = Generation Cost / N (Verifiers).\n\nIf a $3000 asset is shared and verified by 100 people, the cost per trust-unit drops to $30. As N grows towards population scale, the amortized cost approaches zero, making universal verification economically viable.",
+    content: (
+      <div className="space-y-8 animate-in fade-in duration-500">
+        <h2 className="text-[var(--text-header)] font-serif text-2xl font-bold mb-6 italic">1.4 Economic Model</h2>
+        <p className="opacity-80 leading-loose mb-6">
+          Signet operates on an <strong>Amortized Trust Economy</strong>. The protocol achieves near-zero effective cost through scale.
+        </p>
+        <div className="p-6 bg-[var(--code-bg)] border border-[var(--border-light)] rounded font-mono text-[11px] space-y-4">
+          <p className="text-[var(--trust-blue)] font-bold">Amortization Formula:</p>
+          <code className="block p-3 bg-black/5 rounded text-sm">
+            Effective_Cost = Gen_Cost / N_Verifiers
+          </code>
+          <div className="space-y-2 pt-2">
+             <p><strong>Scenario A:</strong> Single Use. Cost = $3000.</p>
+             <p><strong>Scenario B:</strong> N=100 Verifiers. Cost = $30.</p>
+             <p><strong>Scenario C:</strong> N=1M Verifiers. Cost ≈ $0.</p>
+          </div>
+          <p className="opacity-60 italic mt-4">
+            While operational costs for the Registry exist (~$3 per sign event), they are negligible compared to the asset value and vanish at scale.
+          </p>
+        </div>
+      </div>
+    )
+  },
+  {
+    title: "Key Infrastructure: X.509 vs Ed25519",
+    text: "Signet diverges from C2PA's reliance on Centralized X.509 PKI (DigiCert/Adobe) in favor of Sovereign Ed25519 keys.\n\nC2PA (X.509):\n- Root of Trust: Centralized CA\n- Cost: $$$ (Enterprise)\n- Pros: Broad Enterprise Trust\n- Cons: Gatekept, Expensive\n\nSignet (Ed25519):\n- Root of Trust: Decentralized Registry (TKS)\n- Cost: Zero (Democratized)\n- Pros: Sovereign, Fast, Free\n- Cons: Reputation-based Trust",
+    content: (
+      <div className="space-y-8 animate-in fade-in duration-500">
+        <h2 className="text-[var(--text-header)] font-serif text-2xl font-bold mb-6 italic">1.5 Key Infrastructure</h2>
+        <p className="opacity-80 leading-loose mb-6">
+          Comparison of cryptographic strategies for global provenance.
+        </p>
+        <div className="grid grid-cols-2 gap-6">
+           <div className="p-4 border border-[var(--border-light)] rounded">
+              <h4 className="font-bold mb-2">C2PA (X.509)</h4>
+              <ul className="text-sm space-y-1 list-disc pl-4 opacity-70">
+                 <li>Centralized CA (DigiCert)</li>
+                 <li>High Cost ($$$)</li>
+                 <li>Enterprise Focus</li>
+              </ul>
+           </div>
+           <div className="p-4 border border-[var(--trust-blue)] bg-[var(--admonition-bg)] rounded">
+              <h4 className="font-bold mb-2 text-[var(--trust-blue)]">Signet (Ed25519)</h4>
+              <ul className="text-sm space-y-1 list-disc pl-4 opacity-70">
+                 <li>Sovereign Registry</li>
+                 <li>Zero Cost</li>
+                 <li>Democratized Access</li>
+              </ul>
+           </div>
+        </div>
+      </div>
+    )
+  },
+  {
     title: "Technical Implementation",
     text: "Developer SDK Implementation (Node.js/Python). For production-grade C2PA 2.3 signing, use the following logic to handle AI-generated assertions and certificate chains.",
     content: (
