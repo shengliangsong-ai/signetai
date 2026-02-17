@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Hero } from './components/Hero';
 import { Architecture } from './components/Architecture';
@@ -46,7 +45,7 @@ const Sidebar: React.FC<{ currentView: string; isOpen: boolean }> = ({ currentVi
     <div className="p-8 h-full flex flex-col">
       <div className="flex items-center gap-3 mb-12 cursor-pointer" onClick={() => window.location.hash = ''}>
         <SignetLogo className="w-8 h-8 rounded-lg shadow-sm" />
-        <span className="font-bold tracking-tight text-xl text-[var(--text-header)]">Signet v0.2.7</span>
+        <span className="font-bold tracking-tight text-xl text-[var(--text-header)]">Signet v0.3.0</span>
       </div>
 
       <nav className="space-y-1 flex-1 overflow-y-auto">
@@ -261,6 +260,9 @@ const App: React.FC = () => {
             <div className="flex items-center gap-4">
               <div className="cr-badge">cr</div>
               <span>Signet Protocol Group © 2026 | Master Signatory: signetai.io:ssl</span>
+            </div>
+            <div>
+              VERSION: 0.3.0_STABLE
             </div>
           </footer>
         </div>

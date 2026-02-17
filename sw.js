@@ -1,4 +1,4 @@
-const CACHE_NAME = 'signet-v0.3.0-icon-fix';
+const CACHE_NAME = 'signet-v0.3.1-force-refresh';
 // CRITICAL: Only cache files that actually exist in the build output.
 // Removing 'index.tsx' as it is a source file, not a served asset.
 // If cache.addAll hits a 404, the entire PWA install criteria fails.
