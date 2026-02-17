@@ -77,12 +77,13 @@ export const VerifyView: React.FC = () => {
       // In a real env, this might need a CORS proxy if the target doesn't allow cross-origin
       const response = await fetch(url);
       
+      // Check Content-Type specifically for HTML to catch SPA fallbacks
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('text/html')) {
+           throw new Error("Target is HTML (SPA Fallback?), not a raw asset. File may be missing from server.");
+      }
+
       if (!response.ok) {
-        // If we get an HTML response (like the SPA fallback), throw a specific error
-        const contentType = response.headers.get('content-type');
-        if (contentType && contentType.includes('text/html')) {
-             throw new Error("Target is HTML (SPA Fallback?), not a raw asset. File may be missing from server.");
-        }
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
       
@@ -196,22 +197,22 @@ export const VerifyView: React.FC = () => {
   };
 
   const loadDemo = () => {
-    // Dynamic origin for local dev support
-    const demoUrl = `${window.location.origin}/public/signed_signetai-solar-system.svg`;
+    // Root relative path for compatibility with Vite/CRA and Custom Server
+    const demoUrl = `${window.location.origin}/signed_signetai-solar-system.svg`;
     setUrlInput(demoUrl);
     handleUrlFetch(demoUrl);
   };
 
   const loadUnsignedDemo = () => {
-    // Dynamic origin for local dev support
-    const demoUrl = `${window.location.origin}/public/signetai-solar-system.svg`;
+    // Root relative path
+    const demoUrl = `${window.location.origin}/signetai-solar-system.svg`;
     setUrlInput(demoUrl);
     handleUrlFetch(demoUrl);
   };
 
   const loadSignedPngDemo = () => {
-    // Dynamic origin for local dev support
-    const demoUrl = `${window.location.origin}/public/signet_512.png`;
+    // Root relative path - assumes file is in public folder
+    const demoUrl = `${window.location.origin}/signet_512.png`;
     setUrlInput(demoUrl);
     handleUrlFetch(demoUrl);
   };
