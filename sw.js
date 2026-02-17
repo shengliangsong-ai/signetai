@@ -1,8 +1,10 @@
-const CACHE_NAME = 'signet-v0.3.8-stable';
+const CACHE_NAME = 'signet-v0.4.1-fix';
+// Use relative paths to ensure it works on any origin (including sandboxed previews)
 const URLS_TO_CACHE = [
-  '/',
-  '/index.html',
-  '/manifest.json'
+  './',
+  './index.html',
+  './manifest.json',
+  './icon.svg'
 ];
 
 self.addEventListener('install', (event) => {
@@ -24,9 +26,9 @@ self.addEventListener('fetch', (event) => {
   
   if (request.mode === 'navigate') {
     event.respondWith(
-      caches.match('/index.html').then((response) => {
+      caches.match('./index.html').then((response) => {
         return response || fetch(request).catch(() => {
-             return caches.match('/index.html');
+             return caches.match('./index.html');
         });
       })
     );

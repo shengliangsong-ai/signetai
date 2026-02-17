@@ -2,22 +2,22 @@
   "name": "Signet AI",
   "short_name": "Signet",
   "description": "The TrustKeyService for the 8 billion. Cryptographic attestation for AI reasoning.",
-  "id": "/?source=pwa",
-  "start_url": "/?source=pwa",
-  "scope": "/",
+  "id": "./?source=pwa",
+  "start_url": "./?source=pwa",
+  "scope": "./",
   "display": "standalone",
   "background_color": "#000000",
   "theme_color": "#0055FF",
   "orientation": "portrait",
   "icons": [
     {
-      "src": "/icon.svg",
+      "src": "./icon.svg",
       "type": "image/svg+xml",
       "sizes": "192x192",
       "purpose": "any maskable"
     },
     {
-      "src": "/icon.svg",
+      "src": "./icon.svg",
       "type": "image/svg+xml",
       "sizes": "512x512",
       "purpose": "any maskable"
