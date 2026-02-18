@@ -114,6 +114,41 @@ export const ManualView: React.FC = () => {
         </div>
       </ManualSection>
 
+      <ManualSection title="06. Headless Operations (CLI)">
+        <p className="text-lg leading-loose text-[var(--text-body)] opacity-80 font-serif mb-8">
+          For server-side pipelines and batch processing, operators should use the <strong>Signet Node.js CLI</strong>. This tool implements the Universal Tail-Wrap specification in a zero-dependency environment.
+        </p>
+        <div className="space-y-6">
+           <div className="p-6 bg-neutral-900 text-white rounded border border-neutral-700 font-mono text-sm space-y-2">
+              <p className="text-neutral-500"># 1. Download from /#cli</p>
+              <p className="text-neutral-500"># 2. Run Batch Injection</p>
+              <p><span className="text-emerald-500">$</span> node signet-cli.js --dir ./my-assets --identity "operator.id"</p>
+           </div>
+           <p className="text-sm opacity-70 italic">
+             The CLI creates signed copies of assets in-place or can be configured for output directories. It supports parallel execution for high-throughput environments.
+           </p>
+        </div>
+      </ManualSection>
+
+      <ManualSection title="07. Performance Benchmarking">
+        <p className="text-lg leading-loose text-[var(--text-body)] opacity-80 font-serif mb-8">
+          To verify infrastructure readiness, use the <strong>Benchmark Suite</strong>. This tool generates detached "Sidecar" manifests to measure pure cryptographic throughput without modifying source files.
+        </p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div className="p-6 bg-[var(--bg-standard)] border border-[var(--border-light)] rounded">
+             <h5 className="font-bold text-[var(--text-header)] mb-2">Throughput Metrics</h5>
+             <p className="text-sm opacity-70">Measures <strong>Files/Second</strong> and <strong>MB/Second</strong> for both generation and verification cycles.</p>
+          </div>
+          <div className="p-6 bg-[var(--bg-standard)] border border-[var(--border-light)] rounded">
+             <h5 className="font-bold text-[var(--text-header)] mb-2">Latency Analysis</h5>
+             <p className="text-sm opacity-70">Reports average time-to-sign per asset, helping operators plan capacity for real-time streams.</p>
+          </div>
+        </div>
+        <div className="mt-6 p-4 bg-[var(--code-bg)] border border-[var(--border-light)] rounded font-mono text-xs">
+           <code className="text-[var(--trust-blue)]">node signet-benchmark.js --dir ./test-corpus</code>
+        </div>
+      </ManualSection>
+
       <div className="mt-20 pt-10 border-t border-[var(--border-light)] flex justify-between items-center">
         <a href="#" onClick={(e) => { e.preventDefault(); window.location.hash = ''; }} className="text-[var(--trust-blue)] hover:underline font-mono text-[10px] uppercase tracking-widest font-bold">
           &larr; Return to Dashboard

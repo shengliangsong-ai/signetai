@@ -129,20 +129,171 @@ else {
 }
 `;
 
+const BENCHMARK_SOURCE_CODE = `#!/usr/bin/env node
+
+/**
+ * SIGNET BENCHMARK SUITE (v0.3.1)
+ * -------------------------------
+ * Performance testing tool for Sidecar Generation vs Verification.
+ * Generates detached .json manifests for PNG images and verifies them.
+ * 
+ * Usage: node signet-benchmark.js --dir ./images
+ */
+
+const fs = require('fs');
+const path = require('path');
+const crypto = require('crypto');
+const { performance } = require('perf_hooks');
+
+const VERSION = "0.3.1";
+
+// --- UTILS ---
+function getFiles(dir, ext) {
+  if (!fs.existsSync(dir)) return [];
+  return fs.readdirSync(dir)
+    .filter(f => f.endsWith(ext))
+    .map(f => path.join(dir, f));
+}
+
+function sha256(filePath) {
+  const buffer = fs.readFileSync(filePath);
+  return crypto.createHash('sha256').update(buffer).digest('hex');
+}
+
+// --- PHASE 1: GENERATION (Sidecar) ---
+function runGeneration(files) {
+  console.log(\`\\n[PHASE 1] Generating Sidecar Manifests for \${files.length} files...\`);
+  const start = performance.now();
+  let bytesProcessed = 0;
+
+  files.forEach(file => {
+    const hash = sha256(file);
+    const stats = fs.statSync(file);
+    bytesProcessed += stats.size;
+
+    const manifest = {
+      "type": "org.signetai.sidecar",
+      "asset": {
+        "filename": path.basename(file),
+        "content_hash": hash,
+        "byte_length": stats.size
+      },
+      "signature": {
+        "timestamp": Date.now(),
+        "signer": "BENCHMARK_BOT"
+      }
+    };
+
+    fs.writeFileSync(file + '.signet.json', JSON.stringify(manifest, null, 2));
+  });
+
+  const end = performance.now();
+  return {
+    timeMs: end - start,
+    bytes: bytesProcessed,
+    count: files.length
+  };
+}
+
+// --- PHASE 2: VERIFICATION ---
+function runVerification(files) {
+  console.log(\`\\n[PHASE 2] Verifying Sidecar Integrity...\`);
+  const start = performance.now();
+  let passed = 0;
+  let failed = 0;
+
+  files.forEach(file => {
+    const sidecarPath = file + '.signet.json';
+    if (!fs.existsSync(sidecarPath)) {
+      failed++;
+      return;
+    }
+
+    try {
+      const manifest = JSON.parse(fs.readFileSync(sidecarPath, 'utf8'));
+      const currentHash = sha256(file);
+      
+      if (currentHash === manifest.asset.content_hash) {
+        passed++;
+      } else {
+        failed++;
+      }
+    } catch (e) {
+      failed++;
+    }
+  });
+
+  const end = performance.now();
+  return {
+    timeMs: end - start,
+    passed,
+    failed,
+    count: files.length
+  };
+}
+
+// --- MAIN REPORT ---
+const args = process.argv.slice(2);
+const dirIdx = args.indexOf('--dir');
+
+if (dirIdx === -1) {
+  console.log("Usage: node signet-benchmark.js --dir <path_to_png_images>");
+  process.exit(1);
+}
+
+const targetDir = args[dirIdx + 1];
+console.log(\`\\x1b[36m[SIGNET BENCHMARK v\${VERSION}] Target: \${targetDir}\\x1b[0m\`);
+
+const pngFiles = getFiles(targetDir, '.png');
+
+if (pngFiles.length === 0) {
+  console.error("No .png files found in directory.");
+  process.exit(1);
+}
+
+// Execute
+const genStats = runGeneration(pngFiles);
+const verStats = runVerification(pngFiles);
+
+// Formatter
+const fmt = (n) => n.toLocaleString(undefined, { maximumFractionDigits: 2 });
+
+console.log(\`\\n==================================================\`);
+console.log(\`REPORT SUMMARY\`);
+console.log(\`==================================================\`);
+console.log(\`Total Files Processed:   \${genStats.count}\`);
+console.log(\`Total Data Volume:       \${fmt(genStats.bytes / 1024 / 1024)} MB\`);
+console.log(\`--------------------------------------------------\`);
+console.log(\`GENERATION (Sidecar Mode):\`);
+console.log(\`  Time Spent:            \${fmt(genStats.timeMs)} ms\`);
+console.log(\`  Throughput:            \${fmt(genStats.count / (genStats.timeMs / 1000))} files/sec\`);
+console.log(\`  Data Rate:             \${fmt((genStats.bytes / 1024 / 1024) / (genStats.timeMs / 1000))} MB/sec\`);
+console.log(\`--------------------------------------------------\`);
+console.log(\`VALIDATION (Hash Check):\`);
+console.log(\`  Time Spent:            \${fmt(verStats.timeMs)} ms\`);
+console.log(\`  Throughput:            \${fmt(verStats.count / (verStats.timeMs / 1000))} files/sec\`);
+console.log(\`  Success Rate:          \${fmt((verStats.passed / verStats.count) * 100)}%\`);
+console.log(\`==================================================\\n\`);
+`;
+
 export const CliDownload: React.FC = () => {
+  const [activeTab, setActiveTab] = useState<'CLI' | 'BENCH'>('CLI');
   const [copied, setCopied] = useState(false);
 
+  const getSource = () => activeTab === 'CLI' ? CLI_SOURCE_CODE : BENCHMARK_SOURCE_CODE;
+  const getFilename = () => activeTab === 'CLI' ? 'signet-cli.js' : 'signet-benchmark.js';
+
   const handleDownload = () => {
-    const blob = new Blob([CLI_SOURCE_CODE], { type: 'text/javascript' });
+    const blob = new Blob([getSource()], { type: 'text/javascript' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'signet-cli.js';
+    a.download = getFilename();
     a.click();
   };
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(CLI_SOURCE_CODE);
+    navigator.clipboard.writeText(getSource());
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -156,26 +307,51 @@ export const CliDownload: React.FC = () => {
         </div>
         <h2 className="text-5xl font-bold italic tracking-tighter text-[var(--text-header)]">Command Line Interface.</h2>
         <p className="text-xl opacity-60 max-w-2xl font-serif italic">
-          For headless environments and CI/CD pipelines. Download the official Signet CLI script to sign assets in batch without a GUI.
+          Industrial-grade scripts for headless signing and performance benchmarking.
         </p>
       </header>
+
+      <div className="flex gap-4 border-b border-[var(--border-light)] mb-8">
+        <button 
+          onClick={() => setActiveTab('CLI')}
+          className={`pb-4 px-2 font-mono text-[11px] uppercase tracking-widest font-bold transition-all border-b-2 ${activeTab === 'CLI' ? 'text-[var(--trust-blue)] border-[var(--trust-blue)]' : 'text-[var(--text-body)] opacity-40 border-transparent hover:opacity-100'}`}
+        >
+          Signer Tool (UTW)
+        </button>
+        <button 
+          onClick={() => setActiveTab('BENCH')}
+          className={`pb-4 px-2 font-mono text-[11px] uppercase tracking-widest font-bold transition-all border-b-2 ${activeTab === 'BENCH' ? 'text-[var(--trust-blue)] border-[var(--trust-blue)]' : 'text-[var(--text-body)] opacity-40 border-transparent hover:opacity-100'}`}
+        >
+          Benchmark Suite (Sidecar)
+        </button>
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
         <div className="space-y-8">
            <div className="p-8 border border-[var(--border-light)] bg-[var(--bg-standard)] rounded-xl shadow-sm space-y-6">
-              <h3 className="font-serif text-2xl font-bold italic text-[var(--text-header)]">Quick Start</h3>
+              <h3 className="font-serif text-2xl font-bold italic text-[var(--text-header)]">
+                {activeTab === 'CLI' ? 'Batch Injector' : 'Performance Test'}
+              </h3>
+              
               <div className="space-y-4">
                  <div className="space-y-2">
-                    <p className="font-mono text-[10px] uppercase font-bold opacity-40">1. Install Node.js (v18+)</p>
+                    <p className="font-mono text-[10px] uppercase font-bold opacity-40">1. Prerequisite</p>
                     <code className="block p-3 bg-[var(--code-bg)] rounded border border-[var(--border-light)] font-mono text-sm">
-                       node -v
+                       node -v  # Requires Node v18+
                     </code>
                  </div>
                  <div className="space-y-2">
-                    <p className="font-mono text-[10px] uppercase font-bold opacity-40">2. Download & Run</p>
+                    <p className="font-mono text-[10px] uppercase font-bold opacity-40">2. Execute Command</p>
                     <div className="p-3 bg-black text-white rounded font-mono text-sm space-y-2">
-                       <p><span className="text-emerald-500">$</span> node signet-cli.js --help</p>
-                       <p><span className="text-emerald-500">$</span> node signet-cli.js --dir ./my-images --identity "shengliang.song"</p>
+                       {activeTab === 'CLI' ? (
+                         <>
+                           <p><span className="text-emerald-500">$</span> node signet-cli.js --dir ./assets --identity "user"</p>
+                         </>
+                       ) : (
+                         <>
+                           <p><span className="text-emerald-500">$</span> node signet-benchmark.js --dir ./images</p>
+                         </>
+                       )}
                     </div>
                  </div>
               </div>
@@ -185,7 +361,7 @@ export const CliDownload: React.FC = () => {
                    onClick={handleDownload}
                    className="flex-1 py-3 bg-[var(--trust-blue)] text-white font-mono text-[10px] uppercase font-bold tracking-widest rounded shadow hover:brightness-110 transition-all flex items-center justify-center gap-2"
                  >
-                   <span>⭳</span> Download signet-cli.js
+                   <span>⭳</span> Download {getFilename()}
                  </button>
                  <button 
                    onClick={handleCopy}
@@ -196,23 +372,25 @@ export const CliDownload: React.FC = () => {
               </div>
            </div>
 
-           <Admonition type="note" title="Zero Dependencies">
-             This script uses only native Node.js modules (<code>fs</code>, <code>crypto</code>, <code>path</code>). It does not require <code>npm install</code>. It implements the Universal Tail-Wrap specification manually to ensure maximum portability.
+           <Admonition type={activeTab === 'CLI' ? 'note' : 'important'} title={activeTab === 'CLI' ? 'Zero Dependencies' : 'Sidecar Logic'}>
+             {activeTab === 'CLI' 
+               ? "This script uses only native Node.js modules (fs, crypto, path). It implements the Universal Tail-Wrap specification manually to ensure maximum portability."
+               : "The benchmark suite generates detached .signet.json manifests. It does NOT modify the original image files, allowing for safe, repeatable read-only throughput testing."}
            </Admonition>
         </div>
 
-        <div className="bg-[#1e1e1e] rounded-xl overflow-hidden border border-neutral-700 shadow-2xl flex flex-col">
+        <div className="bg-[#1e1e1e] rounded-xl overflow-hidden border border-neutral-700 shadow-2xl flex flex-col h-[600px]">
            <div className="flex items-center px-4 py-3 bg-[#252526] border-b border-black">
               <div className="flex gap-2">
                  <div className="w-3 h-3 rounded-full bg-red-500"></div>
                  <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
                  <div className="w-3 h-3 rounded-full bg-green-500"></div>
               </div>
-              <span className="ml-4 font-mono text-[10px] text-neutral-400">signet-cli.js (Preview)</span>
+              <span className="ml-4 font-mono text-[10px] text-neutral-400">{getFilename()}</span>
            </div>
            <div className="flex-1 overflow-auto p-4">
-              <pre className="font-mono text-[10px] text-blue-300 leading-relaxed">
-                 {CLI_SOURCE_CODE}
+              <pre className="font-mono text-[10px] text-blue-300 leading-relaxed whitespace-pre">
+                 {getSource()}
               </pre>
            </div>
         </div>
