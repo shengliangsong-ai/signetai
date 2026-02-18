@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Admonition } from './Admonition';
 
@@ -303,6 +304,6 @@ export const StandardsView: React.FC = () => {
       <Admonition type="security" title="Cryptographic Assurance">
         All L4 attestation signatures MUST use 256-bit Ed25519. This ensures the integrity of the Human-in-the-loop signet against modern computational brute-force techniques.
       </Admonition>
-    </div>
+    </article>
   );
 };

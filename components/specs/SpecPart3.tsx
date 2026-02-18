@@ -305,7 +305,7 @@ export const PART_3 = [
            <div className="p-4 border-l-2 border-[var(--border-light)] bg-[var(--bg-standard)]">
               <h4 className="font-mono text-[10px] uppercase font-bold text-[var(--text-header)] mb-2">Soft-Binding (pHash)</h4>
               <p className="text-xs opacity-80 leading-relaxed">
-                A perceptual fingerprint (using DCT or Wavelet transforms) that remains stable across resizing, compression, and format shifting. Similarity is measured via Hamming Distance thresholds (< 5).
+                A perceptual fingerprint (using DCT or Wavelet transforms) that remains stable across resizing, compression, and format shifting. Similarity is measured via Hamming Distance thresholds (&lt; 5).
               </p>
            </div>
 
