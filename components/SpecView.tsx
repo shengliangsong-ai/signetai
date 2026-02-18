@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { jsPDF } from 'jspdf';
 
@@ -21,10 +22,20 @@ const SPEC_PAGES = [
            </p>
            <div className="pt-4 border-t border-[var(--trust-blue)]/20">
              <h4 className="font-mono text-[10px] uppercase font-bold text-[var(--trust-blue)] mb-2">Definition: Public Reasoning Graph (PRG)</h4>
-             <p className="text-xs opacity-80 leading-relaxed">
-               A post-hoc, declarative reasoning representation provided for audit purposes. 
-               <strong>Note:</strong> PRG is distinct from any private model chain-of-thought or latent state. It is a public claim of logic, not a dump of neural weights.
-             </p>
+             <div className="text-xs opacity-80 leading-relaxed space-y-3">
+               <p>The PRG is a structured, declarative representation of the rationale asserted for an output. <strong>It is NOT:</strong></p>
+               <ul className="list-disc pl-4 space-y-1">
+                 <li>A raw model chain-of-thought or latent internal state.</li>
+                 <li>A claim about how a model "actually reasoned" (mechanistic interpretability).</li>
+                 <li>An exposure of proprietary AI weights.</li>
+               </ul>
+               <p><strong>Instead, the PRG IS:</strong></p>
+               <ul className="list-disc pl-4 space-y-1">
+                 <li>A post-hoc, auditable justification graph.</li>
+                 <li>Cryptographically bound to the VPR manifest.</li>
+                 <li>A machine-verifiable structure linking assertions to outputs.</li>
+               </ul>
+             </div>
            </div>
         </div>
       </div>
@@ -56,13 +67,52 @@ const SPEC_PAGES = [
            </div>
         </div>
         
-        <div className="mt-4 p-4 bg-amber-500/10 border border-amber-500/20 rounded">
-           <h5 className="font-bold text-amber-600 text-xs uppercase mb-2">L3 Threat Model</h5>
-           <ul className="list-disc pl-4 space-y-1 text-xs opacity-80">
-             <li><strong>Detects:</strong> Hallucinated citations, logic breaks, unsupported claims.</li>
-             <li><strong>Does Not Detect:</strong> Malicious but internally consistent reasoning.</li>
-             <li><strong>Guarantee:</strong> Probabilistic detection under defined probes.</li>
-           </ul>
+        <div className="mt-8">
+           <h5 className="font-mono text-[10px] uppercase font-bold text-[var(--text-header)] mb-4">ISO/NIST Threat Model (v0.3.1)</h5>
+           <div className="border border-[var(--border-light)] rounded overflow-hidden">
+             <table className="w-full text-[10px] text-left">
+               <thead className="bg-[var(--table-header)] border-b border-[var(--border-light)]">
+                 <tr>
+                   <th className="p-2 font-bold">ID</th>
+                   <th className="p-2 font-bold">Threat Vector</th>
+                   <th className="p-2 font-bold">Mitigation</th>
+                   <th className="p-2 font-bold">Residual Risk</th>
+                 </tr>
+               </thead>
+               <tbody className="divide-y divide-[var(--border-light)]">
+                 <tr>
+                   <td className="p-2 font-mono">T1</td>
+                   <td className="p-2">Provenance Stripping</td>
+                   <td className="p-2">Universal Tail-Wrap + Signature Binding</td>
+                   <td className="p-2 text-green-600 font-bold">Low</td>
+                 </tr>
+                 <tr>
+                   <td className="p-2 font-mono">T2</td>
+                   <td className="p-2">Manifest Tampering</td>
+                   <td className="p-2">Ed25519 Signature Sealing</td>
+                   <td className="p-2 text-green-600 font-bold">Low</td>
+                 </tr>
+                 <tr>
+                   <td className="p-2 font-mono">T4</td>
+                   <td className="p-2">Hallucinated Reasoning</td>
+                   <td className="p-2">L3 Drift Audit + L4 Human Seal</td>
+                   <td className="p-2 text-amber-600 font-bold">Medium</td>
+                 </tr>
+                 <tr>
+                   <td className="p-2 font-mono">T6</td>
+                   <td className="p-2">Clean-Slate Attack</td>
+                   <td className="p-2">Soft-Binding (pHash) + Registry Match</td>
+                   <td className="p-2 text-amber-600 font-bold">Medium</td>
+                 </tr>
+                 <tr>
+                   <td className="p-2 font-mono">T8</td>
+                   <td className="p-2">Authority Impersonation</td>
+                   <td className="p-2">Ed25519 Identity Anchoring</td>
+                   <td className="p-2 text-green-600 font-bold">Low</td>
+                 </tr>
+               </tbody>
+             </table>
+           </div>
         </div>
       </div>
     )
@@ -490,6 +540,47 @@ const SPEC_PAGES = [
     )
   },
   {
+    category: "SECURITY AUDIT",
+    title: "16. Adversarial Analysis (Red Team)",
+    text: "Adversarial review of protocol resilience against realistic attack vectors.\n\nGoal #1: 'Make Fake Content Look Legit'\nAttack: Generate synthetic content + fabricate a plausible PRG + self-sign.\nOutcome: Attack technically succeeds, but Trust Impact is limited due to L4 Human Seal accountability.\n\nGoal #2: 'Strip Provenance Without Detection'\nAttack: Remove UTW tail-wrap and redistribute asset.\nOutcome: Fails cryptographically. Verification tools report 'Unsigned'.\n\nGoal #3: 'Rewrite History (Clean-Slate Attack)'\nAttack: Modify asset slightly, re-sign as original.\nOutcome: Partial success possible, but detectable via soft-binding (pHash) registry matching.",
+    content: (
+      <div className="space-y-8 animate-in fade-in duration-500">
+        <h2 className="text-[var(--text-header)] font-serif text-2xl font-bold mb-6 italic">16. Adversarial Analysis (Red Team)</h2>
+        <div className="space-y-6">
+           <div className="p-6 bg-red-500/5 border border-red-500/20 rounded-lg">
+              <h4 className="font-bold text-red-600 mb-2 text-sm uppercase tracking-widest">Attacker Goal #1: "Make Fake Content Look Legit"</h4>
+              <p className="text-xs opacity-70 mb-2"><strong>Attack:</strong> Generate synthetic content + fabricate a plausible PRG + self-sign.</p>
+              <div className="flex items-center gap-3 text-xs">
+                 <span className="text-green-600 font-bold">🛡️ Defense Strength: Good</span>
+                 <span className="opacity-50">|</span>
+                 <span className="opacity-80">Mitigated by L4 Human Accountability. Trust score must be earned.</span>
+              </div>
+           </div>
+
+           <div className="p-6 bg-red-500/5 border border-red-500/20 rounded-lg">
+              <h4 className="font-bold text-red-600 mb-2 text-sm uppercase tracking-widest">Attacker Goal #2: "Strip Provenance"</h4>
+              <p className="text-xs opacity-70 mb-2"><strong>Attack:</strong> Remove UTW tail-wrap and redistribute asset.</p>
+              <div className="flex items-center gap-3 text-xs">
+                 <span className="text-green-600 font-bold">🛡️ Defense Strength: Strong</span>
+                 <span className="opacity-50">|</span>
+                 <span className="opacity-80">Cryptographic failure. Asset becomes "Unverified" immediately.</span>
+              </div>
+           </div>
+
+           <div className="p-6 bg-amber-500/5 border border-amber-500/20 rounded-lg">
+              <h4 className="font-bold text-amber-600 mb-2 text-sm uppercase tracking-widest">Attacker Goal #3: "Rewrite History"</h4>
+              <p className="text-xs opacity-70 mb-2"><strong>Attack:</strong> Modify asset slightly, re-sign as original.</p>
+              <div className="flex items-center gap-3 text-xs">
+                 <span className="text-amber-600 font-bold">🛡️ Defense Strength: Medium</span>
+                 <span className="opacity-50">|</span>
+                 <span className="opacity-80">Detectable via pHash Soft-Binding + Registry Collision.</span>
+              </div>
+           </div>
+        </div>
+      </div>
+    )
+  },
+  {
     category: "TECHNICAL AUDIT",
     title: "Appendix A: Worked Example (MP4)",
     text: "A concrete example of a signed 30-second MP4 asset. \n\n1. Input Hash (SHA-256): e3b0...c442\n2. UTW Payload: %SIGNET_VPR_START% ... %SIGNET_VPR_END%\n3. Final Output: A valid MP4 file playable in VLC, with appended audit data.",
@@ -533,202 +624,84 @@ const SPEC_PAGES = [
   }
 ];
 
-const PDF_FILENAME = "Signet-Protocol-v0.3.2-Official.pdf";
-
 export const SpecView: React.FC = () => {
-  const [page, setPage] = useState(0);
-  const [isGenerating, setIsGenerating] = useState(false);
+  const handleDownloadPdf = () => {
+    const doc = new jsPDF();
+    let yPos = 20;
 
-  const handleDownloadPDF = async () => {
-    setIsGenerating(true);
-    try {
-      const doc = new jsPDF({
-        orientation: 'portrait',
-        unit: 'mm',
-        format: 'a4'
-      });
+    doc.setFont("times", "italic");
+    doc.setFontSize(24);
+    doc.text("Signet Protocol Specification (v0.3.1)", 20, yPos);
+    yPos += 15;
+    
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+    doc.text("Generated via signetai.io reference implementation.", 20, yPos);
+    yPos += 20;
 
-      const margin = 25;
-      const pageWidth = doc.internal.pageSize.getWidth();
-      const pageHeight = doc.internal.pageSize.getHeight();
-      const contentWidth = pageWidth - (margin * 2);
-
-      SPEC_PAGES.forEach((p, index) => {
-        if (index > 0) doc.addPage();
-        
-        // Background Accent (Subtle vertical line)
-        doc.setDrawColor(0, 85, 255);
-        doc.setLineWidth(0.5);
-        doc.line(margin, 20, margin, pageHeight - 20);
-
-        // Header
-        doc.setFont("helvetica", "bold");
-        doc.setFontSize(8);
-        doc.setTextColor(180, 180, 180);
-        doc.text("SIGNET PROTOCOL: OFFICIAL SPECIFICATION", margin + 5, 15);
-        doc.text(`VERSION: v0.3.2_OFFICIAL`, pageWidth - margin - 40, 15);
-        
-        // Category Stamp
-        doc.setTextColor(0, 85, 255);
-        doc.text(`[ ${p.category} ]`, margin + 5, 25);
-        
-        // Page Number
-        doc.setTextColor(180, 180, 180);
-        doc.text(`PAGE ${index + 1} OF ${SPEC_PAGES.length}`, pageWidth - margin - 20, pageHeight - 10);
-
-        // Section Title
-        doc.setFont("times", "bolditalic");
-        doc.setFontSize(24);
-        doc.setTextColor(0, 0, 0);
-        const titleLines = doc.splitTextToSize(p.title, contentWidth - 10);
-        doc.text(titleLines, margin + 5, 35);
-
-        // Horizontal Rule
-        doc.setDrawColor(230, 230, 230);
-        doc.line(margin + 5, 50, pageWidth - margin, 50);
-
-        // Content Body
-        doc.setFont("courier", "normal");
-        doc.setFontSize(10);
-        doc.setTextColor(60, 60, 60);
-        const splitText = doc.splitTextToSize(p.text, contentWidth - 10);
-        doc.text(splitText, margin + 8, 65, { lineHeightFactor: 1.4, maxWidth: contentWidth - 10 });
-
-        // Footer / Seal Box
-        const sealY = pageHeight - 45;
-        doc.setDrawColor(0, 85, 255);
-        doc.setLineWidth(0.2);
-        doc.rect(margin + 5, sealY, contentWidth - 5, 25);
-        
-        doc.setFont("helvetica", "bold");
-        doc.setFontSize(7);
-        doc.setTextColor(0, 85, 255);
-        doc.text("MASTER SIGNATORY ATTESTATION", margin + 10, sealY + 7);
-        
-        doc.setFont("times", "italic");
-        doc.setFontSize(10);
-        doc.setTextColor(0, 0, 0);
-        doc.text("Authorized by: signetai.io:ssl", margin + 10, sealY + 14);
-        
-        doc.setFont("courier", "normal");
-        doc.setFontSize(6);
-        doc.setTextColor(150, 150, 150);
-        doc.text(`SEALED_TS: ${new Date().toISOString()}`, margin + 10, sealY + 20);
-        doc.text(`PROVENANCE_ROOT: SHA256:7B8C...44A2`, pageWidth - margin - 60, sealY + 20);
-      });
-
-      doc.save(PDF_FILENAME);
-    } catch (err) {
-      console.error("PDF Engine Error:", err);
-    } finally {
-      setIsGenerating(false);
-    }
-  };
-
-  const handleDownloadManifest = () => {
-    const manifest = {
-      "@context": "https://signetai.io/contexts/vpr-v1.jsonld",
-      "type": "org.signetai.vpr",
-      "version": "0.3.2",
-      "asset": {
-        "name": PDF_FILENAME,
-        "hash": "sha256:7b8c8f2d4a12b9c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4g5h6i7",
-        "size": 158000
-      },
-      "signature": {
-        "identity": "ssl",
-        "anchor": "signetai.io:ssl",
-        "publicKey": "ed25519:signet_v2.7_sovereign_5b9878a8583b7b38d719c7c8498f8981adc17bec0c311d76269e1275e4a8bdf9",
-        "attestedBy": "Signet Protocol Labs",
-        "timestamp": Date.now()
+    SPEC_PAGES.forEach((page, index) => {
+      if (yPos > 250) {
+        doc.addPage();
+        yPos = 20;
       }
-    };
-    const blob = new Blob([JSON.stringify(manifest, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'spec_v032_audit_manifest.json';
-    a.click();
+      
+      doc.setFontSize(8);
+      doc.setTextColor(100);
+      doc.text(page.category, 20, yPos);
+      yPos += 5;
+
+      doc.setFontSize(14);
+      doc.setTextColor(0);
+      doc.setFont("times", "bold");
+      doc.text(page.title, 20, yPos);
+      yPos += 10;
+
+      doc.setFontSize(11);
+      doc.setFont("helvetica", "normal");
+      const lines = doc.splitTextToSize(page.text, 170);
+      doc.text(lines, 20, yPos);
+      yPos += (lines.length * 6) + 15;
+    });
+
+    doc.save("signet-specification-v0.3.1.pdf");
   };
 
   return (
-    <div className="bg-[var(--bg-standard)] text-[var(--text-body)] font-serif text-lg leading-relaxed pt-12 pb-24 px-6 max-w-4xl mx-auto selection:bg-[var(--trust-blue)] selection:text-white">
-      <div className="glass-card p-8 md:p-20 shadow-2xl relative border border-[var(--border-light)] bg-[var(--bg-standard)] rounded-lg min-h-[700px] flex flex-col">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-[var(--trust-blue)] opacity-[0.02] -translate-y-32 translate-x-32 rotate-45 pointer-events-none"></div>
-
-        <div className="flex flex-col md:flex-row justify-between mb-12 border-b border-[var(--border-light)] pb-6 text-[11px] font-mono uppercase tracking-[0.3em] opacity-40 font-bold">
-          <div className="space-y-1">
-            <p>Protocol Working Group | Page {page + 1}/{SPEC_PAGES.length}</p>
-            <p>Specification: v0.3.2 (Official)</p>
-          </div>
-          <div className="flex gap-4 mt-4 md:mt-0">
-            <button 
-              onClick={handleDownloadPDF}
-              disabled={isGenerating}
-              className="text-[var(--trust-blue)] hover:underline flex items-center gap-2 group"
-            >
-              <span className="text-sm group-hover:-translate-y-0.5 transition-transform">⭳</span> 
-              {isGenerating ? 'Engraving...' : 'Download Official Protocol Spec'}
-            </button>
-            <button 
-              onClick={handleDownloadManifest}
-              className="text-emerald-600 hover:underline flex items-center gap-2 border-l border-[var(--border-light)] pl-4 group"
-            >
-              <span className="text-sm group-hover:scale-110 transition-transform">📜</span> Audit Manifest
-            </button>
-          </div>
-        </div>
-
-        <div className="mb-12 text-center space-y-4">
-          <div className="inline-block mb-4">
-             <span className={`px-3 py-1 rounded-full text-[9px] font-mono font-bold uppercase tracking-widest ${SPEC_PAGES[page].category.includes('TECHNICAL') ? 'bg-[var(--code-bg)] text-[var(--trust-blue)]' : SPEC_PAGES[page].category.includes('STRATEGIC') ? 'bg-purple-500/10 text-purple-600' : SPEC_PAGES[page].category.includes('GOVERNANCE') ? 'bg-amber-500/10 text-amber-600' : 'bg-emerald-500/10 text-emerald-600'}`}>
-                {SPEC_PAGES[page].category}
-             </span>
-          </div>
-          <h1 className="font-serif text-3xl md:text-4xl text-[var(--text-header)] font-bold tracking-tighter leading-tight italic">
-            {SPEC_PAGES[page].title}
+    <div className="py-24 max-w-4xl mx-auto animate-in fade-in duration-700">
+      <div className="flex justify-between items-end mb-16 border-b border-[var(--border-light)] pb-8">
+        <div>
+          <span className="font-mono text-[10px] text-[var(--trust-blue)] tracking-[0.4em] uppercase font-bold block mb-4">Technical Draft</span>
+          <h1 className="text-6xl font-bold tracking-tighter italic text-[var(--text-header)]">
+            Song-03.1
           </h1>
-          <div className="w-12 h-px bg-[var(--trust-blue)] mx-auto"></div>
+          <p className="mt-4 text-xl opacity-60 font-serif italic text-[var(--text-body)]">
+            Standardization candidate for ISO/TC 290.
+          </p>
         </div>
-
-        <div className="flex-1">
-          {SPEC_PAGES[page].content}
-        </div>
-
-        <div className="mt-16 pt-8 border-t border-[var(--border-light)] flex justify-between items-center">
-          <button 
-            disabled={page === 0}
-            onClick={() => setPage(page - 1)}
-            className={`opacity-60 hover:opacity-100 transition-colors flex items-center gap-3 font-mono text-[10px] uppercase tracking-widest font-bold ${page === 0 ? 'invisible' : ''}`}
-          >
-            <span className="text-lg">←</span> Previous
-          </button>
-          
-          <div className="flex gap-2">
-            {SPEC_PAGES.map((_, i) => (
-              <div key={i} className={`w-1.5 h-1.5 rounded-full ${i === page ? 'bg-[var(--trust-blue)]' : 'bg-[var(--border-light)]'}`}></div>
-            ))}
-          </div>
-
-          <button 
-            disabled={page === SPEC_PAGES.length - 1}
-            onClick={() => setPage(page + 1)}
-            className={`opacity-60 hover:opacity-100 transition-colors flex items-center gap-3 font-mono text-[10px] uppercase tracking-widest font-bold ${page === SPEC_PAGES.length - 1 ? 'invisible' : ''}`}
-          >
-            Next <span className="text-lg">→</span>
-          </button>
-        </div>
+        <button 
+          onClick={handleDownloadPdf}
+          className="px-6 py-3 bg-[var(--text-header)] text-[var(--bg-standard)] font-mono text-[10px] uppercase font-bold tracking-widest hover:opacity-80 transition-opacity flex items-center gap-2 shadow-lg"
+        >
+          <span>⭳</span> Download PDF
+        </button>
       </div>
-      
-      <div className="mt-12 text-center space-y-4">
-        <p className="text-xs font-mono opacity-30 uppercase tracking-[0.4em]">
-          Downloaded documents can be verified at /#auditor
-        </p>
-        <div className="flex justify-center gap-8 opacity-20 hover:opacity-100 transition-opacity">
-           <span className="font-mono text-[8px] uppercase font-bold tracking-widest">ISO/TC 290 COMPLIANT</span>
-           <span className="font-mono text-[8px] uppercase font-bold tracking-widest">C2PA v2.3 NATIVE</span>
-           <span className="font-mono text-[8px] uppercase font-bold tracking-widest">PRG_VPR_0.3.2</span>
-        </div>
+
+      <div className="space-y-32">
+        {SPEC_PAGES.map((page, i) => (
+          <section key={i} className="scroll-mt-32" id={`section-${i}`}>
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-12">
+              <div className="md:col-span-3 sticky top-24 self-start">
+                <span className="font-mono text-[10px] uppercase tracking-widest opacity-40 block mb-2">
+                  {page.category}
+                </span>
+                <div className="h-px w-8 bg-[var(--trust-blue)]"></div>
+              </div>
+              <div className="md:col-span-9">
+                {page.content}
+              </div>
+            </div>
+          </section>
+        ))}
       </div>
     </div>
   );
