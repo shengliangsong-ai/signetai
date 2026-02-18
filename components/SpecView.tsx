@@ -5,17 +5,23 @@ const SPEC_PAGES = [
   {
     category: "NARRATIVE STRATEGY",
     title: "1. The Crisis of Trust (Manifesto)",
-    text: "By 2027, it is estimated that 99% of the internet's content will be synthetically generated. In this environment of 'Infinite Content', Truth is no longer the default—it is a luxury resource.\n\nSignet Protocol proposes a new axiom: Verifiable Proof of Reasoning (VPR).\n\nWe do not just attest to the final pixels (Attribution); we attest to the *process* (Reasoning). By binding the 'Logic DAG'—the chain of thought used to reach a conclusion—to the final asset, we create a permanent, auditable link between the prompt and the result.",
+    text: "By 2027, it is estimated that 99% of the internet's content will be synthetically generated. In this environment of 'Infinite Content', Truth is no longer the default—it is a luxury resource.\n\nSignet Protocol proposes a new axiom: Verifiable Proof of Reasoning (VPR).\n\nIn alignment with ISO/TC 290 (Online Reputation), VPR serves as a critical defense against 'Reputation Poisoning'. By binding the 'Logic DAG'—the chain of thought—to the final asset, we create a permanent link between the prompt and the result. This prevents the weaponization of synthetic content by proving Human Intent via the L4 Human Seal.",
     content: (
       <div className="space-y-8 animate-in fade-in duration-500">
         <h2 className="text-[var(--text-header)] font-serif text-2xl font-bold mb-6 italic">1. The Crisis of Trust</h2>
         <p className="opacity-80 leading-loose text-justify">
           By 2027, 99% of the internet's content will be synthetically generated. In this environment of <strong>"Infinite Content"</strong>, Truth is no longer the default—it is a luxury resource.
         </p>
-        <div className="p-6 bg-[var(--admonition-bg)] border-l-4 border-[var(--trust-blue)]">
+        <div className="p-6 bg-[var(--admonition-bg)] border-l-4 border-[var(--trust-blue)] space-y-4">
            <p className="font-serif italic text-lg text-[var(--text-header)]">
              "We are not building a tool. We are building the infrastructure for the preservation of objective reality."
            </p>
+           <div className="pt-4 border-t border-[var(--trust-blue)]/20">
+             <h4 className="font-mono text-[10px] uppercase font-bold text-[var(--trust-blue)] mb-2">ISO/TC 290 Alignment</h4>
+             <p className="text-xs opacity-80 leading-relaxed">
+               Signet explicitly addresses <strong>"Online Reputation"</strong> and <strong>"User-Generated Content"</strong> standards. VPR prevents <em>Reputation Poisoning</em> by ensuring that no asset can be attributed to a creator without a signed, traceable chain of reasoning (The Human Seal).
+             </p>
+           </div>
         </div>
       </div>
     )
@@ -107,13 +113,20 @@ const SPEC_PAGES = [
   {
     category: "TECHNICAL AUDIT",
     title: "6. Universal Tail-Wrap (UTW)",
-    text: "6.1 Definition\nUTW is a zero-dependency injection strategy for appending provenance data to binary files (PDF, MP4, WAV) without rewriting the internal file structure.\n\n6.2 Byte Layout\n[ORIGINAL_BINARY_DATA]\n[EOF_MARKER]\n[0x0A, 0x25] (%)\n[SIGNET_VPR_START]\n[0x0A] (Newline)\n[JSON_MANIFEST_PAYLOAD]\n[0x0A] (Newline)\n[0x25] (%)\n[SIGNET_VPR_END]\n\n6.3 Verification Logic\nParsers MUST scan the last 10KB of a file for the %SIGNET_VPR_START token to extract the manifest without reading the full file.",
+    text: "6.1 Definition\nUTW is a zero-dependency injection strategy for appending provenance data to binary files (PDF, MP4, WAV) without rewriting the internal file structure.\n\n6.2 Security Seal\nThe %SIGNET_VPR_START% token, the JSON payload, and the %SIGNET_VPR_END% marker are ALL included in the final Ed25519 signature calculation. This creates a tamper-evident seal; any attempt to strip the manifest or append a fake one invalidates the signature.\n\n6.3 Byte Layout\n[ORIGINAL_BINARY_DATA]\n[EOF_MARKER]\n[SIGNET_VPR_START]\n[JSON_MANIFEST_PAYLOAD]\n[SIGNET_VPR_END]",
     content: (
       <div className="space-y-8 animate-in fade-in duration-500">
         <h2 className="text-[var(--text-header)] font-serif text-2xl font-bold mb-6 italic">6. Universal Tail-Wrap (UTW)</h2>
         <p className="opacity-80 leading-loose mb-6">
           UTW allows arbitrary binary files to be signed in the browser without expensive parsing libraries or file corruption.
         </p>
+        
+        <div className="p-4 bg-amber-500/10 border border-amber-500/20 rounded-lg mb-6">
+           <h4 className="font-mono text-[10px] uppercase font-bold text-amber-600 mb-2">Security Seal (Tamper Evidence)</h4>
+           <p className="text-xs opacity-80 leading-relaxed">
+             The injection wrapper tokens (<code>%SIGNET_VPR_START%</code>) and the payload are <strong>HARD-BOUND</strong> to the signature. Third parties cannot strip the manifest without invalidating the <code>content_hash</code>.
+           </p>
+        </div>
         
         <div className="border border-[var(--border-light)] rounded-lg overflow-hidden">
            <div className="bg-[var(--table-header)] px-4 py-2 border-b border-[var(--border-light)] font-mono text-[10px] font-bold uppercase">Byte-Level Memory Layout</div>
@@ -195,20 +208,27 @@ const SPEC_PAGES = [
   {
     category: "TECHNICAL AUDIT",
     title: "9. Compliance & Standards",
-    text: "9.1 C2PA 2.3 Alignment\nSignet operates as a 'Cognitive Assertion Provider' under ISO/TC 290.\n- Assertion Type: `org.signetai.vpr`\n- Binding: Soft-Binding via pHash\n\n9.2 GDPR/CCPA Compliance\n- Right to Erasure: Users can delete their 'Local Vault' at any time. The global public key remains as an immutable historical record of past signatures (Accountability).\n- Data Minimization: No biometrics or PII are stored beyond the email anchor used for Sybil resistance.",
+    text: "9.1 C2PA 2.3 Hard-Binding\nSignet implements mandatory 'Hard-Binding' via SHA-256 hashing of the raw asset byte stream (excluding the manifest). This hash is immutable and cryptographically bound to the reasoning assertions.\n\n9.2 Crypto-Agility (NIST CSWP 39)\nThe protocol is architected for algorithm agility. While Ed25519 is the current standard, the `signature.algorithm` field allows for seamless migration to Post-Quantum Cryptography (PQC) schemes (e.g., CRYSTALS-Dilithium) without breaking the Reasoning DAG structure.\n\n9.3 GDPR/CCPA\nRight to Erasure supported via Local Vault deletion.",
     content: (
       <div className="space-y-8 animate-in fade-in duration-500">
         <h2 className="text-[var(--text-header)] font-serif text-2xl font-bold mb-6 italic">9. Compliance</h2>
-        <div className="space-y-6">
+        <div className="space-y-8">
            <div>
-              <h4 className="font-bold text-[var(--text-header)] text-lg">9.1 C2PA 2.3 Mapping</h4>
-              <p className="opacity-80 text-sm mt-2">
-                Signet injects specific JUMBF assertions compatible with Adobe Content Authenticity.
+              <h4 className="font-bold text-[var(--text-header)] text-lg">9.1 Hard-Binding vs Soft-Binding</h4>
+              <p className="opacity-80 text-sm mt-2 leading-relaxed">
+                Signet maintains dual-binding assurance:
               </p>
-              <code className="block mt-3 p-3 bg-[var(--code-bg)] rounded font-mono text-[10px]">
-                Type: org.signetai.vpr<br/>
-                Format: JSON-LD
-              </code>
+              <ul className="list-disc pl-5 mt-2 space-y-2 text-sm opacity-80">
+                <li><strong>Hard-Binding:</strong> SHA-256 hash of the raw binary substrate. Any bit-flip invalidates the seal.</li>
+                <li><strong>Soft-Binding:</strong> pHash (Perceptual Hash) for recovering credentials if metadata is stripped by social platforms.</li>
+              </ul>
+           </div>
+           
+           <div className="p-6 bg-[var(--code-bg)] border border-[var(--border-light)] rounded-lg">
+              <h4 className="font-mono text-[10px] uppercase font-bold text-[var(--trust-blue)] mb-2">9.2 Crypto-Agility (NIST CSWP 39)</h4>
+              <p className="text-xs opacity-70 leading-relaxed">
+                The protocol is designed for future-proofing against quantum threats. The signature schema supports versioned algorithm identifiers, allowing a smooth transition to Post-Quantum Cryptography (PQC) algorithms like <strong>CRYSTALS-Dilithium</strong> or <strong>FALCON</strong> as they become standardized.
+              </p>
            </div>
         </div>
       </div>
