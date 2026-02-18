@@ -748,11 +748,11 @@ const SPEC_PAGES = [
   {
     category: "NORMATIVE STANDARD",
     title: "20. Formal Definitions",
-    text: "Normative definitions to eliminate ambiguity and constrain interpretation. Defines 'Vision Substrate', 'PRG', 'VPR', 'Drift Audit', and 'Human Seal' within the context of the protocol.",
+    text: "Normative definitions to eliminate ambiguity and constrain interpretation. Defines 'Vision Substrate', 'PRG', 'VPR', 'Drift Audit', 'Human Seal', 'Virtual Node', and 'Trust Score' within the context of the protocol.",
     content: (
       <div className="space-y-8 animate-in fade-in duration-500">
         <h2 className="text-[var(--text-header)] font-serif text-2xl font-bold mb-6 italic">20. Formal Definitions</h2>
-        <div className="space-y-6 text-sm">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
            <div className="p-4 border-l-2 border-[var(--trust-blue)] bg-[var(--admonition-bg)]">
               <h4 className="font-mono text-[10px] uppercase font-bold text-[var(--trust-blue)] mb-2">Asset</h4>
               <p className="text-xs opacity-80 leading-relaxed">
@@ -761,32 +761,76 @@ const SPEC_PAGES = [
            </div>
            
            <div className="p-4 border-l-2 border-[var(--border-light)] bg-[var(--bg-standard)]">
-              <h4 className="font-mono text-[10px] uppercase font-bold opacity-60 mb-2">Public Reasoning Graph (PRG)</h4>
+              <h4 className="font-mono text-[10px] uppercase font-bold text-[var(--text-header)] mb-2">Public Reasoning Graph (PRG)</h4>
               <p className="text-xs opacity-80 leading-relaxed">
                 A declarative, post-hoc representation of the asserted rationale linking inputs, constraints, intermediate claims, and outputs. The PRG is <strong>not</strong> an AI system’s internal chain-of-thought and does not expose proprietary or latent model states.
               </p>
            </div>
 
            <div className="p-4 border-l-2 border-[var(--border-light)] bg-[var(--bg-standard)]">
-              <h4 className="font-mono text-[10px] uppercase font-bold opacity-60 mb-2">Drift Audit (L3)</h4>
+              <h4 className="font-mono text-[10px] uppercase font-bold text-[var(--text-header)] mb-2">Verifiable Proof of Reasoning (VPR)</h4>
+              <p className="text-xs opacity-80 leading-relaxed">
+                A cryptographically bound package consisting of the Vision Substrate (L1), Public Reasoning Graph (L2), Drift Audit metadata (L3), and Human Seal(s) (L4).
+              </p>
+           </div>
+
+           <div className="p-4 border-l-2 border-[var(--border-light)] bg-[var(--bg-standard)]">
+              <h4 className="font-mono text-[10px] uppercase font-bold text-[var(--text-header)] mb-2">Vision Substrate (L1)</h4>
+              <p className="text-xs opacity-80 leading-relaxed">
+                The structured representation of human intent, constraints, and objectives provided prior to or during asset generation.
+              </p>
+           </div>
+
+           <div className="p-4 border-l-2 border-[var(--border-light)] bg-[var(--bg-standard)]">
+              <h4 className="font-mono text-[10px] uppercase font-bold text-[var(--text-header)] mb-2">Neural Lens (L2)</h4>
+              <p className="text-xs opacity-80 leading-relaxed">
+                The protocol layer responsible for constructing, serializing, and binding the Public Reasoning Graph to the asset.
+              </p>
+           </div>
+
+           <div className="p-4 border-l-2 border-[var(--border-light)] bg-[var(--bg-standard)]">
+              <h4 className="font-mono text-[10px] uppercase font-bold text-[var(--text-header)] mb-2">Drift Audit (L3)</h4>
               <p className="text-xs opacity-80 leading-relaxed">
                 A deterministic or probabilistic validation process that probes consistency between the PRG and the generated asset to detect hallucination, omission, or logical divergence.
               </p>
            </div>
 
            <div className="p-4 border-l-2 border-[var(--border-light)] bg-[var(--bg-standard)]">
-              <h4 className="font-mono text-[10px] uppercase font-bold opacity-60 mb-2">Universal Tail-Wrap (UTW)</h4>
+              <h4 className="font-mono text-[10px] uppercase font-bold text-[var(--text-header)] mb-2">Human Seal (L4)</h4>
+              <p className="text-xs opacity-80 leading-relaxed">
+                A cryptographic signature applied by a verified human identity, asserting intent, review, or authority over an asset within a declared scope.
+              </p>
+           </div>
+
+           <div className="p-4 border-l-2 border-[var(--border-light)] bg-[var(--bg-standard)]">
+              <h4 className="font-mono text-[10px] uppercase font-bold text-[var(--text-header)] mb-2">Universal Tail-Wrap (UTW)</h4>
               <p className="text-xs opacity-80 leading-relaxed">
                 A zero-dependency method for appending provenance metadata to an asset without modifying its internal structure, while remaining cryptographically bound to the asset via Hard-Binding.
               </p>
            </div>
 
-           <div className="p-4 border-l-2 border-red-500 bg-red-500/5">
-              <h4 className="font-mono text-[10px] uppercase font-bold text-red-600 mb-2">Conventions</h4>
+           <div className="p-4 border-l-2 border-[var(--border-light)] bg-[var(--bg-standard)]">
+              <h4 className="font-mono text-[10px] uppercase font-bold text-[var(--text-header)] mb-2">Virtual Node</h4>
               <p className="text-xs opacity-80 leading-relaxed">
-                MUST / MUST NOT / SHOULD / MAY are interpreted as defined in RFC 2119. "Reasoning" refers to asserted justification, not internal cognition.
+                A compressed provenance representation that aggregates multiple historical nodes into a single cryptographic commitment to preserve scalability.
               </p>
            </div>
+
+           <div className="p-4 border-l-2 border-[var(--border-light)] bg-[var(--bg-standard)]">
+              <h4 className="font-mono text-[10px] uppercase font-bold text-[var(--text-header)] mb-2">Trust Score</h4>
+              <p className="text-xs opacity-80 leading-relaxed">
+                A dynamic reputation metric derived from historical behavior, seal usage, and conflict resolution outcomes.
+              </p>
+           </div>
+        </div>
+
+        <div className="p-6 border-l-4 border-red-500 bg-red-500/5 mt-6">
+           <h4 className="font-mono text-[10px] uppercase font-bold text-red-600 mb-2">Terminology Conventions</h4>
+           <ul className="list-disc pl-4 text-xs opacity-80 leading-relaxed space-y-1">
+             <li>MUST / MUST NOT / SHOULD / MAY are interpreted as defined in RFC 2119.</li>
+             <li>"Reasoning" refers to asserted justification, not internal cognition.</li>
+             <li>"Authority" is contextual and role-bound, not universal truth.</li>
+           </ul>
         </div>
       </div>
     )
@@ -794,7 +838,7 @@ const SPEC_PAGES = [
   {
     category: "AUDIT FRAMEWORK",
     title: "21. Conformance Checklist",
-    text: "Auditor-friendly verification matrix. Lists mandatory Core Conformance, Security, and Governance requirements for implementers.",
+    text: "Auditor-friendly verification matrix. Lists mandatory Core Conformance, Security, Governance, and Interoperability requirements for implementers.",
     content: (
       <div className="space-y-8 animate-in fade-in duration-500">
         <h2 className="text-[var(--text-header)] font-serif text-2xl font-bold mb-6 italic">21. Conformance Checklist</h2>
@@ -817,6 +861,11 @@ const SPEC_PAGES = [
                    <td className="p-3 text-right font-bold">☐</td>
                  </tr>
                  <tr>
+                   <td className="p-3 font-mono opacity-50">C-03</td>
+                   <td className="p-3">PRG MUST be cryptographically bound to asset</td>
+                   <td className="p-3 text-right font-bold">☐</td>
+                 </tr>
+                 <tr>
                    <td className="p-3 font-mono opacity-50">C-04</td>
                    <td className="p-3">Human Seal MUST include seal_mode</td>
                    <td className="p-3 text-right font-bold">☐</td>
@@ -831,19 +880,29 @@ const SPEC_PAGES = [
                    <td className="p-3">Signature MUST cover full UTW payload</td>
                    <td className="p-3 text-right font-bold">☐</td>
                  </tr>
+                 <tr>
+                   <td className="p-3 font-mono opacity-50">C-07</td>
+                   <td className="p-3">Verification MUST be possible offline</td>
+                   <td className="p-3 text-right font-bold">☐</td>
+                 </tr>
                </tbody>
              </table>
            </div>
 
            <div className="border border-[var(--border-light)] rounded overflow-hidden">
              <div className="bg-[var(--table-header)] p-3 border-b border-[var(--border-light)] font-mono text-[10px] font-bold uppercase tracking-widest text-green-600">
-               Security & Resilience
+               Security & Resilience (Mandatory)
              </div>
              <table className="w-full text-[10px] text-left">
                <tbody className="divide-y divide-[var(--border-light)]">
                  <tr>
                    <td className="p-3 font-mono opacity-50">S-01</td>
                    <td className="p-3">Tampering invalidates signature</td>
+                   <td className="p-3 text-right font-bold">☐</td>
+                 </tr>
+                 <tr>
+                   <td className="p-3 font-mono opacity-50">S-02</td>
+                   <td className="p-3">Replay attacks are prevented by hard-binding</td>
                    <td className="p-3 text-right font-bold">☐</td>
                  </tr>
                  <tr>
@@ -854,6 +913,61 @@ const SPEC_PAGES = [
                  <tr>
                    <td className="p-3 font-mono opacity-50">S-04</td>
                    <td className="p-3">Registry loss does not invalidate proofs</td>
+                   <td className="p-3 text-right font-bold">☐</td>
+                 </tr>
+               </tbody>
+             </table>
+           </div>
+
+           <div className="border border-[var(--border-light)] rounded overflow-hidden">
+             <div className="bg-[var(--table-header)] p-3 border-b border-[var(--border-light)] font-mono text-[10px] font-bold uppercase tracking-widest text-amber-600">
+               Governance & Trust (Recommended)
+             </div>
+             <table className="w-full text-[10px] text-left">
+               <tbody className="divide-y divide-[var(--border-light)]">
+                 <tr>
+                   <td className="p-3 font-mono opacity-50">G-01</td>
+                   <td className="p-3">Trust score decay implemented</td>
+                   <td className="p-3 text-right font-bold">☐</td>
+                 </tr>
+                 <tr>
+                   <td className="p-3 font-mono opacity-50">G-02</td>
+                   <td className="p-3">Clean-slate detection supported</td>
+                   <td className="p-3 text-right font-bold">☐</td>
+                 </tr>
+                 <tr>
+                   <td className="p-3 font-mono opacity-50">G-03</td>
+                   <td className="p-3">Seal modes enforced semantically</td>
+                   <td className="p-3 text-right font-bold">☐</td>
+                 </tr>
+                 <tr>
+                   <td className="p-3 font-mono opacity-50">G-04</td>
+                   <td className="p-3">Appeal or remediation path documented</td>
+                   <td className="p-3 text-right font-bold">☐</td>
+                 </tr>
+               </tbody>
+             </table>
+           </div>
+
+           <div className="border border-[var(--border-light)] rounded overflow-hidden">
+             <div className="bg-[var(--table-header)] p-3 border-b border-[var(--border-light)] font-mono text-[10px] font-bold uppercase tracking-widest text-purple-600">
+               Interoperability (Optional)
+             </div>
+             <table className="w-full text-[10px] text-left">
+               <tbody className="divide-y divide-[var(--border-light)]">
+                 <tr>
+                   <td className="p-3 font-mono opacity-50">I-01</td>
+                   <td className="p-3">C2PA compatible hard-binding</td>
+                   <td className="p-3 text-right font-bold">☐</td>
+                 </tr>
+                 <tr>
+                   <td className="p-3 font-mono opacity-50">I-02</td>
+                   <td className="p-3">External identity anchors supported</td>
+                   <td className="p-3 text-right font-bold">☐</td>
+                 </tr>
+                 <tr>
+                   <td className="p-3 font-mono opacity-50">I-03</td>
+                   <td className="p-3">PQC readiness declared</td>
                    <td className="p-3 text-right font-bold">☐</td>
                  </tr>
                </tbody>
@@ -916,7 +1030,7 @@ const SPEC_PAGES = [
         <div className="p-8 md:p-12 bg-white border border-[var(--border-light)] shadow-sm font-serif text-sm leading-relaxed text-black max-w-3xl mx-auto">
            <div className="mb-8 font-mono text-xs opacity-60">
              <p>To: Members of ISO/TC 290</p>
-             <p>Subject: Submission for Consideration — Signet Protocol v0.3.2</p>
+             <p>Subject: Submission for Consideration — Signet Protocol v0.3.2: Verifiable Proof of Reasoning for Synthetic Media</p>
              <p>Date: {new Date().toLocaleDateString()}</p>
            </div>
 
