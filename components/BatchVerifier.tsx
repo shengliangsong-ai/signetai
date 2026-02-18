@@ -4,7 +4,7 @@ import { PersistenceService } from '../services/PersistenceService';
 
 interface FileResult {
   name: string;
-  status: 'PENDING' | 'VERIFIED' | 'UNSIGNED' | 'TAMPERED' | 'SIGNED' | 'ERROR';
+  status: 'QUEUED' | 'VERIFIED' | 'UNSIGNED' | 'TAMPERED' | 'SIGNED' | 'ERROR' | 'SKIPPED';
   msg: string;
   hash: string;
   size: number;
@@ -13,118 +13,219 @@ interface FileResult {
   file?: File;  // Reference for signing
 }
 
+interface PerformanceMetrics {
+  startTime: number;
+  endTime: number;
+  processedBytes: number;
+  processedFiles: number;
+}
+
 export const BatchVerifier: React.FC = () => {
   const [results, setResults] = useState<FileResult[]>([]);
+  const [isScanning, setIsScanning] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [isSigning, setIsSigning] = useState(false);
-  const [summary, setSummary] = useState({ total: 0, verified: 0, unsigned: 0, tampered: 0, signed: 0 });
+  const [summary, setSummary] = useState({ total: 0, verified: 0, unsigned: 0, tampered: 0, signed: 0, queued: 0 });
+  
   const [opMode, setOpMode] = useState<'AUDIT' | 'SIGN'>('AUDIT');
-  const [signStrategy, setSignStrategy] = useState<'EMBEDDED' | 'SIDECAR'>('EMBEDDED');
+  const [strategy, setStrategy] = useState<'EMBEDDED' | 'SIDECAR'>('EMBEDDED');
+  
+  const [metrics, setMetrics] = useState<PerformanceMetrics>({ startTime: 0, endTime: 0, processedBytes: 0, processedFiles: 0 });
   
   // Fallback input for non-Chromium browsers
   const dirInputRef = useRef<HTMLInputElement>(null);
 
-  const processFile = async (file: File, handle?: any, parentHandle?: any): Promise<FileResult> => {
-    const TAIL_SCAN_SIZE = 10240; 
+  // --- ACTIONS ---
+
+  const performAudit = async (res: FileResult): Promise<FileResult> => {
+    if (!res.file) return { ...res, status: 'ERROR', msg: 'File access lost' };
+    
+    const TAIL_SCAN_SIZE = 10240; // 10KB
     let status: FileResult['status'] = 'UNSIGNED';
     let msg = "No credential found";
     let hash = "";
-
+    
     try {
-      // 1. Check for Sidecar (Optimization: In a real app, we'd check if .signet.json exists first)
-      // For now, we scan the file itself.
-      
-      // 2. Fast Tail Scan (Zero-Copy Logic)
-      const tailBlob = file.slice(Math.max(0, file.size - TAIL_SCAN_SIZE), file.size);
-      const tailText = await tailBlob.text();
-      const headText = await file.slice(0, 4096).text(); // Check SVG header
+      // Metric update
+      const bytesRead = strategy === 'EMBEDDED' ? TAIL_SCAN_SIZE : 100; // Sidecar check is tiny I/O
 
-      let jsonStr = "";
-      
-      // Strategy A: UTW
-      if (tailText.includes('%SIGNET_VPR_START')) {
-        const start = tailText.lastIndexOf('%SIGNET_VPR_START');
-        const end = tailText.lastIndexOf('%SIGNET_VPR_END');
-        if (start !== -1 && end !== -1) {
-           jsonStr = tailText.substring(start + '%SIGNET_VPR_START'.length, end).trim();
-        }
-      } 
-      // Strategy B: SVG XML
-      else if (file.type === 'image/svg+xml' || headText.includes('<svg')) {
-         const fullText = await file.text(); // SVG requires full read usually, unless optimized
-         const match = fullText.match(/<signet:manifest>([\s\S]*?)<\/signet:manifest>/);
-         if (match) jsonStr = match[1];
-      }
+      if (strategy === 'SIDECAR') {
+         // Sidecar Logic: Look for sibling .json
+         if (res.parentHandle) {
+            try {
+               const sidecarName = `${res.name}.signet.json`;
+               const sidecarHandle = await res.parentHandle.getFileHandle(sidecarName);
+               const sidecarFile = await sidecarHandle.getFile();
+               const jsonText = await sidecarFile.text();
+               const manifest = JSON.parse(jsonText);
+               
+               status = 'VERIFIED';
+               msg = `Sidecar: ${manifest.signature.signer}`;
+               hash = manifest.asset.content_hash.substring(0, 16) + "...";
+            } catch (e) {
+               // Not found or invalid
+               msg = "No Sidecar Found";
+            }
+         } else {
+            msg = "Sidecar check requires Folder Access";
+         }
+      } else {
+         // Embedded Logic: UTW or XML
+         const file = res.file;
+         const tailBlob = file.slice(Math.max(0, file.size - TAIL_SCAN_SIZE), file.size);
+         const tailText = await tailBlob.text();
+         const headText = await file.slice(0, 4096).text(); 
 
-      if (jsonStr) {
-        try {
-          const manifest = JSON.parse(jsonStr);
-          status = 'VERIFIED';
-          msg = `Signed by: ${manifest.signature.signer}`;
-          hash = manifest.asset.content_hash.substring(0, 16) + "...";
-        } catch (e) {
-          status = 'TAMPERED';
-          msg = "Corrupt Manifest JSON";
-        }
+         let jsonStr = "";
+         
+         if (tailText.includes('%SIGNET_VPR_START')) {
+            const start = tailText.lastIndexOf('%SIGNET_VPR_START');
+            const end = tailText.lastIndexOf('%SIGNET_VPR_END');
+            if (start !== -1 && end !== -1) {
+               jsonStr = tailText.substring(start + '%SIGNET_VPR_START'.length, end).trim();
+            }
+         } else if (file.type === 'image/svg+xml' || headText.includes('<svg')) {
+             const fullText = await file.text(); // SVG requires full read
+             const match = fullText.match(/<signet:manifest>([\s\S]*?)<\/signet:manifest>/);
+             if (match) jsonStr = match[1];
+         }
+
+         if (jsonStr) {
+            try {
+              const manifest = JSON.parse(jsonStr);
+              status = 'VERIFIED';
+              msg = `Embedded: ${manifest.signature.signer}`;
+              hash = manifest.asset.content_hash.substring(0, 16) + "...";
+            } catch (e) {
+              status = 'TAMPERED';
+              msg = "Corrupt Manifest JSON";
+            }
+         }
       }
+      
+      return { ...res, status, msg, hash };
 
     } catch (e) {
-      status = 'TAMPERED';
-      msg = "Read Error";
+      return { ...res, status: 'ERROR', msg: 'Read Error' };
     }
-
-    return {
-      name: file.name,
-      status,
-      msg,
-      hash,
-      size: file.size,
-      handle,
-      parentHandle,
-      file
-    };
   };
 
+  const performSign = async (res: FileResult, vault: any): Promise<FileResult> => {
+      if (!res.file || !res.handle) return res;
+      
+      try {
+          const file = res.file;
+          const arrayBuffer = await file.arrayBuffer(); // Full read for signing
+          
+          // 1. Calculate Hash
+          const hashBuffer = await crypto.subtle.digest('SHA-256', arrayBuffer);
+          const contentHash = Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+
+          // 2. Create Manifest
+          const manifest = {
+              "@context": "https://signetai.io/contexts/vpr-v1.jsonld",
+              "type": "org.signetai.media_provenance",
+              "version": "0.3.1",
+              "strategy": strategy === 'SIDECAR' ? 'SIDECAR_JSON' : (file.type === 'image/svg+xml' ? 'XML_INJECTION' : 'UNIVERSAL_TAIL_WRAP'),
+              "asset": {
+                  "filename": file.name,
+                  "hash_algorithm": "SHA-256",
+                  "content_hash": contentHash,
+                  "byte_length": file.size
+              },
+              "signature": {
+                  "signer": vault.identity,
+                  "anchor": vault.anchor,
+                  "key": vault.publicKey,
+                  "timestamp": new Date().toISOString()
+              }
+          };
+
+          // 3. Execution
+          if (strategy === 'SIDECAR') {
+              if (!res.parentHandle) throw new Error("Parent directory access lost.");
+              const sidecarName = `${file.name}.signet.json`;
+              const sidecarHandle = await res.parentHandle.getFileHandle(sidecarName, { create: true });
+              const writable = await sidecarHandle.createWritable();
+              await writable.write(JSON.stringify(manifest, null, 2));
+              await writable.close();
+              return { ...res, status: 'SIGNED', msg: `Sidecar created`, hash: contentHash.substring(0, 16) + '...' };
+
+          } else {
+              // EMBEDDED
+              let blobToWrite: Blob;
+              if (file.type === 'image/svg+xml') {
+                  const text = new TextDecoder().decode(arrayBuffer);
+                  const uniqueId = `signet-${Date.now()}`;
+                  const metadataBlock = `<metadata id="${uniqueId}" xmlns:signet="https://signetai.io/schema"><signet:manifest>${JSON.stringify(manifest)}</signet:manifest></metadata>`;
+                  const closingTagIndex = text.lastIndexOf('</svg>');
+                  const newSvg = closingTagIndex !== -1 
+                      ? text.slice(0, closingTagIndex) + metadataBlock + '\n' + text.slice(closingTagIndex)
+                      : text + metadataBlock;
+                  blobToWrite = new Blob([newSvg], { type: 'image/svg+xml' });
+              } else {
+                  // UTW
+                  const injection = `\n%SIGNET_VPR_START\n${JSON.stringify(manifest, null, 2)}\n%SIGNET_VPR_END`;
+                  blobToWrite = new Blob([arrayBuffer, injection], { type: file.type });
+              }
+
+              const writable = await res.handle.createWritable();
+              await writable.write(blobToWrite);
+              await writable.close();
+              return { ...res, status: 'SIGNED', msg: `Signed by ${vault.identity}`, hash: contentHash.substring(0, 16) + '...' };
+          }
+
+      } catch (e) {
+          console.error(e);
+          return { ...res, status: 'ERROR', msg: 'Write Failed' };
+      }
+  };
+
+  // --- ORCHESTRATION ---
+
   const updateSummary = (currentResults: FileResult[]) => {
-    const counts = { total: 0, verified: 0, unsigned: 0, tampered: 0, signed: 0 };
+    const counts = { total: 0, verified: 0, unsigned: 0, tampered: 0, signed: 0, queued: 0 };
     currentResults.forEach(r => {
       counts.total++;
       if (r.status === 'VERIFIED') counts.verified++;
       if (r.status === 'UNSIGNED') counts.unsigned++;
       if (r.status === 'TAMPERED') counts.tampered++;
       if (r.status === 'SIGNED') counts.signed++;
+      if (r.status === 'QUEUED') counts.queued++;
     });
     setSummary(counts);
   };
 
-  const handleDirectorySelect = async () => {
-    // Modern FS Access API
+  const handleDiscovery = async () => {
     try {
-      // Determines permission request based on selected mode
       const permMode = opMode === 'SIGN' ? 'readwrite' : 'read';
-      
-      // @ts-ignore - types not fully standard yet
+      // @ts-ignore
       const dirHandle = await window.showDirectoryPicker({ mode: permMode });
-      setIsProcessing(true);
+      setIsScanning(true);
       setResults([]);
-      setSummary({ total: 0, verified: 0, unsigned: 0, tampered: 0, signed: 0 });
+      setSummary({ total: 0, verified: 0, unsigned: 0, tampered: 0, signed: 0, queued: 0 });
+      setMetrics({ startTime: 0, endTime: 0, processedBytes: 0, processedFiles: 0 });
 
       let localResults: FileResult[] = [];
 
-      // Recursive scanner
       async function scanDir(handle: any) {
         for await (const entry of handle.values()) {
           if (entry.kind === 'file') {
+            if (entry.name.startsWith('.') || entry.name.endsWith('.signet.json')) continue;
             const file = await entry.getFile();
-            // Filter dotfiles and existing sidecars
-            if (file.name.startsWith('.') || file.name.endsWith('.signet.json')) continue;
             
-            // Pass 'handle' (current directory) as parentHandle
-            const result = await processFile(file, entry, handle);
-            localResults.unshift(result); // Newest top
-            setResults([...localResults]); // Update UI live
+            // Just push to queue, don't process yet
+            localResults.push({
+                name: file.name,
+                status: 'QUEUED',
+                msg: 'Ready to process',
+                hash: '',
+                size: file.size,
+                handle: entry,
+                parentHandle: handle,
+                file: file
+            });
+            setResults([...localResults]);
             updateSummary(localResults);
-            
           } else if (entry.kind === 'directory') {
             await scanDir(entry);
           }
@@ -132,167 +233,88 @@ export const BatchVerifier: React.FC = () => {
       }
 
       await scanDir(dirHandle);
-      setIsProcessing(false);
+      setIsScanning(false);
 
     } catch (err) {
-      if ((err as Error).name !== 'AbortError') {
-        console.error("Dir Scan Error:", err);
-        alert(`Directory access failed. Ensure you granted '${opMode === 'SIGN' ? 'read/write' : 'read-only'}' permissions.`);
-      }
-      setIsProcessing(false);
+      if ((err as Error).name !== 'AbortError') alert(`Access Error: ${(err as Error).message}`);
+      setIsScanning(false);
     }
   };
 
-  const handleFallbackSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFallbackDiscovery = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
-      setIsProcessing(true);
+      setIsScanning(true);
       const files = Array.from(e.target.files);
-      setResults([]);
-      setSummary({ total: 0, verified: 0, unsigned: 0, tampered: 0, signed: 0 });
-
-      let localResults: FileResult[] = [];
-
-      for (const file of files) {
-        if (file.name.startsWith('.') || file.name.endsWith('.signet.json')) continue;
-        const result = await processFile(file); // No handle in fallback
-        localResults.unshift(result);
-        setResults([...localResults]);
-        updateSummary(localResults);
-        
-        // Small yield to let UI render
-        await new Promise(r => setTimeout(r, 10));
-      }
-      setIsProcessing(false);
+      setResults(files.filter(f => !f.name.startsWith('.') && !f.name.endsWith('.json')).map(f => ({
+          name: f.name,
+          status: 'QUEUED',
+          msg: 'Ready',
+          hash: '',
+          size: f.size,
+          file: f
+      })));
+      updateSummary(results);
+      setIsScanning(false);
     }
   };
 
-  const handleBatchSign = async () => {
-    const unsignedFiles = results.filter(r => r.status === 'UNSIGNED' && r.handle);
-    if (unsignedFiles.length === 0) return;
-
-    // Check Vault
-    const vault = await PersistenceService.getActiveVault();
-    if (!vault) {
-        alert("Identity Required: Please create or unlock a Vault in the 'TrustKey Registry' tab first.");
-        return;
+  const executeBatch = async (action: 'AUDIT' | 'SIGN') => {
+    if (results.length === 0) return;
+    
+    let vault = null;
+    if (action === 'SIGN') {
+        vault = await PersistenceService.getActiveVault();
+        if (!vault) { alert("Identity Required."); return; }
+        if (!confirm(`Sign ${results.length} files as ${vault.identity}?`)) return;
     }
 
-    const confirmMsg = signStrategy === 'SIDECAR'
-      ? `Ready to generate ${unsignedFiles.length} sidecar files (.signet.json)?\nThis will NOT modify original files.`
-      : `Ready to EMBED signatures into ${unsignedFiles.length} files?\nThis will modify files on disk.`;
+    setIsProcessing(true);
+    const startTime = performance.now();
+    let processedBytes = 0;
+    let processedFiles = 0;
 
-    if (!confirm(confirmMsg)) return;
+    const newResults = [...results];
 
-    setIsSigning(true);
-    let signedCount = 0;
+    for (let i = 0; i < newResults.length; i++) {
+        // Update specific item to PENDING
+        newResults[i].status = 'QUEUED'; // Visual refresh?
+        setResults([...newResults]);
 
-    // Process sequentially to manage resources
-    for (const res of unsignedFiles) {
-        try {
-            if (!res.file || !res.handle) continue;
-            
-            res.status = 'PENDING';
-            res.msg = 'Signing...';
-            setResults([...results]); // Trigger update
-
-            const file = res.file;
-            const arrayBuffer = await file.arrayBuffer();
-            
-            // 1. Calculate Hash
-            const hashBuffer = await crypto.subtle.digest('SHA-256', arrayBuffer);
-            const contentHash = Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
-
-            // 2. Determine Strategy
-            // If XML/SVG, we prefer XML Injection unless explicitly forced to sidecar (but usually Sidecar is better for pure binaries)
-            // Here we respect the User's choice.
-            const strategy = signStrategy === 'SIDECAR' ? 'SIDECAR_JSON' : (file.type === 'image/svg+xml' ? 'XML_INJECTION' : 'UNIVERSAL_TAIL_WRAP');
-
-            // 3. Create Manifest
-            const manifest = {
-                "@context": "https://signetai.io/contexts/vpr-v1.jsonld",
-                "type": "org.signetai.media_provenance",
-                "version": "0.3.1",
-                "strategy": strategy,
-                "asset": {
-                    "filename": file.name,
-                    "hash_algorithm": "SHA-256",
-                    "content_hash": contentHash,
-                    "byte_length": file.size
-                },
-                "signature": {
-                    "signer": vault.identity,
-                    "anchor": vault.anchor,
-                    "key": vault.publicKey,
-                    "timestamp": new Date().toISOString()
-                }
-            };
-
-            // 4. Execution
-            if (strategy === 'SIDECAR_JSON') {
-                if (!res.parentHandle) throw new Error("Parent directory access lost.");
-                
-                // Create Sidecar File
-                const sidecarName = `${file.name}.signet.json`;
-                const sidecarHandle = await res.parentHandle.getFileHandle(sidecarName, { create: true });
-                const writable = await sidecarHandle.createWritable();
-                await writable.write(JSON.stringify(manifest, null, 2));
-                await writable.close();
-
-                res.msg = `Sidecar created: ${sidecarName}`;
-
-            } else {
-                // EMBEDDED MODES
-                let blobToWrite: Blob;
-                if (strategy === 'XML_INJECTION') {
-                    const text = new TextDecoder().decode(arrayBuffer);
-                    const uniqueId = `signet-${Date.now()}`;
-                    const metadataBlock = `
-<metadata id="${uniqueId}" xmlns:signet="https://signetai.io/schema">
-<signet:manifest>${JSON.stringify(manifest)}</signet:manifest>
-</metadata>`;
-                    const closingTagIndex = text.lastIndexOf('</svg>');
-                    let newSvg = text;
-                    if (closingTagIndex !== -1) {
-                        newSvg = text.slice(0, closingTagIndex) + metadataBlock + '\n' + text.slice(closingTagIndex);
-                    } else {
-                        newSvg += metadataBlock; // Fallback append
-                    }
-                    blobToWrite = new Blob([newSvg], { type: 'image/svg+xml' });
-                } else {
-                    // UTW
-                    const injection = `\n%SIGNET_VPR_START\n${JSON.stringify(manifest, null, 2)}\n%SIGNET_VPR_END`;
-                    blobToWrite = new Blob([arrayBuffer, injection], { type: file.type });
-                }
-
-                // Write to Disk (In-Place)
-                const writable = await res.handle.createWritable();
-                await writable.write(blobToWrite);
-                await writable.close();
-                res.msg = `Signed by ${vault.identity}`;
-            }
-
-            // 6. Update Status
-            res.status = 'SIGNED';
-            res.hash = contentHash.substring(0, 16) + '...';
-            signedCount++;
-
-        } catch (e) {
-            console.error(`Failed to sign ${res.name}:`, e);
-            res.status = 'ERROR';
-            res.msg = (e as Error).message || 'Write Permission Denied or I/O Error';
+        let res = newResults[i];
+        
+        if (action === 'AUDIT') {
+            res = await performAudit(res);
+            // Approx read size for stats
+            processedBytes += strategy === 'EMBEDDED' ? Math.min(res.size, 10240) : 100;
+        } else {
+            res = await performSign(res, vault);
+            processedBytes += res.size; // Full read/write
         }
+
+        processedFiles++;
+        newResults[i] = res;
+        setResults([...newResults]);
+        updateSummary(newResults);
         
-        // Update UI periodically
-        setResults([...results]);
-        updateSummary(results);
-        await new Promise(r => setTimeout(r, 50)); // UI Breather
+        // Update Metrics Live
+        setMetrics({
+            startTime,
+            endTime: performance.now(),
+            processedBytes,
+            processedFiles
+        });
+
+        // Yield to UI
+        if (i % 5 === 0) await new Promise(r => setTimeout(r, 0));
     }
 
-    setIsSigning(false);
-    alert(`Batch Operation Complete.\nSuccessfully signed ${signedCount} files.`);
+    setIsProcessing(false);
   };
 
-  const hasWritableHandles = results.some(r => r.handle);
+  // Derived Metrics
+  const durationSec = (metrics.endTime - metrics.startTime) / 1000;
+  const mbPerSec = durationSec > 0 ? (metrics.processedBytes / 1024 / 1024) / durationSec : 0;
+  const filesPerSec = durationSec > 0 ? metrics.processedFiles / durationSec : 0;
 
   return (
     <div className="py-12 space-y-8 animate-in fade-in duration-700">
@@ -303,7 +325,7 @@ export const BatchVerifier: React.FC = () => {
         </div>
         <h2 className="text-5xl font-bold italic tracking-tighter text-[var(--text-header)]">Batch Processor.</h2>
         <p className="text-xl opacity-60 max-w-2xl font-serif italic">
-          Select a local folder to recursively audit or sign every file inside. Processing happens entirely on your device (Edge Compute).
+          Discover, Audit, and Sign local assets. Benchmarking engine included.
         </p>
       </header>
 
@@ -315,197 +337,139 @@ export const BatchVerifier: React.FC = () => {
           <div className="p-4 border border-[var(--border-light)] bg-[var(--bg-standard)] rounded-xl shadow-sm space-y-3">
              <h3 className="font-mono text-[10px] uppercase font-bold tracking-widest opacity-40">Operation Mode</h3>
              <div className="flex bg-[var(--bg-sidebar)] p-1 rounded-lg border border-[var(--border-light)]">
-                <button 
-                  onClick={() => setOpMode('AUDIT')}
-                  disabled={isProcessing || isSigning}
-                  className={`flex-1 py-2 font-mono text-[10px] uppercase font-bold rounded transition-all ${opMode === 'AUDIT' ? 'bg-white shadow text-[var(--trust-blue)]' : 'opacity-50 hover:opacity-100'}`}
-                >
-                  Audit
-                </button>
-                <button 
-                  onClick={() => setOpMode('SIGN')}
-                  disabled={isProcessing || isSigning}
-                  className={`flex-1 py-2 font-mono text-[10px] uppercase font-bold rounded transition-all ${opMode === 'SIGN' ? 'bg-white shadow text-emerald-600' : 'opacity-50 hover:opacity-100'}`}
-                >
-                  Sign
-                </button>
+                <button onClick={() => setOpMode('AUDIT')} disabled={isProcessing} className={`flex-1 py-2 font-mono text-[10px] uppercase font-bold rounded transition-all ${opMode === 'AUDIT' ? 'bg-white shadow text-[var(--trust-blue)]' : 'opacity-50 hover:opacity-100'}`}>Audit</button>
+                <button onClick={() => setOpMode('SIGN')} disabled={isProcessing} className={`flex-1 py-2 font-mono text-[10px] uppercase font-bold rounded transition-all ${opMode === 'SIGN' ? 'bg-white shadow text-emerald-600' : 'opacity-50 hover:opacity-100'}`}>Sign</button>
              </div>
              
-             {opMode === 'SIGN' && (
-               <div className="pt-2 animate-in slide-in-from-top-2">
-                 <h3 className="font-mono text-[9px] uppercase font-bold tracking-widest opacity-40 mb-2">Signing Strategy</h3>
+             <div className="pt-2 animate-in slide-in-from-top-2">
+                 <h3 className="font-mono text-[9px] uppercase font-bold tracking-widest opacity-40 mb-2">Strategy</h3>
                  <div className="flex flex-col gap-2">
-                    <label className={`flex items-center gap-3 p-2 rounded border cursor-pointer transition-all ${signStrategy === 'EMBEDDED' ? 'border-emerald-500 bg-emerald-50 text-emerald-900' : 'border-[var(--border-light)] opacity-60'}`}>
-                      <input 
-                        type="radio" 
-                        name="strategy" 
-                        checked={signStrategy === 'EMBEDDED'} 
-                        onChange={() => setSignStrategy('EMBEDDED')}
-                        className="accent-emerald-600"
-                      />
+                    <label className={`flex items-center gap-3 p-2 rounded border cursor-pointer transition-all ${strategy === 'EMBEDDED' ? 'border-[var(--trust-blue)] bg-[var(--admonition-bg)] text-[var(--trust-blue)]' : 'border-[var(--border-light)] opacity-60'}`}>
+                      <input type="radio" name="strategy" checked={strategy === 'EMBEDDED'} onChange={() => setStrategy('EMBEDDED')} className="accent-[var(--trust-blue)]" />
                       <div>
                         <span className="block font-bold text-[10px] uppercase">Embedded (UTW)</span>
-                        <span className="block text-[9px] opacity-70">Modifies original file</span>
+                        <span className="block text-[9px] opacity-70">Binary Tail Check</span>
                       </div>
                     </label>
-                    <label className={`flex items-center gap-3 p-2 rounded border cursor-pointer transition-all ${signStrategy === 'SIDECAR' ? 'border-blue-500 bg-blue-50 text-blue-900' : 'border-[var(--border-light)] opacity-60'}`}>
-                      <input 
-                        type="radio" 
-                        name="strategy" 
-                        checked={signStrategy === 'SIDECAR'} 
-                        onChange={() => setSignStrategy('SIDECAR')}
-                        className="accent-blue-600"
-                      />
+                    <label className={`flex items-center gap-3 p-2 rounded border cursor-pointer transition-all ${strategy === 'SIDECAR' ? 'border-[var(--trust-blue)] bg-[var(--admonition-bg)] text-[var(--trust-blue)]' : 'border-[var(--border-light)] opacity-60'}`}>
+                      <input type="radio" name="strategy" checked={strategy === 'SIDECAR'} onChange={() => setStrategy('SIDECAR')} className="accent-[var(--trust-blue)]" />
                       <div>
                         <span className="block font-bold text-[10px] uppercase">Sidecar (.json)</span>
-                        <span className="block text-[9px] opacity-70">Creates separate file</span>
+                        <span className="block text-[9px] opacity-70">Detached Manifest</span>
                       </div>
                     </label>
                  </div>
-               </div>
-             )}
-
-             <p className="text-[9px] opacity-50 italic pt-1">
-               {opMode === 'AUDIT' ? 'Read-only access. Ideal for verification.' : 'Read/Write access. Required for batch signing.'}
-             </p>
+             </div>
           </div>
 
           <div className="p-6 border border-[var(--border-light)] bg-[var(--bg-standard)] rounded-xl shadow-sm space-y-4">
-             <h3 className="font-mono text-[10px] uppercase font-bold tracking-widest opacity-40">Input Source</h3>
-             
+             <h3 className="font-mono text-[10px] uppercase font-bold tracking-widest opacity-40">1. Discovery</h3>
              <button 
-               onClick={handleDirectorySelect}
-               disabled={isProcessing || isSigning}
-               className={`w-full py-4 text-white font-mono text-[10px] uppercase font-bold tracking-widest rounded hover:brightness-110 transition-all shadow-lg flex flex-col items-center justify-center gap-2 ${opMode === 'SIGN' ? 'bg-emerald-600' : 'bg-[var(--trust-blue)]'}`}
+               onClick={handleDiscovery}
+               disabled={isScanning || isProcessing}
+               className={`w-full py-4 text-white font-mono text-[10px] uppercase font-bold tracking-widest rounded hover:brightness-110 transition-all shadow-lg flex flex-col items-center justify-center gap-2 bg-neutral-800`}
              >
-               <span className="text-xl">📁</span>
+               <span className="text-xl">📂</span>
                Select Folder
              </button>
-
-             <div className="text-center">
-               <span className="text-[9px] opacity-40 font-mono uppercase">- OR -</span>
-             </div>
-
              <div className="relative">
                <input 
                  type="file" 
-                 // @ts-ignore - webkitdirectory is standard in most browsers but not TS
-                 webkitdirectory="" 
-                 directory="" 
+                 {...({ webkitdirectory: "", directory: "" } as any)}
                  multiple 
-                 ref={dirInputRef}
-                 onChange={handleFallbackSelect}
-                 className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                 ref={dirInputRef} 
+                 onChange={handleFallbackDiscovery} 
+                 className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" 
                />
-               <button 
-                 disabled={isProcessing || isSigning}
-                 className="w-full py-2 border border-[var(--border-light)] text-[var(--text-body)] font-mono text-[10px] uppercase font-bold rounded hover:bg-[var(--bg-sidebar)]"
-               >
-                 Legacy File Picker
-               </button>
+               <button disabled={isScanning} className="w-full py-2 border border-[var(--border-light)] text-[var(--text-body)] font-mono text-[10px] uppercase font-bold rounded hover:bg-[var(--bg-sidebar)]">Legacy Picker</button>
              </div>
           </div>
 
-          <div className="p-6 border border-[var(--border-light)] bg-[var(--table-header)] rounded-xl space-y-4">
-             <h3 className="font-mono text-[10px] uppercase font-bold tracking-widest opacity-40">Audit Summary</h3>
-             <div className="space-y-2">
-                <div className="flex justify-between text-xs font-mono">
-                   <span>Total Scanned</span>
-                   <span className="font-bold">{summary.total}</span>
-                </div>
-                <div className="flex justify-between text-xs font-mono text-emerald-600">
-                   <span>Verified (UTW/XML)</span>
-                   <span className="font-bold">{summary.verified}</span>
-                </div>
-                <div className="flex justify-between text-xs font-mono text-blue-600">
-                   <span>Newly Signed</span>
-                   <span className="font-bold">{summary.signed}</span>
-                </div>
-                <div className="flex justify-between text-xs font-mono text-amber-600">
-                   <span>Unsigned</span>
-                   <span className="font-bold">{summary.unsigned}</span>
-                </div>
-                <div className="flex justify-between text-xs font-mono text-red-600">
-                   <span>Tampered/Corrupt</span>
-                   <span className="font-bold">{summary.tampered}</span>
-                </div>
-             </div>
-          </div>
-
-          {/* Only show signing controls if in SIGN mode */}
-          {opMode === 'SIGN' && summary.unsigned > 0 && hasWritableHandles && (
-             <div className="p-6 border border-emerald-500/30 bg-emerald-50/10 rounded-xl space-y-4 animate-in slide-in-from-left-2">
-                <h3 className="font-mono text-[10px] uppercase font-bold tracking-widest text-emerald-600">Batch Actions</h3>
+          {summary.total > 0 && (
+             <div className="p-6 border border-[var(--border-light)] bg-[var(--bg-standard)] rounded-xl shadow-sm space-y-4 animate-in slide-in-from-left-2">
+                <h3 className="font-mono text-[10px] uppercase font-bold tracking-widest opacity-40">2. Execute</h3>
+                
                 <button
-                  onClick={handleBatchSign}
-                  disabled={isSigning || isProcessing}
-                  className="w-full py-3 bg-emerald-600 text-white font-mono text-[10px] uppercase font-bold tracking-widest rounded shadow-lg hover:brightness-110 transition-all flex items-center justify-center gap-2"
+                  onClick={() => executeBatch('AUDIT')}
+                  disabled={isProcessing}
+                  className="w-full py-3 bg-[var(--trust-blue)] text-white font-mono text-[10px] uppercase font-bold tracking-widest rounded shadow-lg hover:brightness-110 transition-all flex items-center justify-center gap-2"
                 >
-                  {isSigning ? (
-                    <>
-                      <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                      <span>SIGNING...</span>
-                    </>
-                  ) : (
-                    <>
-                      <span>✎</span>
-                      <span>Sign All ({summary.unsigned})</span>
-                    </>
-                  )}
+                  {isProcessing && opMode === 'AUDIT' ? <span className="animate-pulse">AUDITING...</span> : <span>AUDIT ALL ({summary.total})</span>}
                 </button>
-                <p className="text-[9px] opacity-60 font-serif italic leading-relaxed text-center">
-                   {signStrategy === 'EMBEDDED' 
-                     ? "Writes signatures directly to disk (Modifies Files)." 
-                     : "Generates .signet.json files (Preserves Originals)."}
-                </p>
+
+                {opMode === 'SIGN' && (
+                    <button
+                      onClick={() => executeBatch('SIGN')}
+                      disabled={isProcessing}
+                      className="w-full py-3 bg-emerald-600 text-white font-mono text-[10px] uppercase font-bold tracking-widest rounded shadow-lg hover:brightness-110 transition-all flex items-center justify-center gap-2"
+                    >
+                      {isProcessing && opMode === 'SIGN' ? <span className="animate-pulse">SIGNING...</span> : <span>SIGN ALL ({summary.total})</span>}
+                    </button>
+                )}
              </div>
           )}
         </div>
 
         {/* Results Feed */}
-        <div className="lg:col-span-3 bg-[var(--code-bg)] border border-[var(--border-light)] rounded-xl overflow-hidden flex flex-col h-[600px]">
-           <div className="p-4 bg-[var(--table-header)] border-b border-[var(--border-light)] flex justify-between items-center">
-              <div className="flex items-center gap-4">
-                <span className="font-mono text-[10px] uppercase font-bold tracking-widest">Live Telemetry Stream</span>
-                <span className={`font-mono text-[9px] px-2 py-0.5 rounded border ${opMode === 'SIGN' ? 'border-emerald-500 text-emerald-600 bg-emerald-50' : 'border-blue-500 text-blue-600 bg-blue-50'}`}>
-                    MODE: {opMode} {opMode === 'SIGN' ? `(${signStrategy})` : ''}
-                </span>
+        <div className="lg:col-span-3 space-y-6">
+           {/* Telemetry Dashboard */}
+           <div className="grid grid-cols-3 gap-4">
+              <div className="p-4 bg-[var(--bg-standard)] border border-[var(--border-light)] rounded-xl">
+                 <p className="font-mono text-[9px] uppercase font-bold opacity-40">Throughput</p>
+                 <p className="font-serif text-2xl font-bold text-[var(--text-header)]">{mbPerSec.toFixed(2)} <span className="text-xs font-mono opacity-50 font-normal">MB/s</span></p>
               </div>
-              {isProcessing && <span className="font-mono text-[10px] text-[var(--trust-blue)] animate-pulse">PROCESSING...</span>}
-              {isSigning && <span className="font-mono text-[10px] text-emerald-500 animate-pulse">BATCH_SIGN_ACTIVE</span>}
+              <div className="p-4 bg-[var(--bg-standard)] border border-[var(--border-light)] rounded-xl">
+                 <p className="font-mono text-[9px] uppercase font-bold opacity-40">Velocity</p>
+                 <p className="font-serif text-2xl font-bold text-[var(--text-header)]">{filesPerSec.toFixed(1)} <span className="text-xs font-mono opacity-50 font-normal">Files/s</span></p>
+              </div>
+              <div className="p-4 bg-[var(--bg-standard)] border border-[var(--border-light)] rounded-xl">
+                 <p className="font-mono text-[9px] uppercase font-bold opacity-40">Total Processed</p>
+                 <p className="font-serif text-2xl font-bold text-[var(--text-header)]">{(metrics.processedBytes / 1024 / 1024).toFixed(2)} <span className="text-xs font-mono opacity-50 font-normal">MB</span></p>
+              </div>
            </div>
-           
-           <div className="flex-1 overflow-y-auto p-4 space-y-1 font-mono text-[11px]">
-              {results.length === 0 ? (
-                <div className="h-full flex flex-col items-center justify-center opacity-20 italic">
-                   <span className="text-4xl mb-4">⚡</span>
-                   <p>Waiting for directory handle...</p>
-                </div>
-              ) : (
-                results.map((r, i) => (
-                  <div key={i} className="grid grid-cols-12 gap-4 p-2 border-b border-[var(--border-light)] last:border-0 hover:bg-white/5 transition-colors">
-                     <div className="col-span-1 opacity-30">{i+1}</div>
-                     <div className="col-span-4 truncate font-bold" title={r.name}>{r.name}</div>
-                     <div className="col-span-2 opacity-50">{(r.size / 1024).toFixed(1)} KB</div>
-                     <div className={`col-span-2 font-bold ${
-                       r.status === 'VERIFIED' ? 'text-emerald-500' : 
-                       r.status === 'SIGNED' ? 'text-blue-500' :
-                       r.status === 'TAMPERED' || r.status === 'ERROR' ? 'text-red-500' : 
-                       r.status === 'PENDING' ? 'text-[var(--trust-blue)]' : 'text-amber-500 opacity-50'
-                     }`}>
-                       {r.status}
+
+           <div className="bg-[var(--code-bg)] border border-[var(--border-light)] rounded-xl overflow-hidden flex flex-col h-[500px]">
+              <div className="p-4 bg-[var(--table-header)] border-b border-[var(--border-light)] flex justify-between items-center">
+                 <div className="flex items-center gap-4">
+                   <span className="font-mono text-[10px] uppercase font-bold tracking-widest">Live Stream</span>
+                   {isProcessing && <span className="font-mono text-[10px] text-[var(--trust-blue)] animate-pulse">PROCESSING_BATCH...</span>}
+                 </div>
+                 <div className="flex gap-4 text-[9px] font-mono font-bold">
+                    <span className="text-emerald-500">VERIFIED: {summary.verified}</span>
+                    <span className="text-blue-500">SIGNED: {summary.signed}</span>
+                    <span className="text-amber-500">UNSIGNED: {summary.unsigned}</span>
+                    <span className="opacity-40">QUEUED: {summary.queued}</span>
+                 </div>
+              </div>
+              
+              <div className="flex-1 overflow-y-auto p-4 space-y-1 font-mono text-[11px]">
+                 {results.length === 0 ? (
+                   <div className="h-full flex flex-col items-center justify-center opacity-20 italic">
+                      <span className="text-4xl mb-4">⚡</span>
+                      <p>Select a folder to initialize discovery.</p>
+                   </div>
+                 ) : (
+                   results.map((r, i) => (
+                     <div key={i} className="grid grid-cols-12 gap-4 p-2 border-b border-[var(--border-light)] last:border-0 hover:bg-white/5 transition-colors">
+                        <div className="col-span-1 opacity-30">{i+1}</div>
+                        <div className="col-span-4 truncate font-bold" title={r.name}>{r.name}</div>
+                        <div className="col-span-2 opacity-50">{(r.size / 1024).toFixed(1)} KB</div>
+                        <div className={`col-span-2 font-bold ${
+                          r.status === 'VERIFIED' ? 'text-emerald-500' : 
+                          r.status === 'SIGNED' ? 'text-blue-500' :
+                          r.status === 'TAMPERED' || r.status === 'ERROR' ? 'text-red-500' : 
+                          r.status === 'QUEUED' ? 'opacity-30' : 'text-amber-500 opacity-50'
+                        }`}>
+                          {r.status}
+                        </div>
+                        <div className="col-span-3 truncate opacity-60 text-[9px]">{r.msg}</div>
                      </div>
-                     <div className="col-span-3 truncate opacity-60 text-[9px]">{r.msg}</div>
-                  </div>
-                ))
-              )}
+                   ))
+                 )}
+              </div>
            </div>
         </div>
       </div>
-      
-      <Admonition type="security" title="Zero-Data Disclosure">
-        This Batch Processor utilizes the <code>FileSystemHandle</code> API. Files are streamed directly from your disk to the local browser memory for hashing. No data is ever uploaded to the cloud.
-      </Admonition>
     </div>
   );
 };
