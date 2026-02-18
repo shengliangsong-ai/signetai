@@ -28,7 +28,7 @@ export interface XSignetVPRHeader {
   signatureHash: string;
   layers: {
     l1_thesis_id: string;
-    l2_dag_hash: string;
+    l2_prg_hash: string; // Renamed from dag_hash for Public Reasoning Graph alignment
     l3_logic_drift: number;
     l4_curator_sig: string;
   };

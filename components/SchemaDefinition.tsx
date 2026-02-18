@@ -10,16 +10,16 @@ export const SchemaDefinition: React.FC = () => {
       "chain": [
         { "entity": "MODEL", "id": "gemini-3-pro", "hash": "sha256:45ea..." },
         { "entity": "TOOL", "id": "podcast-oracle-v2", "hash": "sha256:88bc..." },
-        { "entity": "HUMAN", "id": "ssl", "anchor": "signetai.io:ssl", "sig": "ed25519:5b98..." }
+        { "entity": "HUMAN", "id": "ssl", "seal": "AUTHORITY", "sig": "ed25519:5b98..." }
       ]
     }
   };
 
   const appMapping = [
     { "app": "Scripture", "layer": "L1: VISION", "task": "Truth Anchor" },
-    { "app": "Neural Lens", "layer": "L2: COMPILER", "task": "Logic Graphing" },
-    { "app": "Verifier", "layer": "L3: ADVERSARIAL", "task": "Drift Detection" },
-    { "app": "TKS Hub", "layer": "L4: HUMAN", "task": "Final Attestation" }
+    { "app": "Neural Lens", "layer": "L2: PRG COMPILER", "task": "Graph Mapping" },
+    { "app": "Verifier", "layer": "L3: ADVERSARIAL", "task": "Threat Modeling" },
+    { "app": "TKS Hub", "layer": "L4: HUMAN", "task": "Attestation Seal" }
   ];
 
   return (
@@ -30,7 +30,7 @@ export const SchemaDefinition: React.FC = () => {
             <span className="font-mono text-[10px] text-[var(--trust-blue)] tracking-[0.4em] uppercase font-bold">Standard Artifacts</span>
             <h2 className="text-4xl font-bold italic text-[var(--text-header)]">The VPR Header.</h2>
             <p className="text-lg leading-relaxed text-[var(--text-body)] opacity-80">
-              Protocol nodes emit an `X-Signet-VPR` header containing a deterministic reasoning chain.
+              Protocol nodes emit an `X-Signet-VPR` header containing a deterministic <strong>Public Reasoning Graph (PRG)</strong>.
             </p>
           </div>
           

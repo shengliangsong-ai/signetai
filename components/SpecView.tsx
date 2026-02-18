@@ -5,7 +5,7 @@ const SPEC_PAGES = [
   {
     category: "NARRATIVE STRATEGY",
     title: "1. The Crisis of Trust (Manifesto)",
-    text: "Building on warnings from organizations such as the Europol Innovation Lab, many analysts expect synthetic and AI-assisted media to constitute a dominant share of newly created online content by the mid-to-late 2020s. While precise global percentages are uncertain and depend on definitions and measurement methods, the overall trajectory suggests that a substantial majority of future internet content will involve generative systems, fundamentally reshaping how online information is produced, distributed, and trusted.\n\nSignet Protocol proposes a new axiom: Verifiable Proof of Reasoning (VPR).\n\nIn alignment with ISO/TC 290 (Online Reputation), VPR serves as a critical defense against 'Reputation Poisoning'. By binding the 'Logic DAG'—the chain of thought—to the final asset, we create a permanent link between the prompt and the result. This prevents the weaponization of synthetic content by proving Human Intent via the L4 Human Seal.",
+    text: "Building on warnings from organizations such as the Europol Innovation Lab, many analysts expect synthetic and AI-assisted media to constitute a dominant share of newly created online content by the mid-to-late 2020s. While precise global percentages are uncertain, the overall trajectory suggests that a substantial majority of future internet content will involve generative systems.\n\nSignet Protocol proposes a new axiom: Verifiable Proof of Reasoning (VPR).\n\nIn alignment with ISO/TC 290 (Online Reputation), VPR serves as a critical defense against 'Reputation Poisoning'. By binding the 'Public Reasoning Graph (PRG)'—a post-hoc, declarative representation of the logic flow—to the final asset, we create a permanent link between the prompt and the result. This graph is distinct from the model's private chain-of-thought, serving strictly as an audit artifact.",
     content: (
       <div className="space-y-8 animate-in fade-in duration-500">
         <h2 className="text-[var(--text-header)] font-serif text-2xl font-bold mb-6 italic">1. The Crisis of Trust</h2>
@@ -13,16 +13,17 @@ const SPEC_PAGES = [
           Building on warnings from organizations such as the <strong>Europol Innovation Lab</strong>, many analysts expect synthetic and AI-assisted media to constitute a <strong>dominant share</strong> of newly created online content by the mid-to-late 2020s.
         </p>
         <p className="opacity-80 leading-loose text-justify">
-          While precise global percentages are uncertain and depend on definitions and measurement methods, the overall trajectory suggests that a substantial majority of future internet content will involve generative systems, fundamentally reshaping how online information is produced, distributed, and trusted.
+          While precise global percentages are uncertain, the overall trajectory suggests that a substantial majority of future internet content will involve generative systems, fundamentally reshaping how online information is produced, distributed, and trusted.
         </p>
         <div className="p-6 bg-[var(--admonition-bg)] border-l-4 border-[var(--trust-blue)] space-y-4">
            <p className="font-serif italic text-lg text-[var(--text-header)]">
              "We are not building a tool. We are building the infrastructure for the preservation of objective reality."
            </p>
            <div className="pt-4 border-t border-[var(--trust-blue)]/20">
-             <h4 className="font-mono text-[10px] uppercase font-bold text-[var(--trust-blue)] mb-2">ISO/TC 290 Alignment</h4>
+             <h4 className="font-mono text-[10px] uppercase font-bold text-[var(--trust-blue)] mb-2">Definition: Public Reasoning Graph (PRG)</h4>
              <p className="text-xs opacity-80 leading-relaxed">
-               Signet explicitly addresses <strong>"Online Reputation"</strong> and <strong>"User-Generated Content"</strong> standards. VPR prevents <em>Reputation Poisoning</em> by ensuring that no asset can be attributed to a creator without a signed, traceable chain of reasoning (The Human Seal).
+               A post-hoc, declarative reasoning representation provided for audit purposes. 
+               <strong>Note:</strong> PRG is distinct from any private model chain-of-thought or latent state. It is a public claim of logic, not a dump of neural weights.
              </p>
            </div>
         </div>
@@ -32,17 +33,36 @@ const SPEC_PAGES = [
   {
     category: "NARRATIVE STRATEGY",
     title: "2. Protocol Architecture (4 Layers)",
-    text: "The Signet Pipeline consists of four distinct verification layers to ensure end-to-end integrity:\n\nL1: Vision Substrate (The DNA)\nCryptographic binding of the initial prompt and intent ingredients.\n\nL2: Neural Lens (The Logic Map)\nJUMBF encapsulation of the reasoning DAG (Directed Acyclic Graph).\n\nL3: Reality Check (Drift Audit)\nDeterministic probing of the output against the claimed logic to detect hallucinations.\n\nL4: Human Seal (The Pact)\nFinal Ed25519 signature by a verified human curator (The 'Signet').",
+    text: "The Signet Pipeline consists of four distinct verification layers:\n\nL1: Vision Substrate (The DNA)\nCryptographic binding of the initial prompt and intent ingredients.\n\nL2: Neural Lens (The PRG)\nJUMBF encapsulation of the Public Reasoning Graph. This is the claimed logic path.\n\nL3: Reality Check (Drift Audit & Threat Model)\nDeterministic probing of the output against the PRG. \n- Detects: Hallucinations, logic breaks.\n- Does Not Detect: Malicious but internally consistent reasoning.\n\nL4: Human Seal (Accountability)\nFinal Ed25519 signature. The Curator must select an attestation mode:\n1. Intent Seal: 'I intended this result.'\n2. Review Seal: 'I reviewed this result.'\n3. Authority Seal: 'I take liability for this.'",
     content: (
       <div className="space-y-8 animate-in fade-in duration-500">
         <h2 className="text-[var(--text-header)] font-serif text-2xl font-bold mb-6 italic">2. Protocol Architecture</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-           {['L1: Vision Substrate', 'L2: Neural Lens', 'L3: Reality Check', 'L4: Human Seal'].map((layer, i) => (
-             <div key={i} className="p-4 border border-[var(--border-light)] rounded bg-[var(--bg-standard)]">
-               <h4 className="font-bold text-[var(--trust-blue)] mb-2">{layer}</h4>
-               <p className="text-xs opacity-70">Cryptographic binding of stage {i+1} in the reasoning pipeline.</p>
-             </div>
-           ))}
+           <div className="p-4 border border-[var(--border-light)] rounded bg-[var(--bg-standard)]">
+             <h4 className="font-bold text-[var(--trust-blue)] mb-2">L1: Vision Substrate</h4>
+             <p className="text-xs opacity-70">Binding of prompt/intent ingredients.</p>
+           </div>
+           <div className="p-4 border border-[var(--border-light)] rounded bg-[var(--bg-standard)]">
+             <h4 className="font-bold text-[var(--trust-blue)] mb-2">L2: Public Reasoning Graph</h4>
+             <p className="text-xs opacity-70">Declarative map of logic steps (PRG).</p>
+           </div>
+           <div className="p-4 border border-[var(--border-light)] rounded bg-[var(--bg-standard)]">
+             <h4 className="font-bold text-[var(--trust-blue)] mb-2">L3: Reality Check</h4>
+             <p className="text-xs opacity-70">Drift Audit (Probabilistic Detection).</p>
+           </div>
+           <div className="p-4 border border-[var(--border-light)] rounded bg-[var(--bg-standard)]">
+             <h4 className="font-bold text-[var(--trust-blue)] mb-2">L4: Human Seal</h4>
+             <p className="text-xs opacity-70">Attestation Modes: Intent, Review, Authority.</p>
+           </div>
+        </div>
+        
+        <div className="mt-4 p-4 bg-amber-500/10 border border-amber-500/20 rounded">
+           <h5 className="font-bold text-amber-600 text-xs uppercase mb-2">L3 Threat Model</h5>
+           <ul className="list-disc pl-4 space-y-1 text-xs opacity-80">
+             <li><strong>Detects:</strong> Hallucinated citations, logic breaks, unsupported claims.</li>
+             <li><strong>Does Not Detect:</strong> Malicious but internally consistent reasoning.</li>
+             <li><strong>Guarantee:</strong> Probabilistic detection under defined probes.</li>
+           </ul>
         </div>
       </div>
     )
@@ -56,7 +76,7 @@ const SPEC_PAGES = [
         <h2 className="text-[var(--text-header)] font-serif text-2xl font-bold mb-6 italic underline underline-offset-8 decoration-1 decoration-neutral-500/30">3. Executive Summary</h2>
         <p className="indent-12 opacity-80 leading-loose text-justify">
           The Signet Protocol (v0.3.1) defines a decentralized framework for the cryptographic attestation of AI-generated reasoning paths (VPR). 
-          Unlike traditional watermarking which focuses on asset attribution, Signet verifies the <strong>"Reasoning DAG"</strong>—the logical chain of thought used to generate the output.
+          Unlike traditional watermarking which focuses on asset attribution, Signet verifies the <strong>"Public Reasoning Graph"</strong>—the logical chain of thought used to generate the output.
         </p>
       </div>
     )
@@ -347,7 +367,7 @@ const SPEC_PAGES = [
   {
     category: "PROTOCOL GOVERNANCE",
     title: "12. Trust Economy & Penalties",
-    text: "To discourage the stripping of provenance data, the Signet Protocol introduces Trust Score Attrition.\n\n12.1 Malicious Actor Penalties\nRepeated 'Clean Slate' signatures on assets found to be stripped versions of existing registry entries lead to Trust Score Decay. \n\nConsequences:\n- Automatic 'Low-Confidence' flags on all future content.\n- Exclusion from high-integrity distribution networks.\n- Revocation of Sovereign Identity status.",
+    text: "To discourage the stripping of provenance data, the Signet Protocol introduces Trust Score Attrition.\n\n12.1 Malicious Actor Penalties\nRepeated 'Clean Slate' signatures on assets found to be stripped versions of existing registry entries lead to Trust Score Decay. \n\nConsequences:\n- Automatic 'Low-Confidence' flags on all future content.\n- Exclusion from high-integrity distribution networks.\n\n12.2 Redemption & Decay\nPenalties follow a decay half-life of 90 days. Users may appeal via manual human review, ensuring the system remains equitable.",
     content: (
       <div className="space-y-8 animate-in fade-in duration-500">
         <h2 className="text-[var(--text-header)] font-serif text-2xl font-bold mb-6 italic">12. The Trust Economy</h2>
@@ -360,9 +380,9 @@ const SPEC_PAGES = [
               </p>
            </div>
            <div className="p-6 border border-[var(--border-light)] bg-[var(--bg-standard)] rounded">
-              <h4 className="font-bold text-[var(--text-header)] mb-2">Trust Score Decay</h4>
+              <h4 className="font-bold text-[var(--text-header)] mb-2">Remediation Path</h4>
               <p className="text-xs opacity-70 leading-relaxed">
-                Reputation is finite. Malicious stripping burns the user's "Social Collateral", eventually isolating their identity from the trusted graph.
+                Trust Score Attrition has a <strong>half-life of 90 days</strong>. Users can rehabilitate their score through consistent, verifiable behavior or manual appeal.
               </p>
            </div>
         </div>
@@ -392,14 +412,14 @@ const SPEC_PAGES = [
   },
   {
     category: "STRATEGIC ALIGNMENT",
-    title: "14. ISO/TC 290 Submission Strategy",
-    text: "How to Pitch 'Compression' to ISO/TC 290.\n\nFrame it as 'Scalable Reputation Infrastructure'.\nThe Problem: Long-term online reputation generates massive metadata ('Data Gravity').\nThe Solution: Virtual Nodes keep asset files 'light' and performant for mobile/web while maintaining 'heavy' cryptographic proof in decentralized sidecars.",
+    title: "14. ISO/TC 290 Strategy: The Ledger",
+    text: "How to Pitch 'Compression' to ISO/TC 290.\n\nFrame it as 'Scalable Reputation Ledger for Synthetic Media'.\nThe Problem: Long-term online reputation generates massive metadata ('Data Gravity').\nThe Solution: Virtual Nodes keep asset files 'light' and performant for mobile/web while maintaining 'heavy' cryptographic proof in decentralized sidecars.",
     content: (
       <div className="space-y-8 animate-in fade-in duration-500">
         <h2 className="text-[var(--text-header)] font-serif text-2xl font-bold mb-6 italic">14. ISO/TC 290 Strategy</h2>
         
         <p className="opacity-80 leading-loose mb-8">
-          <strong>Pitching to Mme. Hélène Xu:</strong> Frame Virtual Nodes as the solution to the "Data Gravity" problem in long-term reputation tracking.
+          <strong>Strategic Framing:</strong> Shift language from "Infrastructure" to <strong>"Scalable Reputation Ledger"</strong> to align with auditability, neutrality, and composability standards.
         </p>
 
         <div className="overflow-hidden border border-[var(--border-light)] rounded-lg">
@@ -408,7 +428,7 @@ const SPEC_PAGES = [
                  <tr>
                     <th className="p-4 font-bold text-[var(--text-header)]">Feature</th>
                     <th className="p-4 font-bold text-[var(--text-header)]">Linear Chain (Basic)</th>
-                    <th className="p-4 font-bold text-[var(--trust-blue)]">Compressed Virtual Chain (Signet)</th>
+                    <th className="p-4 font-bold text-[var(--trust-blue)]">Compressed Ledger (Signet)</th>
                  </tr>
               </thead>
               <tbody className="divide-y divide-[var(--border-light)]">
@@ -468,10 +488,52 @@ const SPEC_PAGES = [
         </div>
       </div>
     )
+  },
+  {
+    category: "TECHNICAL AUDIT",
+    title: "Appendix A: Worked Example (MP4)",
+    text: "A concrete example of a signed 30-second MP4 asset. \n\n1. Input Hash (SHA-256): e3b0...c442\n2. UTW Payload: %SIGNET_VPR_START% ... %SIGNET_VPR_END%\n3. Final Output: A valid MP4 file playable in VLC, with appended audit data.",
+    content: (
+      <div className="space-y-8 animate-in fade-in duration-500">
+        <h2 className="text-[var(--text-header)] font-serif text-2xl font-bold mb-6 italic">Appendix A: MP4 Signing Example</h2>
+        <div className="space-y-6">
+           <div className="p-4 border border-[var(--border-light)] rounded bg-[var(--bg-standard)]">
+              <h4 className="font-mono text-[10px] font-bold uppercase mb-2">1. Original Asset</h4>
+              <code className="block text-xs font-mono bg-[var(--code-bg)] p-2 rounded">
+                File: demo_clip.mp4<br/>
+                Size: 15,400,000 bytes<br/>
+                Hash: sha256:7f83b165... (Hash of raw video data)
+              </code>
+           </div>
+           
+           <div className="p-4 border-l-2 border-[var(--trust-blue)] bg-[var(--admonition-bg)] rounded-r">
+              <h4 className="font-mono text-[10px] font-bold uppercase text-[var(--trust-blue)] mb-2">2. UTW Injection (Tail)</h4>
+              <pre className="text-[10px] font-mono whitespace-pre-wrap">
+{`... [EOF of MP4] ...
+%SIGNET_VPR_START
+{
+  "type": "org.signetai.media_provenance",
+  "asset": { "content_hash": "7f83b165..." },
+  "signature": { "signer": "signetai.io:ssl", "sig": "ed25519:..." }
+}
+%SIGNET_VPR_END`}
+              </pre>
+           </div>
+
+           <div className="p-4 border border-green-500/20 bg-green-500/5 rounded">
+              <h4 className="font-mono text-[10px] font-bold uppercase text-green-600 mb-2">3. Verification Result</h4>
+              <p className="text-xs opacity-80">
+                The verifier slices the file at `byte_length`, hashes the video body, and matches it to `content_hash`. <br/>
+                <strong>Status: VERIFIED (Deterministic)</strong>
+              </p>
+           </div>
+        </div>
+      </div>
+    )
   }
 ];
 
-const PDF_FILENAME = "Signet-Protocol-v0.3.1-Official.pdf";
+const PDF_FILENAME = "Signet-Protocol-v0.3.2-Official.pdf";
 
 export const SpecView: React.FC = () => {
   const [page, setPage] = useState(0);
@@ -504,7 +566,7 @@ export const SpecView: React.FC = () => {
         doc.setFontSize(8);
         doc.setTextColor(180, 180, 180);
         doc.text("SIGNET PROTOCOL: OFFICIAL SPECIFICATION", margin + 5, 15);
-        doc.text(`VERSION: v0.3.1_OFFICIAL`, pageWidth - margin - 40, 15);
+        doc.text(`VERSION: v0.3.2_OFFICIAL`, pageWidth - margin - 40, 15);
         
         // Category Stamp
         doc.setTextColor(0, 85, 255);
@@ -567,7 +629,7 @@ export const SpecView: React.FC = () => {
     const manifest = {
       "@context": "https://signetai.io/contexts/vpr-v1.jsonld",
       "type": "org.signetai.vpr",
-      "version": "0.3.1",
+      "version": "0.3.2",
       "asset": {
         "name": PDF_FILENAME,
         "hash": "sha256:7b8c8f2d4a12b9c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4g5h6i7",
@@ -585,7 +647,7 @@ export const SpecView: React.FC = () => {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'spec_v031_audit_manifest.json';
+    a.download = 'spec_v032_audit_manifest.json';
     a.click();
   };
 
@@ -597,7 +659,7 @@ export const SpecView: React.FC = () => {
         <div className="flex flex-col md:flex-row justify-between mb-12 border-b border-[var(--border-light)] pb-6 text-[11px] font-mono uppercase tracking-[0.3em] opacity-40 font-bold">
           <div className="space-y-1">
             <p>Protocol Working Group | Page {page + 1}/{SPEC_PAGES.length}</p>
-            <p>Specification: v0.3.1 (Official)</p>
+            <p>Specification: v0.3.2 (Official)</p>
           </div>
           <div className="flex gap-4 mt-4 md:mt-0">
             <button 
@@ -665,7 +727,7 @@ export const SpecView: React.FC = () => {
         <div className="flex justify-center gap-8 opacity-20 hover:opacity-100 transition-opacity">
            <span className="font-mono text-[8px] uppercase font-bold tracking-widest">ISO/TC 290 COMPLIANT</span>
            <span className="font-mono text-[8px] uppercase font-bold tracking-widest">C2PA v2.3 NATIVE</span>
-           <span className="font-mono text-[8px] uppercase font-bold tracking-widest">NEURAL LENS 0.3.1</span>
+           <span className="font-mono text-[8px] uppercase font-bold tracking-widest">PRG_VPR_0.3.2</span>
         </div>
       </div>
     </div>

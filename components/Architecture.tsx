@@ -46,24 +46,24 @@ export const Architecture: React.FC = () => {
             />
             <PipelineStep 
               layer="Layer 2" 
-              storyTitle="The Logic Map"
-              techTitle="Cognitive Assertion" 
-              desc="Neural Prism intercepts the AI's internal monologue. It maps the chain of reasoning (The DAG) into a structured JUMBF box, freezing the thought process in time."
-              tools={['JUMBF Box', 'VPR Assertion']}
+              storyTitle="Public Reasoning Graph"
+              techTitle="PRG Assertion" 
+              desc="Neural Prism extracts a post-hoc Public Reasoning Graph (PRG). Unlike private Chain-of-Thought, this is a declarative audit artifact safe for public scrutiny."
+              tools={['JUMBF Box', 'VPR Graph']}
             />
             <PipelineStep 
               layer="Layer 3" 
               storyTitle="The Reality Check"
               techTitle="Soft-Binding Probe" 
-              desc="A deterministic probe verifies that the final pixels or text actually match the claimed reasoning, detecting subtle logic drift or hallucinations."
+              desc="A deterministic probe verifies the PRG against the output. It detects hallucinations and logic breaks, but cannot detect internally consistent malice."
               tools={['Binding Check', 'Drift Audit']}
             />
             <PipelineStep 
               layer="Layer 4" 
               storyTitle="The Human Seal"
-              techTitle="Manifest Signing" 
-              desc="Finally, a human curator reviews the chain. Using their private Ed25519 key, they stamp the manifest, taking ultimate responsibility for its existence."
-              tools={['Ed25519 Signer', 'HSM Cluster']}
+              techTitle="Attestation Modes" 
+              desc="The curator applies a specific seal: Intent (I prompted), Review (I watched), or Authority (I take liability). This defines the legal boundary of the asset."
+              tools={['Ed25519 Signer', 'Seal Selection']}
             />
           </div>
         </div>
@@ -81,7 +81,7 @@ export const Architecture: React.FC = () => {
             <h4 className="font-mono text-[11px] text-[var(--text-body)] opacity-40 uppercase mb-8 tracking-[0.3em] font-bold">Process Integrity</h4>
             <h2 className="font-serif text-5xl mb-6 italic text-[var(--text-header)] font-bold leading-tight">Beyond Attribution</h2>
             <p className="text-[var(--text-body)] opacity-80 text-xl leading-relaxed font-serif italic">
-              "Standard C2PA answers 'Who?'. Signet answers 'Why?'. We extend the manifest to include the reasoning path behind every decision."
+              "Standard C2PA answers 'Who?'. Signet answers 'Why?'. We extend the manifest to include the Reasoning Graph (PRG) behind every decision."
             </p>
           </div>
         </div>
