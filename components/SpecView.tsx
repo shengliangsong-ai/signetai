@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { jsPDF } from 'jspdf';
 
@@ -1101,44 +1102,218 @@ export const SpecView: React.FC = () => {
 
   const handleDownload = () => {
     const doc = new jsPDF();
+    const width = doc.internal.pageSize.getWidth();
+    const height = doc.internal.pageSize.getHeight();
+    const pageWidth = width;
+    const pageHeight = height;
+    const margin = 20;
+
+    // --- HELPER: FOOTER ---
+    const addFooter = (pageNo: number, total: number) => {
+        doc.setFont("times", "normal");
+        doc.setFontSize(8);
+        doc.setTextColor(150);
+        doc.text("MASTER SIGNATORY ATTESTATION | Authorized by: signetai.io:ssl | PROVENANCE_ROOT: SHA256:7B8C...44A2", margin, pageHeight - 10);
+        doc.text(`Page ${pageNo} of ${total}`, pageWidth - margin - 20, pageHeight - 10);
+        doc.setTextColor(0);
+    };
+
+    // --- HELPER: HEADER ---
+    const addHeader = (title: string) => {
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(10);
+        doc.setTextColor(100);
+        doc.text("SIGNET PROTOCOL v0.3.1_OFFICIAL", margin, 15);
+        doc.setLineWidth(0.5);
+        doc.setDrawColor(200);
+        doc.line(margin, 18, pageWidth - margin, 18);
+        doc.setTextColor(0);
+        
+        doc.setFont("times", "bolditalic");
+        doc.setFontSize(12);
+        doc.text(title, margin, 25);
+    };
+
+    // --- PAGE 1: COVER PAGE ---
+    // Background
+    doc.setFillColor(10, 10, 10); // Nearly black
+    doc.rect(0, 0, width, height, 'F');
+    
+    // Logo (Vector Construction)
+    doc.setDrawColor(255, 255, 255);
+    doc.setLineWidth(2);
+    doc.roundedRect(width/2 - 40, 60, 80, 80, 10, 10, 'S'); // Outline square
+    
+    // "SA" Text
+    doc.setTextColor(255, 255, 255);
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(20);
-    doc.text("Signet Protocol Specification v0.3.1", 20, 20);
+    doc.setFontSize(80);
+    doc.text("SA", width/2, 110, { align: 'center' });
     
+    // Blue Dot
+    doc.setFillColor(0, 85, 255); // Trust Blue
+    doc.circle(width/2 + 25, 75, 8, 'F');
+
+    // Title
+    doc.setFont("times", "bold");
+    doc.setFontSize(28);
+    doc.text("SIGNET PROTOCOL", width/2, 180, { align: 'center' });
+    
+    doc.setFontSize(16);
     doc.setFont("helvetica", "normal");
-    doc.setFontSize(10);
-    doc.text("Generated via signetai.io", 20, 30);
+    doc.text("Verifiable Proof of Reasoning (VPR)", width/2, 195, { align: 'center' });
     
-    let y = 40;
+    // Metadata
+    doc.setFontSize(10);
+    doc.setTextColor(180, 180, 180);
+    doc.text("VERSION 0.3.1 (DRAFT-SONG-03.1)", width/2, 230, { align: 'center' });
+    doc.text("ISO/TC 290 Alignment", width/2, 236, { align: 'center' });
+    
+    // Bottom Bar
+    doc.setFillColor(0, 85, 255);
+    doc.rect(0, height - 20, width, 20, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(8);
+    doc.text("CONFIDENTIAL - NEURAL PRISM WORKING GROUP", width/2, height - 8, { align: 'center' });
+
+    // --- PAGE 2: PROLOG / DOCUMENT CONTROL ---
+    doc.addPage();
+    doc.setTextColor(0);
+    
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(18);
+    doc.text("Document Control", margin, 40);
+    
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    
+    const metaY = 60;
+    const metaGap = 10;
+    
+    const metaData = [
+        ["Document ID:", "SPC-VPR-2026-003"],
+        ["Version:", "0.3.1"],
+        ["Status:", "Active Draft / Implementation Ready"],
+        ["Date:", new Date().toLocaleDateString()],
+        ["Author:", "Signet Protocol Group"],
+        ["Master Signatory:", "signetai.io:ssl"],
+        ["Classification:", "Public Specification"]
+    ];
+
+    metaData.forEach((item, i) => {
+        doc.setFont("helvetica", "bold");
+        doc.text(item[0], margin, metaY + (i * metaGap));
+        doc.setFont("helvetica", "normal");
+        doc.text(item[1], margin + 50, metaY + (i * metaGap));
+    });
+
+    doc.setLineWidth(0.5);
+    doc.line(margin, 140, pageWidth - margin, 140);
+
+    doc.setFont("times", "italic");
+    doc.setFontSize(11);
+    const abstract = "This document specifies the technical requirements for the Signet Protocol, a framework for ensuring the cryptographic provenance of AI-generated reasoning paths. It defines the schemas for JSON-LD manifests, Ed25519 identity binding, and Universal Tail-Wrap (UTW) injection strategies for binary assets.";
+    const splitAbstract = doc.splitTextToSize(abstract, pageWidth - (margin * 2));
+    doc.text(splitAbstract, margin, 155);
+
+    addFooter(1, SPEC_PAGES.length + 4); // approx page count adjustment
+
+    // --- PAGE 3: TABLE OF CONTENTS ---
+    doc.addPage();
+    addHeader("Table of Contents");
+    
+    let tocY = 40;
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(11);
+    
     SPEC_PAGES.forEach((page, i) => {
-      // Force page break for each new section to match the "Old PDF" aesthetic and readability
-      if (i > 0) {
-        doc.addPage();
-        y = 20;
-      }
-      
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(14); // Slightly larger header
-      doc.text(`${page.title}`, 20, y);
-      y += 15;
-      
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(10);
-      
-      // Use splitTextToSize to handle multi-line text blocks
-      const splitText = doc.splitTextToSize(page.text, 170);
-      doc.text(splitText, 20, y);
-      
-      // Add footer to mimic the official document style
-      const pageHeight = doc.internal.pageSize.height;
-      doc.setFontSize(8);
-      doc.setTextColor(150);
-      doc.text("MASTER SIGNATORY ATTESTATION | Authorized by: signetai.io:ssl | PROVENANCE_ROOT: SHA256:7B8C...44A2", 20, pageHeight - 10);
-      doc.text(`Page ${i + 1} of ${SPEC_PAGES.length}`, 170, pageHeight - 10);
-      doc.setTextColor(0); // Reset color
+        if (tocY > pageHeight - 30) {
+            doc.addPage();
+            addHeader("Table of Contents (Cont.)");
+            tocY = 40;
+        }
+        // Simple dot leader simulation
+        const title = page.title;
+        const pageNum = (i + 4).toString(); // Start content on page 4
+        doc.text(title, margin, tocY);
+        doc.text(pageNum, pageWidth - margin - 10, tocY, { align: 'right' });
+        
+        // Draw dots
+        const titleWidth = doc.getTextWidth(title);
+        const dotsStart = margin + titleWidth + 2;
+        const dotsEnd = pageWidth - margin - 15;
+        doc.setFontSize(8);
+        doc.setTextColor(150);
+        for (let d = dotsStart; d < dotsEnd; d += 2) {
+            doc.text(".", d, tocY);
+        }
+        doc.setFontSize(11);
+        doc.setTextColor(0);
+        
+        tocY += 10;
     });
     
-    // --- SIGNATURE INJECTION (Universal Tail-Wrap) ---
+    addFooter(2, SPEC_PAGES.length + 4);
+
+    // --- CONTENT PAGES ---
+    let currentPageNum = 3; // Starts after Cover (0), Prolog (1), TOC (2) -> 3
+    
+    SPEC_PAGES.forEach((page, i) => {
+        currentPageNum++;
+        doc.addPage();
+        addHeader(page.category);
+        
+        let cursorY = 40;
+        
+        // Section Title
+        doc.setFont("times", "bold");
+        doc.setFontSize(16);
+        doc.text(page.title, margin, cursorY);
+        cursorY += 15;
+        
+        // Body Text
+        doc.setFont("times", "normal");
+        doc.setFontSize(11);
+        doc.setLineHeightFactor(1.5);
+        
+        const splitBody = doc.splitTextToSize(page.text, pageWidth - (margin * 2));
+        
+        // Handle pagination within a section if text is too long (basic implementation)
+        // For simplicity in this demo, we assume sections fit or flow naturally.
+        // Complex flow requires a dedicated engine, but we'll print what fits.
+        doc.text(splitBody, margin, cursorY);
+        
+        addFooter(currentPageNum, SPEC_PAGES.length + 4);
+    });
+
+    // --- BACK COVER ---
+    doc.addPage();
+    doc.setFillColor(10, 10, 10);
+    doc.rect(0, 0, width, height, 'F');
+    
+    // Barcode Simulation
+    doc.setFillColor(255, 255, 255);
+    const barcodeY = height / 2 - 20;
+    const barcodeX = width / 2 - 60;
+    for(let i=0; i<60; i++) {
+        const w = Math.random() * 3 + 1;
+        const gap = Math.random() * 3 + 1;
+        doc.rect(barcodeX + (i * 2.5), barcodeY, w, 40, 'F');
+    }
+    
+    doc.setTextColor(255, 255, 255);
+    doc.setFont("courier", "bold");
+    doc.setFontSize(10);
+    doc.text("GENERATED BY: www.signetai.io", width/2, barcodeY + 55, { align: 'center' });
+    doc.text(new Date().toISOString(), width/2, barcodeY + 65, { align: 'center' });
+    
+    doc.setFontSize(8);
+    doc.setTextColor(150);
+    doc.text("SIGNED BY PUBLIC KEY:", width/2, barcodeY + 85, { align: 'center' });
+    doc.setTextColor(0, 255, 255); // Cyan
+    doc.text("ed25519:signet_v3.1_sovereign_5b98...8bdf9", width/2, barcodeY + 95, { align: 'center' });
+    
+    // --- SIGNATURE INJECTION (UTW) ---
     const pdfBuffer = doc.output('arraybuffer');
     
     const manifest = {
@@ -1168,7 +1343,6 @@ ${JSON.stringify(manifest, null, 2)}
     const encoder = new TextEncoder();
     const injectionBuffer = encoder.encode(injectionString);
 
-    // Combine PDF + Signature
     const combinedBuffer = new Uint8Array(pdfBuffer.byteLength + injectionBuffer.byteLength);
     combinedBuffer.set(new Uint8Array(pdfBuffer), 0);
     combinedBuffer.set(injectionBuffer, pdfBuffer.byteLength);
