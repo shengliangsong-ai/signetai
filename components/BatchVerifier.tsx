@@ -9,6 +9,7 @@ interface FileResult {
   hash: string;
   size: number;
   handle?: any; // FileSystemFileHandle
+  parentHandle?: any; // FileSystemDirectoryHandle (Required for Sidecar creation)
   file?: File;  // Reference for signing
 }
 
@@ -18,18 +19,22 @@ export const BatchVerifier: React.FC = () => {
   const [isSigning, setIsSigning] = useState(false);
   const [summary, setSummary] = useState({ total: 0, verified: 0, unsigned: 0, tampered: 0, signed: 0 });
   const [opMode, setOpMode] = useState<'AUDIT' | 'SIGN'>('AUDIT');
+  const [signStrategy, setSignStrategy] = useState<'EMBEDDED' | 'SIDECAR'>('EMBEDDED');
   
   // Fallback input for non-Chromium browsers
   const dirInputRef = useRef<HTMLInputElement>(null);
 
-  const processFile = async (file: File, handle?: any): Promise<FileResult> => {
+  const processFile = async (file: File, handle?: any, parentHandle?: any): Promise<FileResult> => {
     const TAIL_SCAN_SIZE = 10240; 
     let status: FileResult['status'] = 'UNSIGNED';
     let msg = "No credential found";
     let hash = "";
 
     try {
-      // 1. Fast Tail Scan (Zero-Copy Logic)
+      // 1. Check for Sidecar (Optimization: In a real app, we'd check if .signet.json exists first)
+      // For now, we scan the file itself.
+      
+      // 2. Fast Tail Scan (Zero-Copy Logic)
       const tailBlob = file.slice(Math.max(0, file.size - TAIL_SCAN_SIZE), file.size);
       const tailText = await tailBlob.text();
       const headText = await file.slice(0, 4096).text(); // Check SVG header
@@ -75,6 +80,7 @@ export const BatchVerifier: React.FC = () => {
       hash,
       size: file.size,
       handle,
+      parentHandle,
       file
     };
   };
@@ -110,10 +116,11 @@ export const BatchVerifier: React.FC = () => {
         for await (const entry of handle.values()) {
           if (entry.kind === 'file') {
             const file = await entry.getFile();
-            // Filter dotfiles
-            if (file.name.startsWith('.')) continue;
+            // Filter dotfiles and existing sidecars
+            if (file.name.startsWith('.') || file.name.endsWith('.signet.json')) continue;
             
-            const result = await processFile(file, entry);
+            // Pass 'handle' (current directory) as parentHandle
+            const result = await processFile(file, entry, handle);
             localResults.unshift(result); // Newest top
             setResults([...localResults]); // Update UI live
             updateSummary(localResults);
@@ -146,7 +153,7 @@ export const BatchVerifier: React.FC = () => {
       let localResults: FileResult[] = [];
 
       for (const file of files) {
-        if (file.name.startsWith('.')) continue;
+        if (file.name.startsWith('.') || file.name.endsWith('.signet.json')) continue;
         const result = await processFile(file); // No handle in fallback
         localResults.unshift(result);
         setResults([...localResults]);
@@ -170,7 +177,11 @@ export const BatchVerifier: React.FC = () => {
         return;
     }
 
-    if (!confirm(`Ready to sign ${unsignedFiles.length} files as '${vault.identity}'?\n\nThis will modify the files on your disk by appending provenance data.`)) return;
+    const confirmMsg = signStrategy === 'SIDECAR'
+      ? `Ready to generate ${unsignedFiles.length} sidecar files (.signet.json)?\nThis will NOT modify original files.`
+      : `Ready to EMBED signatures into ${unsignedFiles.length} files?\nThis will modify files on disk.`;
+
+    if (!confirm(confirmMsg)) return;
 
     setIsSigning(true);
     let signedCount = 0;
@@ -192,7 +203,9 @@ export const BatchVerifier: React.FC = () => {
             const contentHash = Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
 
             // 2. Determine Strategy
-            const strategy = file.type === 'image/svg+xml' ? 'XML_INJECTION' : 'UNIVERSAL_TAIL_WRAP';
+            // If XML/SVG, we prefer XML Injection unless explicitly forced to sidecar (but usually Sidecar is better for pure binaries)
+            // Here we respect the User's choice.
+            const strategy = signStrategy === 'SIDECAR' ? 'SIDECAR_JSON' : (file.type === 'image/svg+xml' ? 'XML_INJECTION' : 'UNIVERSAL_TAIL_WRAP');
 
             // 3. Create Manifest
             const manifest = {
@@ -214,44 +227,59 @@ export const BatchVerifier: React.FC = () => {
                 }
             };
 
-            // 4. Construct Payload
-            let blobToWrite: Blob;
-            if (strategy === 'XML_INJECTION') {
-                const text = new TextDecoder().decode(arrayBuffer);
-                const uniqueId = `signet-${Date.now()}`;
-                const metadataBlock = `
+            // 4. Execution
+            if (strategy === 'SIDECAR_JSON') {
+                if (!res.parentHandle) throw new Error("Parent directory access lost.");
+                
+                // Create Sidecar File
+                const sidecarName = `${file.name}.signet.json`;
+                const sidecarHandle = await res.parentHandle.getFileHandle(sidecarName, { create: true });
+                const writable = await sidecarHandle.createWritable();
+                await writable.write(JSON.stringify(manifest, null, 2));
+                await writable.close();
+
+                res.msg = `Sidecar created: ${sidecarName}`;
+
+            } else {
+                // EMBEDDED MODES
+                let blobToWrite: Blob;
+                if (strategy === 'XML_INJECTION') {
+                    const text = new TextDecoder().decode(arrayBuffer);
+                    const uniqueId = `signet-${Date.now()}`;
+                    const metadataBlock = `
 <metadata id="${uniqueId}" xmlns:signet="https://signetai.io/schema">
 <signet:manifest>${JSON.stringify(manifest)}</signet:manifest>
 </metadata>`;
-                const closingTagIndex = text.lastIndexOf('</svg>');
-                let newSvg = text;
-                if (closingTagIndex !== -1) {
-                    newSvg = text.slice(0, closingTagIndex) + metadataBlock + '\n' + text.slice(closingTagIndex);
+                    const closingTagIndex = text.lastIndexOf('</svg>');
+                    let newSvg = text;
+                    if (closingTagIndex !== -1) {
+                        newSvg = text.slice(0, closingTagIndex) + metadataBlock + '\n' + text.slice(closingTagIndex);
+                    } else {
+                        newSvg += metadataBlock; // Fallback append
+                    }
+                    blobToWrite = new Blob([newSvg], { type: 'image/svg+xml' });
                 } else {
-                    newSvg += metadataBlock; // Fallback append
+                    // UTW
+                    const injection = `\n%SIGNET_VPR_START\n${JSON.stringify(manifest, null, 2)}\n%SIGNET_VPR_END`;
+                    blobToWrite = new Blob([arrayBuffer, injection], { type: file.type });
                 }
-                blobToWrite = new Blob([newSvg], { type: 'image/svg+xml' });
-            } else {
-                // UTW
-                const injection = `\n%SIGNET_VPR_START\n${JSON.stringify(manifest, null, 2)}\n%SIGNET_VPR_END`;
-                blobToWrite = new Blob([arrayBuffer, injection], { type: file.type });
-            }
 
-            // 5. Write to Disk
-            const writable = await res.handle.createWritable();
-            await writable.write(blobToWrite);
-            await writable.close();
+                // Write to Disk (In-Place)
+                const writable = await res.handle.createWritable();
+                await writable.write(blobToWrite);
+                await writable.close();
+                res.msg = `Signed by ${vault.identity}`;
+            }
 
             // 6. Update Status
             res.status = 'SIGNED';
-            res.msg = `Signed by ${vault.identity}`;
             res.hash = contentHash.substring(0, 16) + '...';
             signedCount++;
 
         } catch (e) {
             console.error(`Failed to sign ${res.name}:`, e);
             res.status = 'ERROR';
-            res.msg = 'Write Permission Denied or I/O Error';
+            res.msg = (e as Error).message || 'Write Permission Denied or I/O Error';
         }
         
         // Update UI periodically
@@ -302,7 +330,42 @@ export const BatchVerifier: React.FC = () => {
                   Sign
                 </button>
              </div>
-             <p className="text-[9px] opacity-50 italic">
+             
+             {opMode === 'SIGN' && (
+               <div className="pt-2 animate-in slide-in-from-top-2">
+                 <h3 className="font-mono text-[9px] uppercase font-bold tracking-widest opacity-40 mb-2">Signing Strategy</h3>
+                 <div className="flex flex-col gap-2">
+                    <label className={`flex items-center gap-3 p-2 rounded border cursor-pointer transition-all ${signStrategy === 'EMBEDDED' ? 'border-emerald-500 bg-emerald-50 text-emerald-900' : 'border-[var(--border-light)] opacity-60'}`}>
+                      <input 
+                        type="radio" 
+                        name="strategy" 
+                        checked={signStrategy === 'EMBEDDED'} 
+                        onChange={() => setSignStrategy('EMBEDDED')}
+                        className="accent-emerald-600"
+                      />
+                      <div>
+                        <span className="block font-bold text-[10px] uppercase">Embedded (UTW)</span>
+                        <span className="block text-[9px] opacity-70">Modifies original file</span>
+                      </div>
+                    </label>
+                    <label className={`flex items-center gap-3 p-2 rounded border cursor-pointer transition-all ${signStrategy === 'SIDECAR' ? 'border-blue-500 bg-blue-50 text-blue-900' : 'border-[var(--border-light)] opacity-60'}`}>
+                      <input 
+                        type="radio" 
+                        name="strategy" 
+                        checked={signStrategy === 'SIDECAR'} 
+                        onChange={() => setSignStrategy('SIDECAR')}
+                        className="accent-blue-600"
+                      />
+                      <div>
+                        <span className="block font-bold text-[10px] uppercase">Sidecar (.json)</span>
+                        <span className="block text-[9px] opacity-70">Creates separate file</span>
+                      </div>
+                    </label>
+                 </div>
+               </div>
+             )}
+
+             <p className="text-[9px] opacity-50 italic pt-1">
                {opMode === 'AUDIT' ? 'Read-only access. Ideal for verification.' : 'Read/Write access. Required for batch signing.'}
              </p>
           </div>
@@ -391,7 +454,9 @@ export const BatchVerifier: React.FC = () => {
                   )}
                 </button>
                 <p className="text-[9px] opacity-60 font-serif italic leading-relaxed text-center">
-                   Writes signatures directly to disk using your active Identity Vault.
+                   {signStrategy === 'EMBEDDED' 
+                     ? "Writes signatures directly to disk (Modifies Files)." 
+                     : "Generates .signet.json files (Preserves Originals)."}
                 </p>
              </div>
           )}
@@ -403,7 +468,7 @@ export const BatchVerifier: React.FC = () => {
               <div className="flex items-center gap-4">
                 <span className="font-mono text-[10px] uppercase font-bold tracking-widest">Live Telemetry Stream</span>
                 <span className={`font-mono text-[9px] px-2 py-0.5 rounded border ${opMode === 'SIGN' ? 'border-emerald-500 text-emerald-600 bg-emerald-50' : 'border-blue-500 text-blue-600 bg-blue-50'}`}>
-                    MODE: {opMode}
+                    MODE: {opMode} {opMode === 'SIGN' ? `(${signStrategy})` : ''}
                 </span>
               </div>
               {isProcessing && <span className="font-mono text-[10px] text-[var(--trust-blue)] animate-pulse">PROCESSING...</span>}
