@@ -25,6 +25,20 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
     
+    <!-- Tailwind CDN for Preview/Runtime Safety -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              'trust-blue': '#0055FF',
+            }
+          }
+        }
+      }
+    </script>
+
     <style>
       :root {
         /* C2PA Industrial Palette (Standard Light) */
@@ -160,22 +174,18 @@
     <script>
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
+          // Only register SW if on http/https
           if (!window.location.protocol.startsWith('http')) {
-             console.warn('Signet SW: Skipping registration (invalid protocol).');
              return;
           }
           try {
             const currentPath = window.location.pathname;
             const basePath = currentPath.substring(0, currentPath.lastIndexOf('/') + 1);
             const swUrl = window.location.protocol + '//' + window.location.host + basePath + 'sw.js';
-            
-            console.log('Signet SW: Registering at', swUrl);
-
             navigator.serviceWorker.register(swUrl, { scope: basePath })
-              .then(reg => console.log('SW registered!', reg))
-              .catch(err => console.error('SW failed!', err));
+              .catch(err => console.error('Signet SW failed', err));
           } catch (e) {
-            console.error('Signet SW: Construction Error', e);
+            console.error('Signet SW construction error', e);
           }
         });
       }
