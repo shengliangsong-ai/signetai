@@ -826,21 +826,21 @@ const SPEC_PAGES = [
            <div className="p-4 border-l-2 border-[var(--border-light)] bg-[var(--bg-standard)]">
               <h4 className="font-mono text-[10px] uppercase font-bold text-[var(--text-header)] mb-2">Hard-Binding</h4>
               <p className="text-xs opacity-80 leading-relaxed">
-                Cryptographic binding of provenance to the exact byte representation of an asset (e.g., SHA-256 hash).
+                Cryptographic binding of provenance to the exact byte representation of an asset (e.g., SHA-256 hash). Any bit-level modification invalidates this binding.
               </p>
            </div>
 
            <div className="p-4 border-l-2 border-[var(--border-light)] bg-[var(--bg-standard)]">
-              <h4 className="font-mono text-[10px] uppercase font-bold text-[var(--text-header)] mb-2">Soft-Binding</h4>
+              <h4 className="font-mono text-[10px] uppercase font-bold text-[var(--text-header)] mb-2">Soft-Binding (pHash)</h4>
               <p className="text-xs opacity-80 leading-relaxed">
-                A perceptual or semantic fingerprint enabling similarity matching across transformations that break cryptographic hashes.
+                A perceptual fingerprint (using DCT or Wavelet transforms) that remains stable across resizing, compression, and format shifting. Similarity is measured via Hamming Distance thresholds (&lt; 5).
               </p>
            </div>
 
            <div className="p-4 border-l-2 border-[var(--border-light)] bg-[var(--bg-standard)]">
               <h4 className="font-mono text-[10px] uppercase font-bold text-[var(--text-header)] mb-2">Seal Mode</h4>
               <p className="text-xs opacity-80 leading-relaxed">
-                A normative classification defining the semantic meaning of a Human Seal. Valid values: intent, review, authority.
+                A normative classification defining the semantic meaning of a Human Seal. Valid values: <code>intent</code>, <code>review</code>, <code>authority</code>.
               </p>
            </div>
         </div>
