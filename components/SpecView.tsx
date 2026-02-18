@@ -118,12 +118,82 @@ const SPEC_PAGES = [
     )
   },
   {
+    category: "NORMATIVE STANDARD",
+    title: "3. Seal Mode Schemas",
+    text: "Defines the JSON schema for L4 Human Seals. \n\nSemantics:\n1. Intent Seal: 'I intended this result.'\n2. Review Seal: 'I watched this and it is consistent.'\n3. Authority Seal: 'I take liability for this.'\n\nValidation Rule: A Seal MUST NOT be interpreted beyond its declared mode.",
+    content: (
+      <div className="space-y-8 animate-in fade-in duration-500">
+        <h2 className="text-[var(--text-header)] font-serif text-2xl font-bold mb-6 italic">3. Seal Mode Schemas</h2>
+        
+        <div className="grid grid-cols-1 gap-6">
+           <div className="p-6 border-l-4 border-blue-500 bg-blue-500/5 rounded-r-lg">
+              <h4 className="font-bold text-blue-600 uppercase text-xs tracking-widest mb-2">Mode 1: Intent Seal</h4>
+              <p className="text-sm italic opacity-80 mb-2">"I intentionally initiated or directed the generation of this asset."</p>
+              <ul className="list-disc pl-4 text-xs opacity-70 space-y-1">
+                 <li><strong>Claims:</strong> Establishes origin of intent. No claim of correctness.</li>
+                 <li><strong>Typical Use:</strong> Prompt authors, Commissioners.</li>
+              </ul>
+           </div>
+
+           <div className="p-6 border-l-4 border-amber-500 bg-amber-500/5 rounded-r-lg">
+              <h4 className="font-bold text-amber-600 uppercase text-xs tracking-widest mb-2">Mode 2: Review Seal</h4>
+              <p className="text-sm italic opacity-80 mb-2">"I have reviewed this output and find it consistent with its stated intent."</p>
+              <ul className="list-disc pl-4 text-xs opacity-70 space-y-1">
+                 <li><strong>Claims:</strong> Confirms human inspection. Asserts reasonable diligence.</li>
+                 <li><strong>Typical Use:</strong> Editors, Moderators, Curators.</li>
+              </ul>
+           </div>
+
+           <div className="p-6 border-l-4 border-red-600 bg-red-600/5 rounded-r-lg">
+              <h4 className="font-bold text-red-600 uppercase text-xs tracking-widest mb-2">Mode 3: Authority Seal</h4>
+              <p className="text-sm italic opacity-80 mb-2">"I stand behind this output as authoritative within my declared role."</p>
+              <ul className="list-disc pl-4 text-xs opacity-70 space-y-1">
+                 <li><strong>Claims:</strong> Strongest accountability. Highest trust-weight.</li>
+                 <li><strong>Typical Use:</strong> Publishers, Institutions, Certified Experts.</li>
+              </ul>
+           </div>
+        </div>
+
+        <div className="mt-8">
+           <h4 className="font-mono text-[10px] uppercase font-bold text-[var(--text-header)] mb-2">JSON Schema: Seal Object</h4>
+           <div className="p-4 bg-[var(--code-bg)] border border-[var(--border-light)] rounded overflow-x-auto">
+             <pre className="font-mono text-[10px] leading-relaxed">
+{`{
+  "seal": {
+    "seal_id": "uuid-v4",
+    "seal_mode": "intent | review | authority",
+    "signer": {
+      "anchor": "did:synet:abc123",
+      "public_key": "ed25519:BASE64",
+      "identity_claim": "string"
+    },
+    "scope": {
+      "asset_hash": "sha256:HEX",
+      "prg_hash": "sha256:HEX"
+    },
+    "timestamp": "ISO-8601",
+    "signature": {
+      "algorithm": "Ed25519",
+      "value": "BASE64"
+    }
+  }
+}`}
+             </pre>
+           </div>
+           <p className="text-[10px] mt-4 font-bold text-red-500 uppercase tracking-widest">
+             Critical: A Seal MUST NOT be interpreted beyond its declared mode.
+           </p>
+        </div>
+      </div>
+    )
+  },
+  {
     category: "TECHNICAL AUDIT",
-    title: "3. Executive Summary & Abstract",
+    title: "4. Executive Summary & Abstract",
     text: "The Signet Protocol (v0.3.1) defines a decentralized framework for the cryptographic attestation of AI-generated reasoning paths (VPR). \n\nUnlike traditional watermarking which focuses on asset attribution, Signet verifies the 'Reasoning DAG'—the logical chain of thought used to generate the output. \n\nThis document serves as a Technical Audit of the reference implementation hosted at signetai.io. It details the Client-Side PWA architecture, Zero-Copy memory management, Universal Tail-Wrap (UTW) injection strategy, and the Sovereign Identity capabilities utilizing Ed25519-256.",
     content: (
       <div className="space-y-8 animate-in fade-in duration-500">
-        <h2 className="text-[var(--text-header)] font-serif text-2xl font-bold mb-6 italic underline underline-offset-8 decoration-1 decoration-neutral-500/30">3. Executive Summary</h2>
+        <h2 className="text-[var(--text-header)] font-serif text-2xl font-bold mb-6 italic underline underline-offset-8 decoration-1 decoration-neutral-500/30">4. Executive Summary</h2>
         <p className="indent-12 opacity-80 leading-loose text-justify">
           The Signet Protocol (v0.3.1) defines a decentralized framework for the cryptographic attestation of AI-generated reasoning paths (VPR). 
           Unlike traditional watermarking which focuses on asset attribution, Signet verifies the <strong>"Public Reasoning Graph"</strong>—the logical chain of thought used to generate the output.
@@ -133,11 +203,11 @@ const SPEC_PAGES = [
   },
   {
     category: "TECHNICAL AUDIT",
-    title: "4. System Topology (Local-First)",
+    title: "5. System Topology (Local-First)",
     text: "The Signet architecture strictly adheres to a 'Local-First' privacy model. \n\n4.1 Client-Side Execution\nAll cryptographic operations—Hashing (SHA-256), Key Generation (Ed25519), and Signing—occur exclusively within the user's browser (V8 Sandbox). \n\n4.2 Data Isolation\nPrivate Keys and Mnemonics are stored in the browser's IndexedDB ('IdentityVault') and are never transmitted over the network. \n\n4.3 Registry Sync\nOnly Public Keys and Identity Anchors are synchronized to the global Firestore registry. This ensures verifiable identity without custodial risk.",
     content: (
       <div className="space-y-8 animate-in fade-in duration-500">
-        <h2 className="text-[var(--text-header)] font-serif text-2xl font-bold mb-6 italic">4. System Topology</h2>
+        <h2 className="text-[var(--text-header)] font-serif text-2xl font-bold mb-6 italic">5. System Topology</h2>
         <p className="opacity-80 leading-loose mb-6">
           The Signet architecture strictly adheres to a <strong>'Local-First'</strong> privacy model to prevent key leakage.
         </p>
@@ -155,11 +225,11 @@ const SPEC_PAGES = [
   },
   {
     category: "TECHNICAL AUDIT",
-    title: "5. Cryptographic Implementation",
+    title: "6. Cryptographic Implementation",
     text: "5.1 Algorithms\n- Signatures: Ed25519 (Edwards-curve Digital Signature Algorithm).\n- Hashing: SHA-256 (WebCrypto API).\n- Key Derivation: BIP-39 Mnemonic standard.\n\n5.2 Entropy Standards\nSignet enforces 'Sovereign Grade' entropy for Master Curators.\n- Dictionary: 2,048 words (2^11).\n- Mnemonic Length: 24 words.\n- Total Entropy: 24 * 11 = 264 bits.\n\nThis exceeds the 256-bit security floor of modern elliptic curves, rendering brute-force attacks computationally infeasible.",
     content: (
       <div className="space-y-8 animate-in fade-in duration-500">
-        <h2 className="text-[var(--text-header)] font-serif text-2xl font-bold mb-6 italic">5. Cryptography & Entropy</h2>
+        <h2 className="text-[var(--text-header)] font-serif text-2xl font-bold mb-6 italic">6. Cryptography & Entropy</h2>
         <div className="grid grid-cols-2 gap-4 text-xs font-mono">
            <div className="p-4 border border-[var(--border-light)] rounded">
               <span className="block font-bold text-[var(--trust-blue)] mb-1">Signature Algo</span>
@@ -185,11 +255,11 @@ const SPEC_PAGES = [
   },
   {
     category: "TECHNICAL AUDIT",
-    title: "6. Universal Tail-Wrap (UTW)",
+    title: "7. Universal Tail-Wrap (UTW)",
     text: "6.1 Definition\nUTW is a zero-dependency injection strategy for appending provenance data to binary files (PDF, MP4, WAV) without rewriting the internal file structure.\n\n6.2 Security Seal\nThe %SIGNET_VPR_START% token, the JSON payload, and the %SIGNET_VPR_END% marker are ALL included in the final Ed25519 signature calculation. This creates a tamper-evident seal; any attempt to strip the manifest or append a fake one invalidates the signature.\n\n6.3 Byte Layout\n[ORIGINAL_BINARY_DATA]\n[EOF_MARKER]\n[SIGNET_VPR_START]\n[JSON_MANIFEST_PAYLOAD]\n[SIGNET_VPR_END]",
     content: (
       <div className="space-y-8 animate-in fade-in duration-500">
-        <h2 className="text-[var(--text-header)] font-serif text-2xl font-bold mb-6 italic">6. Universal Tail-Wrap (UTW)</h2>
+        <h2 className="text-[var(--text-header)] font-serif text-2xl font-bold mb-6 italic">7. Universal Tail-Wrap (UTW)</h2>
         <p className="opacity-80 leading-loose mb-6">
           UTW allows arbitrary binary files to be signed in the browser without expensive parsing libraries or file corruption.
         </p>
@@ -224,11 +294,11 @@ const SPEC_PAGES = [
   },
   {
     category: "TECHNICAL AUDIT",
-    title: "7. Zero-Copy Streaming Engine",
+    title: "8. Zero-Copy Streaming Engine",
     text: "7.1 The Problem\nLoading large assets (e.g., 2GB Video) into browser RAM (ArrayBuffer) causes crash loops on mobile devices.\n\n7.2 The Solution: Block-Chained Hashing\nSignet implements a stream reader that processes files in 5MB chunks. \nFormula: H(n) = SHA256( H(n-1) + Chunk(n) )\n\n7.3 Zero-Copy Composition\nThe final signed file is constructed using a Blob composition of pointers:\nconst final = new Blob([originalFileRef, signatureString]);\nThis requires O(1) memory overhead regardless of file size.",
     content: (
       <div className="space-y-8 animate-in fade-in duration-500">
-        <h2 className="text-[var(--text-header)] font-serif text-2xl font-bold mb-6 italic">7. Zero-Copy Streaming</h2>
+        <h2 className="text-[var(--text-header)] font-serif text-2xl font-bold mb-6 italic">8. Zero-Copy Streaming</h2>
         <p className="opacity-80 leading-loose mb-6">
           To support GB-scale assets on mobile, Signet avoids loading files into RAM.
         </p>
@@ -250,11 +320,11 @@ const SPEC_PAGES = [
   },
   {
     category: "TECHNICAL AUDIT",
-    title: "8. Data & Storage Schema (Resilient PKI)",
+    title: "9. Data & Storage Schema (Resilient PKI)",
     text: "8.1 Local Schema (IndexedDB)\nStore: 'IdentityVault'\nKeyPath: 'anchor'\nFields: { anchor, identity, publicKey, mnemonic (encrypted), timestamp, type }\n\n8.2 Global Schema (Firestore)\nCollection: 'identities'\nDocumentID: {anchor}\nFields: { identity, publicKey, ownerUid, provider, timestamp }\n\n8.3 Registry Reconstruction Strategy\nSignetAI acts as an aggregator, not a gatekeeper. Users SHOULD publish their public keys to external profiles (GitHub/LinkedIn/X). In the event of a database loss, the Global Registry can be rebuilt by crawling these verified social proofs.",
     content: (
       <div className="space-y-8 animate-in fade-in duration-500">
-        <h2 className="text-[var(--text-header)] font-serif text-2xl font-bold mb-6 italic">8. Data Schema Audit</h2>
+        <h2 className="text-[var(--text-header)] font-serif text-2xl font-bold mb-6 italic">9. Data Schema Audit</h2>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
            <div className="space-y-4">
@@ -304,11 +374,11 @@ const SPEC_PAGES = [
   },
   {
     category: "TECHNICAL AUDIT",
-    title: "9. Compliance & Standards",
+    title: "10. Compliance & Standards",
     text: "9.1 C2PA 2.3 Hard-Binding\nSignet implements mandatory 'Hard-Binding' via SHA-256 hashing of the raw asset byte stream (excluding the manifest). This hash is immutable and cryptographically bound to the reasoning assertions.\n\n9.2 Crypto-Agility (NIST CSWP 39)\nThe protocol is architected for algorithm agility. While Ed25519 is the current standard, the `signature.algorithm` field allows for seamless migration to Post-Quantum Cryptography (PQC) schemes (e.g., CRYSTALS-Dilithium) without breaking the Reasoning DAG structure.\n\n9.3 GDPR/CCPA\nRight to Erasure supported via Local Vault deletion.",
     content: (
       <div className="space-y-8 animate-in fade-in duration-500">
-        <h2 className="text-[var(--text-header)] font-serif text-2xl font-bold mb-6 italic">9. Compliance</h2>
+        <h2 className="text-[var(--text-header)] font-serif text-2xl font-bold mb-6 italic">10. Compliance</h2>
         <div className="space-y-8">
            <div>
               <h4 className="font-bold text-[var(--text-header)] text-lg">9.1 Hard-Binding vs Soft-Binding</h4>
@@ -333,11 +403,11 @@ const SPEC_PAGES = [
   },
   {
     category: "TECHNICAL AUDIT",
-    title: "10. Traceability & Asset Retrieval",
+    title: "11. Traceability & Asset Retrieval",
     text: "10.1 The Persistence Paradox\nWhen a destructive 'in-place' edit occurs, the Vision Substrate (L1) is physically altered. To maintain the integrity of the Reasoning Chain, the protocol provides a mechanism to bridge the gap between the current modified state and the original source pixels.\n\n10.2 URI Pointer Architecture\nEvery Signet Manifest for a derived asset MUST contain an origin_reference block if the parent asset is not embedded. This includes the content hash (Hard-Binding), a URI locator (IPFS/HTTPS), and VPR continuity data.",
     content: (
       <div className="space-y-8 animate-in fade-in duration-500">
-        <h2 className="text-[var(--text-header)] font-serif text-2xl font-bold mb-6 italic">10. Traceability & Retrieval</h2>
+        <h2 className="text-[var(--text-header)] font-serif text-2xl font-bold mb-6 italic">11. Traceability & Retrieval</h2>
         
         <div className="space-y-6">
            <div className="p-6 border-l-4 border-amber-500 bg-amber-500/5">
@@ -388,11 +458,11 @@ const SPEC_PAGES = [
   },
   {
     category: "TECHNICAL AUDIT",
-    title: "11. Soft-Binding & Resilience",
+    title: "12. Soft-Binding & Resilience",
     text: "11.1 Perceptual Fingerprint Layer\nTo protect the Trust Economy from 'Clean Slate' attacks, Signet implements a Soft-Binding layer. Unlike cryptographic hashes (SHA-256) which break if a single pixel changes, a Perceptual Hash (pHash) or Neural Fingerprint remains stable across resizing, compression, and metadata stripping.\n\n11.2 Conflict Resolution\nIf a stripped asset is resigned, the Registry uses visual matching (Hamming Distance) to identify the original Root Claim. The timestamped original (A1) takes precedence over the derived claim (B1), triggering a 'Stolen Heritage' flag.",
     content: (
       <div className="space-y-8 animate-in fade-in duration-500">
-        <h2 className="text-[var(--text-header)] font-serif text-2xl font-bold mb-6 italic">11. Soft-Binding Resilience</h2>
+        <h2 className="text-[var(--text-header)] font-serif text-2xl font-bold mb-6 italic">12. Soft-Binding Resilience</h2>
         
         <div className="space-y-6">
            <div>
@@ -416,11 +486,11 @@ const SPEC_PAGES = [
   },
   {
     category: "PROTOCOL GOVERNANCE",
-    title: "12. Trust Economy & Penalties",
+    title: "13. Trust Economy & Penalties",
     text: "To discourage the stripping of provenance data, the Signet Protocol introduces Trust Score Attrition.\n\n12.1 Malicious Actor Penalties\nRepeated 'Clean Slate' signatures on assets found to be stripped versions of existing registry entries lead to Trust Score Decay. \n\nConsequences:\n- Automatic 'Low-Confidence' flags on all future content.\n- Exclusion from high-integrity distribution networks.\n\n12.2 Redemption & Decay\nPenalties follow a decay half-life of 90 days. Users may appeal via manual human review, ensuring the system remains equitable.",
     content: (
       <div className="space-y-8 animate-in fade-in duration-500">
-        <h2 className="text-[var(--text-header)] font-serif text-2xl font-bold mb-6 italic">12. The Trust Economy</h2>
+        <h2 className="text-[var(--text-header)] font-serif text-2xl font-bold mb-6 italic">13. The Trust Economy</h2>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
            <div className="p-6 border border-[var(--border-light)] bg-[var(--bg-standard)] rounded">
@@ -441,11 +511,11 @@ const SPEC_PAGES = [
   },
   {
     category: "TECHNICAL AUDIT",
-    title: "13. Chain Compression (Virtual Nodes)",
+    title: "14. Chain Compression (Virtual Nodes)",
     text: "13.1 The Principle of 'Amortized Trust'\nLong provenance chains increase file size. Signet solves this via Recursive Chain Compression.\n\n13.2 The Virtual Node\nWhen a chain reaches a defined threshold (e.g., 50 nodes), the protocol 'bakes' these blocks into a single Compressed Provenance Document (CPD). The asset's tail-wrap then stores only a single 'Virtual Node' containing the CPD Hash and Merkle Root. This allows O(1) file size growth while preserving the full cryptographic history.",
     content: (
       <div className="space-y-8 animate-in fade-in duration-500">
-        <h2 className="text-[var(--text-header)] font-serif text-2xl font-bold mb-6 italic">13. Recursive Chain Compression</h2>
+        <h2 className="text-[var(--text-header)] font-serif text-2xl font-bold mb-6 italic">14. Recursive Chain Compression</h2>
         
         <div className="space-y-6">
            <div className="p-6 bg-[var(--code-bg)] border border-[var(--border-light)] rounded-lg">
@@ -462,11 +532,11 @@ const SPEC_PAGES = [
   },
   {
     category: "STRATEGIC ALIGNMENT",
-    title: "14. ISO/TC 290 Strategy: The Ledger",
+    title: "15. ISO/TC 290 Strategy: The Ledger",
     text: "How to Pitch 'Compression' to ISO/TC 290.\n\nFrame it as 'Scalable Reputation Ledger for Synthetic Media'.\nThe Problem: Long-term online reputation generates massive metadata ('Data Gravity').\nThe Solution: Virtual Nodes keep asset files 'light' and performant for mobile/web while maintaining 'heavy' cryptographic proof in decentralized sidecars.",
     content: (
       <div className="space-y-8 animate-in fade-in duration-500">
-        <h2 className="text-[var(--text-header)] font-serif text-2xl font-bold mb-6 italic">14. ISO/TC 290 Strategy</h2>
+        <h2 className="text-[var(--text-header)] font-serif text-2xl font-bold mb-6 italic">15. ISO/TC 290 Strategy</h2>
         
         <p className="opacity-80 leading-loose mb-8">
           <strong>Strategic Framing:</strong> Shift language from "Infrastructure" to <strong>"Scalable Reputation Ledger"</strong> to align with auditability, neutrality, and composability standards.
@@ -505,11 +575,11 @@ const SPEC_PAGES = [
   },
   {
     category: "TRANSPARENCY & AUDIT",
-    title: "15. Multimodal & Git Traceability",
+    title: "16. Multimodal & Git Traceability",
     text: "The Signet Protocol specification is not static text; it is a living, version-controlled artifact. \n\n15.1 Git Provenance\nAll architectural decisions (ADRs), code changes, and protocol updates are cryptographically traced in our public repository: https://github.com/shengliangsong-ai/signetai.\n\n15.2 AI-Generated Synthesis\nWe utilize Google's NotebookLM to autonomously generate high-level audio/video summaries of this very specification. This circular feedback loop—where the spec generates its own explainer material—validates our 'Cognitive Provenance' thesis.",
     content: (
       <div className="space-y-8 animate-in fade-in duration-500">
-        <h2 className="text-[var(--text-header)] font-serif text-2xl font-bold mb-6 italic">15. Multimodal Audit</h2>
+        <h2 className="text-[var(--text-header)] font-serif text-2xl font-bold mb-6 italic">16. Multimodal Audit</h2>
         
         <div className="space-y-6">
            <div className="p-6 border border-[var(--border-light)] bg-[var(--bg-standard)] rounded-lg">
@@ -541,11 +611,11 @@ const SPEC_PAGES = [
   },
   {
     category: "SECURITY AUDIT",
-    title: "16. Adversarial Analysis (Red Team)",
+    title: "17. Adversarial Analysis (Red Team)",
     text: "Adversarial review of protocol resilience against realistic attack vectors.\n\nGoal #1: 'Make Fake Content Look Legit'\nAttack: Generate synthetic content + fabricate a plausible PRG + self-sign.\nOutcome: Attack technically succeeds, but Trust Impact is limited due to L4 Human Seal accountability.\n\nGoal #2: 'Strip Provenance Without Detection'\nAttack: Remove UTW tail-wrap and redistribute asset.\nOutcome: Fails cryptographically. Verification tools report 'Unsigned'.\n\nGoal #3: 'Rewrite History (Clean-Slate Attack)'\nAttack: Modify asset slightly, re-sign as original.\nOutcome: Partial success possible, but detectable via soft-binding (pHash) registry matching.",
     content: (
       <div className="space-y-8 animate-in fade-in duration-500">
-        <h2 className="text-[var(--text-header)] font-serif text-2xl font-bold mb-6 italic">16. Adversarial Analysis (Red Team)</h2>
+        <h2 className="text-[var(--text-header)] font-serif text-2xl font-bold mb-6 italic">17. Adversarial Analysis (Red Team)</h2>
         <div className="space-y-6">
            <div className="p-6 bg-red-500/5 border border-red-500/20 rounded-lg">
               <h4 className="font-bold text-red-600 mb-2 text-sm uppercase tracking-widest">Attacker Goal #1: "Make Fake Content Look Legit"</h4>
@@ -575,6 +645,219 @@ const SPEC_PAGES = [
                  <span className="opacity-50">|</span>
                  <span className="opacity-80">Detectable via pHash Soft-Binding + Registry Collision.</span>
               </div>
+           </div>
+        </div>
+      </div>
+    )
+  },
+  {
+    category: "SECURITY AUDIT",
+    title: "18. Formal Security Considerations",
+    text: "ISO/RFC style security assessment. Defines Integrity, Non-Repudiation, Tamper Evidence, and Key Sovereignty. Lists Out-of-Scope threats such as social engineering and coercion.",
+    content: (
+      <div className="space-y-8 animate-in fade-in duration-500">
+        <h2 className="text-[var(--text-header)] font-serif text-2xl font-bold mb-6 italic">18. Formal Security Considerations</h2>
+        <p className="text-sm opacity-80 leading-relaxed italic">
+          The Signet Protocol enhances accountability and provenance. It does not guarantee factual correctness or prevent all forms of deception.
+        </p>
+
+        <div className="space-y-6">
+           <div className="p-6 border border-[var(--border-light)] rounded bg-[var(--bg-standard)]">
+              <h4 className="font-mono text-[10px] uppercase font-bold text-[var(--trust-blue)] mb-4">Key Security Properties</h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-xs">
+                 <div>
+                    <strong className="block mb-1 text-[var(--text-header)]">Integrity</strong>
+                    <p className="opacity-70">Cryptographic signatures bind assets, reasoning, and seals. Any modification invalidates the signature.</p>
+                 </div>
+                 <div>
+                    <strong className="block mb-1 text-[var(--text-header)]">Non-Repudiation</strong>
+                    <p className="opacity-70">Ed25519 signatures provide strong proof of key possession at signing time.</p>
+                 </div>
+                 <div>
+                    <strong className="block mb-1 text-[var(--text-header)]">Tamper Evidence</strong>
+                    <p className="opacity-70">Universal Tail-Wrap ensures provenance removal is detectable by standard auditors.</p>
+                 </div>
+                 <div>
+                    <strong className="block mb-1 text-[var(--text-header)]">Key Sovereignty</strong>
+                    <p className="opacity-70">Private keys never leave the client environment. No custodial key escrow exists.</p>
+                 </div>
+              </div>
+           </div>
+
+           <div className="p-6 border border-amber-500/20 bg-amber-500/5 rounded">
+              <h4 className="font-mono text-[10px] uppercase font-bold text-amber-600 mb-2">Out-of-Scope Threats</h4>
+              <ul className="list-disc pl-4 text-xs opacity-70 space-y-1">
+                 <li>Collusion between malicious humans and AI systems.</li>
+                 <li>Social engineering attacks on end-users.</li>
+                 <li>Coercion or false legal claims by signatories.</li>
+              </ul>
+              <p className="mt-4 text-xs italic opacity-60">These are governance, legal, or societal issues rather than cryptographic ones.</p>
+           </div>
+        </div>
+      </div>
+    )
+  },
+  {
+    category: "STRATEGIC AUDIT",
+    title: "19. ISO Reviewer Q&A",
+    text: "Simulated dialogue with ISO/TC 290 reviewers. Addresses Chain-of-Thought leakage, legal liability of seals, and protocol centralization risks.",
+    content: (
+      <div className="space-y-8 animate-in fade-in duration-500">
+        <h2 className="text-[var(--text-header)] font-serif text-2xl font-bold mb-6 italic">19. ISO Reviewer Q&A</h2>
+        
+        <div className="space-y-6">
+           <div className="space-y-2">
+              <p className="font-bold text-sm text-[var(--text-header)]">Q1: Are you claiming to expose or store AI chain-of-thought?</p>
+              <div className="pl-4 border-l-2 border-[var(--trust-blue)]">
+                 <p className="text-xs opacity-80 leading-relaxed">
+                   <strong>Answer: No.</strong> Signet records a Public Reasoning Graph (PRG), which is a declarative justification artifact. It is explicitly not a model’s internal reasoning state and does not expose proprietary or private chain-of-thought data.
+                 </p>
+              </div>
+           </div>
+
+           <div className="space-y-2">
+              <p className="font-bold text-sm text-[var(--text-header)]">Q2: Does a Human Seal imply legal liability?</p>
+              <div className="pl-4 border-l-2 border-[var(--trust-blue)]">
+                 <p className="text-xs opacity-80 leading-relaxed">
+                   <strong>Answer: No.</strong> Seal modes distinguish intent, review, and authority. Each conveys a different level of accountability and must not be interpreted beyond its declared scope. Legal interpretation is jurisdiction-dependent.
+                 </p>
+              </div>
+           </div>
+
+           <div className="space-y-2">
+              <p className="font-bold text-sm text-[var(--text-header)]">Q4: What prevents malicious users from signing false content?</p>
+              <div className="pl-4 border-l-2 border-[var(--trust-blue)]">
+                 <p className="text-xs opacity-80 leading-relaxed">
+                   <strong>Answer: Nothing—and this is intentional.</strong> Signet does not attempt to prevent deception; it ensures deception is attributable and auditable. Trust accrues over time, not by single signatures.
+                 </p>
+              </div>
+           </div>
+
+           <div className="space-y-2">
+              <p className="font-bold text-sm text-[var(--text-header)]">Q6: What happens if your registry disappears?</p>
+              <div className="pl-4 border-l-2 border-[var(--trust-blue)]">
+                 <p className="text-xs opacity-80 leading-relaxed">
+                   <strong>Answer:</strong> The registry is reconstructible via public key anchors published externally (Github/X). The protocol is not dependent on a single operator.
+                 </p>
+              </div>
+           </div>
+        </div>
+      </div>
+    )
+  },
+  {
+    category: "NORMATIVE STANDARD",
+    title: "20. Formal Definitions",
+    text: "Normative definitions to eliminate ambiguity and constrain interpretation. Defines 'Vision Substrate', 'PRG', 'VPR', 'Drift Audit', and 'Human Seal' within the context of the protocol.",
+    content: (
+      <div className="space-y-8 animate-in fade-in duration-500">
+        <h2 className="text-[var(--text-header)] font-serif text-2xl font-bold mb-6 italic">20. Formal Definitions</h2>
+        <div className="space-y-6 text-sm">
+           <div className="p-4 border-l-2 border-[var(--trust-blue)] bg-[var(--admonition-bg)]">
+              <h4 className="font-mono text-[10px] uppercase font-bold text-[var(--trust-blue)] mb-2">Asset</h4>
+              <p className="text-xs opacity-80 leading-relaxed">
+                A digital artifact (e.g., text, image, audio, video, software) subject to provenance attestation under the Signet Protocol.
+              </p>
+           </div>
+           
+           <div className="p-4 border-l-2 border-[var(--border-light)] bg-[var(--bg-standard)]">
+              <h4 className="font-mono text-[10px] uppercase font-bold opacity-60 mb-2">Public Reasoning Graph (PRG)</h4>
+              <p className="text-xs opacity-80 leading-relaxed">
+                A declarative, post-hoc representation of the asserted rationale linking inputs, constraints, intermediate claims, and outputs. The PRG is <strong>not</strong> an AI system’s internal chain-of-thought and does not expose proprietary or latent model states.
+              </p>
+           </div>
+
+           <div className="p-4 border-l-2 border-[var(--border-light)] bg-[var(--bg-standard)]">
+              <h4 className="font-mono text-[10px] uppercase font-bold opacity-60 mb-2">Drift Audit (L3)</h4>
+              <p className="text-xs opacity-80 leading-relaxed">
+                A deterministic or probabilistic validation process that probes consistency between the PRG and the generated asset to detect hallucination, omission, or logical divergence.
+              </p>
+           </div>
+
+           <div className="p-4 border-l-2 border-[var(--border-light)] bg-[var(--bg-standard)]">
+              <h4 className="font-mono text-[10px] uppercase font-bold opacity-60 mb-2">Universal Tail-Wrap (UTW)</h4>
+              <p className="text-xs opacity-80 leading-relaxed">
+                A zero-dependency method for appending provenance metadata to an asset without modifying its internal structure, while remaining cryptographically bound to the asset via Hard-Binding.
+              </p>
+           </div>
+
+           <div className="p-4 border-l-2 border-red-500 bg-red-500/5">
+              <h4 className="font-mono text-[10px] uppercase font-bold text-red-600 mb-2">Conventions</h4>
+              <p className="text-xs opacity-80 leading-relaxed">
+                MUST / MUST NOT / SHOULD / MAY are interpreted as defined in RFC 2119. "Reasoning" refers to asserted justification, not internal cognition.
+              </p>
+           </div>
+        </div>
+      </div>
+    )
+  },
+  {
+    category: "AUDIT FRAMEWORK",
+    title: "21. Conformance Checklist",
+    text: "Auditor-friendly verification matrix. Lists mandatory Core Conformance, Security, and Governance requirements for implementers.",
+    content: (
+      <div className="space-y-8 animate-in fade-in duration-500">
+        <h2 className="text-[var(--text-header)] font-serif text-2xl font-bold mb-6 italic">21. Conformance Checklist</h2>
+        
+        <div className="space-y-8">
+           <div className="border border-[var(--border-light)] rounded overflow-hidden">
+             <div className="bg-[var(--table-header)] p-3 border-b border-[var(--border-light)] font-mono text-[10px] font-bold uppercase tracking-widest text-[var(--trust-blue)]">
+               Core Conformance (Mandatory)
+             </div>
+             <table className="w-full text-[10px] text-left">
+               <tbody className="divide-y divide-[var(--border-light)]">
+                 <tr>
+                   <td className="p-3 font-mono opacity-50">C-01</td>
+                   <td className="p-3">Assets MUST be hard-bound via cryptographic hash</td>
+                   <td className="p-3 text-right font-bold">☐</td>
+                 </tr>
+                 <tr>
+                   <td className="p-3 font-mono opacity-50">C-02</td>
+                   <td className="p-3">PRG MUST be serialized as a DAG</td>
+                   <td className="p-3 text-right font-bold">☐</td>
+                 </tr>
+                 <tr>
+                   <td className="p-3 font-mono opacity-50">C-04</td>
+                   <td className="p-3">Human Seal MUST include seal_mode</td>
+                   <td className="p-3 text-right font-bold">☐</td>
+                 </tr>
+                 <tr>
+                   <td className="p-3 font-mono opacity-50">C-05</td>
+                   <td className="p-3">Private keys MUST remain client-side</td>
+                   <td className="p-3 text-right font-bold">☐</td>
+                 </tr>
+                 <tr>
+                   <td className="p-3 font-mono opacity-50">C-06</td>
+                   <td className="p-3">Signature MUST cover full UTW payload</td>
+                   <td className="p-3 text-right font-bold">☐</td>
+                 </tr>
+               </tbody>
+             </table>
+           </div>
+
+           <div className="border border-[var(--border-light)] rounded overflow-hidden">
+             <div className="bg-[var(--table-header)] p-3 border-b border-[var(--border-light)] font-mono text-[10px] font-bold uppercase tracking-widest text-green-600">
+               Security & Resilience
+             </div>
+             <table className="w-full text-[10px] text-left">
+               <tbody className="divide-y divide-[var(--border-light)]">
+                 <tr>
+                   <td className="p-3 font-mono opacity-50">S-01</td>
+                   <td className="p-3">Tampering invalidates signature</td>
+                   <td className="p-3 text-right font-bold">☐</td>
+                 </tr>
+                 <tr>
+                   <td className="p-3 font-mono opacity-50">S-03</td>
+                   <td className="p-3">Algorithm agility is supported</td>
+                   <td className="p-3 text-right font-bold">☐</td>
+                 </tr>
+                 <tr>
+                   <td className="p-3 font-mono opacity-50">S-04</td>
+                   <td className="p-3">Registry loss does not invalidate proofs</td>
+                   <td className="p-3 text-right font-bold">☐</td>
+                 </tr>
+               </tbody>
+             </table>
            </div>
         </div>
       </div>
@@ -621,87 +904,155 @@ const SPEC_PAGES = [
         </div>
       </div>
     )
+  },
+  {
+    category: "STRATEGIC COMM",
+    title: "Appendix B: ISO Submission",
+    text: "Draft submission letter for ISO/TC 290. Formally requests consideration of Signet Protocol v0.3.2 as a candidate contribution for digital trust and reputation systems.",
+    content: (
+      <div className="space-y-8 animate-in fade-in duration-500">
+        <h2 className="text-[var(--text-header)] font-serif text-2xl font-bold mb-6 italic">Appendix B: ISO/TC Submission Draft</h2>
+        
+        <div className="p-8 md:p-12 bg-white border border-[var(--border-light)] shadow-sm font-serif text-sm leading-relaxed text-black max-w-3xl mx-auto">
+           <div className="mb-8 font-mono text-xs opacity-60">
+             <p>To: Members of ISO/TC 290</p>
+             <p>Subject: Submission for Consideration — Signet Protocol v0.3.2</p>
+             <p>Date: {new Date().toLocaleDateString()}</p>
+           </div>
+
+           <div className="space-y-6">
+             <p>Dear Members of ISO/TC 290,</p>
+             
+             <p>
+               We respectfully submit the <strong>Signet Protocol (v0.3.2)</strong> for consideration as a candidate contribution to ongoing work in online reputation, digital trust, and content authenticity.
+             </p>
+             
+             <p>
+               The Signet Protocol addresses a growing gap in existing provenance standards: while current systems effectively attribute origin, they do not capture asserted reasoning, human intent, or accountable authorization behind AI-assisted content.
+             </p>
+             
+             <p>Key characteristics of the proposal include:</p>
+             <ul className="list-disc pl-6 space-y-2">
+               <li>A four-layer verification model separating intent, reasoning representation, drift analysis, and human accountability.</li>
+               <li>A local-first cryptographic architecture that preserves user sovereignty and privacy.</li>
+               <li>A scalable provenance compression mechanism enabling long-lived reputation without asset bloat.</li>
+               <li>Explicit differentiation between generation, review, and authority through sealed attestations.</li>
+             </ul>
+
+             <p>
+               The protocol is designed to complement, not replace, existing standards such as C2PA, and intentionally avoids claims about factual correctness or internal AI cognition.
+             </p>
+
+             <p>
+               We believe this work aligns with ISO/TC 290’s mission to support trustworthy digital reputation systems in an era of large-scale synthetic media, and we welcome technical review, critique, and collaborative refinement.
+             </p>
+
+             <p>Thank you for your consideration.</p>
+
+             <div className="mt-12">
+               <p>Respectfully submitted,</p>
+               <br/>
+               <p className="font-bold">Signet Protocol Project</p>
+               <p className="text-xs font-mono opacity-60">Working Group: Neural Prism Implementation</p>
+             </div>
+           </div>
+        </div>
+      </div>
+    )
   }
 ];
 
 export const SpecView: React.FC = () => {
-  const handleDownloadPdf = () => {
-    const doc = new jsPDF();
-    let yPos = 20;
+  const [activePage, setActivePage] = useState(0);
 
-    doc.setFont("times", "italic");
-    doc.setFontSize(24);
-    doc.text("Signet Protocol Specification (v0.3.1)", 20, yPos);
-    yPos += 15;
+  const handleDownload = () => {
+    const doc = new jsPDF();
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(20);
+    doc.text("Signet Protocol Specification v0.3.1", 20, 20);
     
     doc.setFont("helvetica", "normal");
     doc.setFontSize(10);
-    doc.text("Generated via signetai.io reference implementation.", 20, yPos);
-    yPos += 20;
-
-    SPEC_PAGES.forEach((page, index) => {
-      if (yPos > 250) {
+    doc.text("Generated via signetai.io", 20, 30);
+    
+    let y = 40;
+    SPEC_PAGES.forEach((page, i) => {
+      if (y > 250) {
         doc.addPage();
-        yPos = 20;
+        y = 20;
       }
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(12);
+      doc.text(`${page.title}`, 20, y);
+      y += 10;
       
-      doc.setFontSize(8);
-      doc.setTextColor(100);
-      doc.text(page.category, 20, yPos);
-      yPos += 5;
-
-      doc.setFontSize(14);
-      doc.setTextColor(0);
-      doc.setFont("times", "bold");
-      doc.text(page.title, 20, yPos);
-      yPos += 10;
-
-      doc.setFontSize(11);
       doc.setFont("helvetica", "normal");
-      const lines = doc.splitTextToSize(page.text, 170);
-      doc.text(lines, 20, yPos);
-      yPos += (lines.length * 6) + 15;
+      doc.setFontSize(10);
+      const splitText = doc.splitTextToSize(page.text, 170);
+      doc.text(splitText, 20, y);
+      y += (splitText.length * 5) + 10;
     });
-
-    doc.save("signet-specification-v0.3.1.pdf");
+    
+    doc.save("signet_spec_v0.3.1.pdf");
   };
 
   return (
-    <div className="py-24 max-w-4xl mx-auto animate-in fade-in duration-700">
-      <div className="flex justify-between items-end mb-16 border-b border-[var(--border-light)] pb-8">
-        <div>
-          <span className="font-mono text-[10px] text-[var(--trust-blue)] tracking-[0.4em] uppercase font-bold block mb-4">Technical Draft</span>
-          <h1 className="text-6xl font-bold tracking-tighter italic text-[var(--text-header)]">
-            Song-03.1
-          </h1>
-          <p className="mt-4 text-xl opacity-60 font-serif italic text-[var(--text-body)]">
-            Standardization candidate for ISO/TC 290.
-          </p>
+    <div className="py-24 max-w-7xl mx-auto border-v">
+      <div className="flex flex-col lg:flex-row gap-12">
+        <div className="w-full lg:w-80 space-y-8">
+           <div className="p-6 border border-[var(--border-light)] bg-[var(--bg-standard)] rounded-lg">
+              <h3 className="font-mono text-[10px] uppercase font-bold text-[var(--trust-blue)] mb-4 tracking-widest">Table of Contents</h3>
+              <div className="space-y-1">
+                 {SPEC_PAGES.map((page, i) => (
+                    <button
+                      key={i}
+                      onClick={() => setActivePage(i)}
+                      className={`w-full text-left px-3 py-2 text-[10px] font-mono uppercase tracking-tight rounded transition-all ${activePage === i ? 'bg-[var(--trust-blue)] text-white font-bold' : 'text-[var(--text-body)] opacity-60 hover:opacity-100 hover:bg-[var(--bg-sidebar)]'}`}
+                    >
+                      {page.title.split('.')[0]}. {page.title.split('.')[1]}
+                    </button>
+                 ))}
+              </div>
+           </div>
+           
+           <button 
+             onClick={handleDownload}
+             className="w-full py-4 bg-[var(--text-header)] text-[var(--bg-standard)] font-mono text-[10px] uppercase font-bold tracking-widest rounded shadow-xl hover:brightness-110 transition-all flex items-center justify-center gap-2"
+           >
+             <span>⭳</span> Download PDF
+           </button>
         </div>
-        <button 
-          onClick={handleDownloadPdf}
-          className="px-6 py-3 bg-[var(--text-header)] text-[var(--bg-standard)] font-mono text-[10px] uppercase font-bold tracking-widest hover:opacity-80 transition-opacity flex items-center gap-2 shadow-lg"
-        >
-          <span>⭳</span> Download PDF
-        </button>
-      </div>
 
-      <div className="space-y-32">
-        {SPEC_PAGES.map((page, i) => (
-          <section key={i} className="scroll-mt-32" id={`section-${i}`}>
-            <div className="grid grid-cols-1 md:grid-cols-12 gap-12">
-              <div className="md:col-span-3 sticky top-24 self-start">
-                <span className="font-mono text-[10px] uppercase tracking-widest opacity-40 block mb-2">
-                  {page.category}
-                </span>
-                <div className="h-px w-8 bg-[var(--trust-blue)]"></div>
+        <div className="flex-1">
+           <div className="mb-8 flex justify-between items-end border-b border-[var(--border-light)] pb-4">
+              <div>
+                <span className="font-mono text-[10px] text-[var(--trust-blue)] uppercase tracking-[0.3em] font-bold">{SPEC_PAGES[activePage].category}</span>
+                <h1 className="text-4xl font-serif italic font-bold text-[var(--text-header)] mt-2">{SPEC_PAGES[activePage].title}</h1>
               </div>
-              <div className="md:col-span-9">
-                {page.content}
-              </div>
-            </div>
-          </section>
-        ))}
+              <span className="font-mono text-[10px] opacity-30">Page {activePage + 1} of {SPEC_PAGES.length}</span>
+           </div>
+
+           <div className="prose prose-lg max-w-none prose-headings:font-serif prose-p:text-[var(--text-body)] prose-headings:text-[var(--text-header)]">
+              {SPEC_PAGES[activePage].content}
+           </div>
+
+           <div className="mt-16 flex justify-between pt-8 border-t border-[var(--border-light)]">
+              <button 
+                onClick={() => setActivePage(Math.max(0, activePage - 1))}
+                disabled={activePage === 0}
+                className="font-mono text-[10px] uppercase font-bold tracking-widest opacity-50 hover:opacity-100 disabled:opacity-20"
+              >
+                &larr; Previous
+              </button>
+              <button 
+                onClick={() => setActivePage(Math.min(SPEC_PAGES.length - 1, activePage + 1))}
+                disabled={activePage === SPEC_PAGES.length - 1}
+                className="font-mono text-[10px] uppercase font-bold tracking-widest opacity-50 hover:opacity-100 disabled:opacity-20"
+              >
+                Next &rarr;
+              </button>
+           </div>
+        </div>
       </div>
     </div>
   );
