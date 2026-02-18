@@ -17,6 +17,7 @@ export const BatchVerifier: React.FC = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [isSigning, setIsSigning] = useState(false);
   const [summary, setSummary] = useState({ total: 0, verified: 0, unsigned: 0, tampered: 0, signed: 0 });
+  const [opMode, setOpMode] = useState<'AUDIT' | 'SIGN'>('AUDIT');
   
   // Fallback input for non-Chromium browsers
   const dirInputRef = useRef<HTMLInputElement>(null);
@@ -93,8 +94,11 @@ export const BatchVerifier: React.FC = () => {
   const handleDirectorySelect = async () => {
     // Modern FS Access API
     try {
+      // Determines permission request based on selected mode
+      const permMode = opMode === 'SIGN' ? 'readwrite' : 'read';
+      
       // @ts-ignore - types not fully standard yet
-      const dirHandle = await window.showDirectoryPicker({ mode: 'readwrite' });
+      const dirHandle = await window.showDirectoryPicker({ mode: permMode });
       setIsProcessing(true);
       setResults([]);
       setSummary({ total: 0, verified: 0, unsigned: 0, tampered: 0, signed: 0 });
@@ -126,7 +130,7 @@ export const BatchVerifier: React.FC = () => {
     } catch (err) {
       if ((err as Error).name !== 'AbortError') {
         console.error("Dir Scan Error:", err);
-        alert("Directory access failed or permission denied. Try the fallback input (Read-Only).");
+        alert(`Directory access failed. Ensure you granted '${opMode === 'SIGN' ? 'read/write' : 'read-only'}' permissions.`);
       }
       setIsProcessing(false);
     }
@@ -278,13 +282,38 @@ export const BatchVerifier: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
         {/* Controls */}
         <div className="lg:col-span-1 space-y-6">
+          
+          {/* Operation Mode Selector */}
+          <div className="p-4 border border-[var(--border-light)] bg-[var(--bg-standard)] rounded-xl shadow-sm space-y-3">
+             <h3 className="font-mono text-[10px] uppercase font-bold tracking-widest opacity-40">Operation Mode</h3>
+             <div className="flex bg-[var(--bg-sidebar)] p-1 rounded-lg border border-[var(--border-light)]">
+                <button 
+                  onClick={() => setOpMode('AUDIT')}
+                  disabled={isProcessing || isSigning}
+                  className={`flex-1 py-2 font-mono text-[10px] uppercase font-bold rounded transition-all ${opMode === 'AUDIT' ? 'bg-white shadow text-[var(--trust-blue)]' : 'opacity-50 hover:opacity-100'}`}
+                >
+                  Audit
+                </button>
+                <button 
+                  onClick={() => setOpMode('SIGN')}
+                  disabled={isProcessing || isSigning}
+                  className={`flex-1 py-2 font-mono text-[10px] uppercase font-bold rounded transition-all ${opMode === 'SIGN' ? 'bg-white shadow text-emerald-600' : 'opacity-50 hover:opacity-100'}`}
+                >
+                  Sign
+                </button>
+             </div>
+             <p className="text-[9px] opacity-50 italic">
+               {opMode === 'AUDIT' ? 'Read-only access. Ideal for verification.' : 'Read/Write access. Required for batch signing.'}
+             </p>
+          </div>
+
           <div className="p-6 border border-[var(--border-light)] bg-[var(--bg-standard)] rounded-xl shadow-sm space-y-4">
              <h3 className="font-mono text-[10px] uppercase font-bold tracking-widest opacity-40">Input Source</h3>
              
              <button 
                onClick={handleDirectorySelect}
                disabled={isProcessing || isSigning}
-               className="w-full py-4 bg-[var(--trust-blue)] text-white font-mono text-[10px] uppercase font-bold tracking-widest rounded hover:brightness-110 transition-all shadow-lg flex flex-col items-center justify-center gap-2"
+               className={`w-full py-4 text-white font-mono text-[10px] uppercase font-bold tracking-widest rounded hover:brightness-110 transition-all shadow-lg flex flex-col items-center justify-center gap-2 ${opMode === 'SIGN' ? 'bg-emerald-600' : 'bg-[var(--trust-blue)]'}`}
              >
                <span className="text-xl">📁</span>
                Select Folder
@@ -340,7 +369,8 @@ export const BatchVerifier: React.FC = () => {
              </div>
           </div>
 
-          {summary.unsigned > 0 && hasWritableHandles && (
+          {/* Only show signing controls if in SIGN mode */}
+          {opMode === 'SIGN' && summary.unsigned > 0 && hasWritableHandles && (
              <div className="p-6 border border-emerald-500/30 bg-emerald-50/10 rounded-xl space-y-4 animate-in slide-in-from-left-2">
                 <h3 className="font-mono text-[10px] uppercase font-bold tracking-widest text-emerald-600">Batch Actions</h3>
                 <button
@@ -370,7 +400,12 @@ export const BatchVerifier: React.FC = () => {
         {/* Results Feed */}
         <div className="lg:col-span-3 bg-[var(--code-bg)] border border-[var(--border-light)] rounded-xl overflow-hidden flex flex-col h-[600px]">
            <div className="p-4 bg-[var(--table-header)] border-b border-[var(--border-light)] flex justify-between items-center">
-              <span className="font-mono text-[10px] uppercase font-bold tracking-widest">Live Telemetry Stream</span>
+              <div className="flex items-center gap-4">
+                <span className="font-mono text-[10px] uppercase font-bold tracking-widest">Live Telemetry Stream</span>
+                <span className={`font-mono text-[9px] px-2 py-0.5 rounded border ${opMode === 'SIGN' ? 'border-emerald-500 text-emerald-600 bg-emerald-50' : 'border-blue-500 text-blue-600 bg-blue-50'}`}>
+                    MODE: {opMode}
+                </span>
+              </div>
               {isProcessing && <span className="font-mono text-[10px] text-[var(--trust-blue)] animate-pulse">PROCESSING...</span>}
               {isSigning && <span className="font-mono text-[10px] text-emerald-500 animate-pulse">BATCH_SIGN_ACTIVE</span>}
            </div>
