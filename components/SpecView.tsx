@@ -46,27 +46,32 @@ export const SpecView: React.FC = () => {
     doc.rect(0, 0, width, height, 'F');
     
     // Attempt to load Banner Image
-    const bannerUrl = "/signetai_banner.png"; 
+    const bannerUrl = "https://www.signetai.io/public/signetai_banner.png"; 
     try {
-        const img = new Image();
-        img.src = bannerUrl;
-        img.crossOrigin = "Anonymous";
-        await new Promise((resolve, reject) => {
-            img.onload = resolve;
-            img.onerror = resolve; // Fail gracefully
-        });
+        // We use fetch/blob approach to better handle CORS/Caching issues in some browsers
+        const response = await fetch(bannerUrl, { mode: 'cors' });
+        if (!response.ok) throw new Error("Network response was not ok");
+        const blob = await response.blob();
         
-        // Image Dimensions - Centered if loaded successfully
-        if (img.complete && img.naturalWidth !== 0) {
-            const imgWidth = 160; 
-            const imgHeight = (img.height * imgWidth) / img.width;
-            doc.addImage(img, 'PNG', width/2 - imgWidth/2, 60, imgWidth, imgHeight);
-        } else {
-            throw new Error("Image failed to load");
+        const imgBitmap = await createImageBitmap(blob);
+        
+        // Calculate dimensions (Max width 160mm)
+        const imgWidth = 160; 
+        const imgHeight = (imgBitmap.height * imgWidth) / imgBitmap.width;
+        
+        // Draw to canvas to get base64 (jsPDF handles base64 reliably)
+        const canvas = document.createElement('canvas');
+        canvas.width = imgBitmap.width;
+        canvas.height = imgBitmap.height;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+            ctx.drawImage(imgBitmap, 0, 0);
+            const base64Img = canvas.toDataURL('image/png');
+            doc.addImage(base64Img, 'PNG', width/2 - imgWidth/2, 60, imgWidth, imgHeight);
         }
-        
+
     } catch (e) {
-        console.warn("Banner image failed to load, using vector fallback.");
+        console.warn("Banner image failed to load, using vector fallback.", e);
         // Fallback Vector Logo (Dark for white bg)
         doc.setDrawColor(0, 0, 0);
         doc.setLineWidth(2);
