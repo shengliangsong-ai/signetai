@@ -41,14 +41,45 @@ node signet-cli.js --dir ./assets --identity "your.name"
 3. **Adversarial Probing (L3)**: Logic Stress Test.
 4. **Human-in-the-Loop (L4)**: Final Curatorial Attestation.
 
-## Quick Start
-```bash
-# Clone the official repository
-git clone https://github.com/signetai-io/website.git
+## Local Development & Compilation (MacBook/Linux)
 
-# Install dependencies (Optional - CLI is zero-dependency)
-npm install
-```
+To compile the full Signet Platform offline on your machine:
+
+### Prerequisites
+- **Node.js** (v18 or higher)
+- **npm** (v9 or higher)
+
+### Installation Steps
+
+1. **Clone the Repository**
+   ```bash
+   git clone https://github.com/signetai-io/website.git
+   cd website
+   ```
+
+2. **Install Dependencies**
+   This installs React, Vite, Tailwind, and the Google GenAI SDK locally.
+   ```bash
+   npm install
+   ```
+
+3. **Run Development Server**
+   Starts a hot-reloading local server at `http://localhost:3000`.
+   ```bash
+   npm run dev
+   ```
+
+4. **Compile for Production**
+   Generates a static, offline-ready build in the `dist/` folder.
+   ```bash
+   npm run build
+   ```
+
+5. **Preview Production Build**
+   To test the compiled artifacts locally:
+   ```bash
+   npm run preview
+   ```
 
 ## Live Documentation
 The official technical specification is served directly from the platform. Access it by navigating to:
