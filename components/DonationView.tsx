@@ -19,8 +19,8 @@ export const DonationView: React.FC = () => {
          <div className="p-10 bg-black text-white rounded-xl shadow-2xl flex flex-col justify-between min-h-[300px] relative overflow-hidden group">
             <div className="absolute inset-0 bg-gradient-to-br from-blue-900 to-black opacity-50"></div>
             <div className="relative z-10">
-                <h3 className="text-3xl font-bold italic mb-2">GitHub Sponsors</h3>
-                <p className="opacity-70 text-sm">Recurring support for ongoing development and server costs.</p>
+                <h3 className="text-3xl font-bold italic mb-2 text-white">GitHub Sponsors</h3>
+                <p className="opacity-70 text-sm text-white">Recurring support for ongoing development and server costs.</p>
             </div>
             <a 
                 href="https://github.com/sponsors/signetai-io" 
