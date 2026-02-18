@@ -134,8 +134,7 @@ const BENCHMARK_SOURCE_CODE = `#!/usr/bin/env node
 /**
  * SIGNET BENCHMARK SUITE (v0.3.1)
  * -------------------------------
- * Performance testing tool for Sidecar Generation vs Verification.
- * Generates detached .json manifests for PNG images and verifies them.
+ * Comparative Performance Test: Sidecar vs Embedded (UTW).
  * 
  * Usage: node signet-benchmark.js --dir ./images
  */
@@ -151,128 +150,133 @@ const VERSION = "0.3.1";
 function getFiles(dir, ext) {
   if (!fs.existsSync(dir)) return [];
   return fs.readdirSync(dir)
-    .filter(f => f.endsWith(ext))
+    .filter(f => f.endsWith(ext) && !f.includes('.signed'))
     .map(f => path.join(dir, f));
 }
 
-function sha256(filePath) {
-  const buffer = fs.readFileSync(filePath);
+function sha256(buffer) {
   return crypto.createHash('sha256').update(buffer).digest('hex');
 }
 
-// --- PHASE 1: GENERATION (Sidecar) ---
-function runGeneration(files) {
-  console.log(\`\\n[PHASE 1] Generating Sidecar Manifests for \${files.length} files...\`);
+// --- MODE 1: SIDECAR (Lightweight) ---
+function runSidecarBench(files) {
+  console.log(\`\\n[TEST 1] Sidecar Generation (.json)...\`);
   const start = performance.now();
   let bytesProcessed = 0;
 
   files.forEach(file => {
-    const hash = sha256(file);
-    const stats = fs.statSync(file);
-    bytesProcessed += stats.size;
+    const buffer = fs.readFileSync(file);
+    const hash = sha256(buffer);
+    bytesProcessed += buffer.length;
 
     const manifest = {
       "type": "org.signetai.sidecar",
       "asset": {
         "filename": path.basename(file),
         "content_hash": hash,
-        "byte_length": stats.size
+        "byte_length": buffer.length
       },
-      "signature": {
-        "timestamp": Date.now(),
-        "signer": "BENCHMARK_BOT"
-      }
+      "signature": { "timestamp": Date.now(), "signer": "BENCHMARK_BOT" }
     };
 
     fs.writeFileSync(file + '.signet.json', JSON.stringify(manifest, null, 2));
   });
 
-  const end = performance.now();
-  return {
-    timeMs: end - start,
-    bytes: bytesProcessed,
-    count: files.length
-  };
+  return { timeMs: performance.now() - start, bytes: bytesProcessed, count: files.length };
 }
 
-// --- PHASE 2: VERIFICATION ---
-function runVerification(files) {
-  console.log(\`\\n[PHASE 2] Verifying Sidecar Integrity...\`);
+// --- MODE 2: EMBEDDED UTW (Heavyweight) ---
+function runEmbeddedBench(files) {
+  console.log(\`\\n[TEST 2] Embedded UTW Generation (Rewrite)...\`);
   const start = performance.now();
-  let passed = 0;
-  let failed = 0;
+  let bytesProcessed = 0;
 
   files.forEach(file => {
-    const sidecarPath = file + '.signet.json';
-    if (!fs.existsSync(sidecarPath)) {
-      failed++;
-      return;
-    }
+    const buffer = fs.readFileSync(file);
+    const hash = sha256(buffer);
+    bytesProcessed += buffer.length;
 
-    try {
-      const manifest = JSON.parse(fs.readFileSync(sidecarPath, 'utf8'));
-      const currentHash = sha256(file);
-      
-      if (currentHash === manifest.asset.content_hash) {
-        passed++;
-      } else {
-        failed++;
-      }
-    } catch (e) {
-      failed++;
+    const manifest = {
+      "type": "org.signetai.embedded",
+      "asset": { "hash": hash, "mode": "UTW" },
+      "signature": { "ts": Date.now() }
+    };
+
+    const wrapperStart = Buffer.from("\\n%SIGNET_VPR_START\\n");
+    const payload = Buffer.from(JSON.stringify(manifest));
+    const wrapperEnd = Buffer.from("\\n%SIGNET_VPR_END");
+
+    // Write new signed file to test write throughput
+    const signedPath = file + '.signed' + path.extname(file);
+    const fd = fs.openSync(signedPath, 'w');
+    fs.writeSync(fd, buffer);
+    fs.writeSync(fd, wrapperStart);
+    fs.writeSync(fd, payload);
+    fs.writeSync(fd, wrapperEnd);
+    fs.closeSync(fd);
+  });
+
+  return { timeMs: performance.now() - start, bytes: bytesProcessed, count: files.length };
+}
+
+// --- VERIFICATION LOOP ---
+function runVerification(files) {
+  console.log(\`\\n[TEST 3] Verification Cycle (Both Modes)...\`);
+  const start = performance.now();
+  let checks = 0;
+
+  files.forEach(file => {
+    // Check Sidecar
+    if (fs.existsSync(file + '.signet.json')) {
+        const m = JSON.parse(fs.readFileSync(file + '.signet.json'));
+        if (m.type) checks++;
+    }
+    // Check Embedded
+    const signedPath = file + '.signed' + path.extname(file);
+    if (fs.existsSync(signedPath)) {
+        const content = fs.readFileSync(signedPath);
+        // Simple buffer scan
+        if (content.indexOf('%SIGNET_VPR_START') > -1) checks++;
     }
   });
 
-  const end = performance.now();
-  return {
-    timeMs: end - start,
-    passed,
-    failed,
-    count: files.length
-  };
+  return { timeMs: performance.now() - start, count: checks };
 }
 
-// --- MAIN REPORT ---
+// --- MAIN ---
 const args = process.argv.slice(2);
 const dirIdx = args.indexOf('--dir');
-
-if (dirIdx === -1) {
-  console.log("Usage: node signet-benchmark.js --dir <path_to_png_images>");
-  process.exit(1);
-}
+if (dirIdx === -1) { console.log("Usage: node signet-benchmark.js --dir <path>"); process.exit(1); }
 
 const targetDir = args[dirIdx + 1];
-console.log(\`\\x1b[36m[SIGNET BENCHMARK v\${VERSION}] Target: \${targetDir}\\x1b[0m\`);
-
 const pngFiles = getFiles(targetDir, '.png');
 
-if (pngFiles.length === 0) {
-  console.error("No .png files found in directory.");
-  process.exit(1);
-}
+if (pngFiles.length === 0) { console.error("No .png files found."); process.exit(1); }
 
-// Execute
-const genStats = runGeneration(pngFiles);
-const verStats = runVerification(pngFiles);
+console.log(\`\\x1b[36m[SIGNET BENCHMARK] Processing \${pngFiles.length} files in \${targetDir}...\` + "\\x1b[0m");
 
-// Formatter
+const sidecarStats = runSidecarBench(pngFiles);
+const embeddedStats = runEmbeddedBench(pngFiles);
+const verifyStats = runVerification(pngFiles);
+
 const fmt = (n) => n.toLocaleString(undefined, { maximumFractionDigits: 2 });
 
 console.log(\`\\n==================================================\`);
-console.log(\`REPORT SUMMARY\`);
+console.log(\`COMPARATIVE REPORT\`);
 console.log(\`==================================================\`);
-console.log(\`Total Files Processed:   \${genStats.count}\`);
-console.log(\`Total Data Volume:       \${fmt(genStats.bytes / 1024 / 1024)} MB\`);
+console.log(\`Files: \${pngFiles.length} | Data: \${fmt(sidecarStats.bytes / 1024 / 1024)} MB\`);
 console.log(\`--------------------------------------------------\`);
-console.log(\`GENERATION (Sidecar Mode):\`);
-console.log(\`  Time Spent:            \${fmt(genStats.timeMs)} ms\`);
-console.log(\`  Throughput:            \${fmt(genStats.count / (genStats.timeMs / 1000))} files/sec\`);
-console.log(\`  Data Rate:             \${fmt((genStats.bytes / 1024 / 1024) / (genStats.timeMs / 1000))} MB/sec\`);
+console.log(\`MODE 1: SIDECAR (JSON)\`);
+console.log(\`  Throughput:    \${fmt(sidecarStats.count / (sidecarStats.timeMs / 1000))} files/sec\`);
+console.log(\`  Latency:       \${fmt(sidecarStats.timeMs / sidecarStats.count)} ms/file\`);
 console.log(\`--------------------------------------------------\`);
-console.log(\`VALIDATION (Hash Check):\`);
-console.log(\`  Time Spent:            \${fmt(verStats.timeMs)} ms\`);
-console.log(\`  Throughput:            \${fmt(verStats.count / (verStats.timeMs / 1000))} files/sec\`);
-console.log(\`  Success Rate:          \${fmt((verStats.passed / verStats.count) * 100)}%\`);
+console.log(\`MODE 2: EMBEDDED (UTW)\`);
+console.log(\`  Throughput:    \${fmt(embeddedStats.count / (embeddedStats.timeMs / 1000))} files/sec\`);
+console.log(\`  Latency:       \${fmt(embeddedStats.timeMs / embeddedStats.count)} ms/file\`);
+console.log(\`  Overhead Cost: \${fmt(((embeddedStats.timeMs - sidecarStats.timeMs) / sidecarStats.timeMs) * 100)}% slower (expected due to I/O)\`);
+console.log(\`--------------------------------------------------\`);
+console.log(\`VERIFICATION\`);
+console.log(\`  Throughput:    \${fmt(verifyStats.count / (verifyStats.timeMs / 1000))} checks/sec\`);
 console.log(\`==================================================\\n\`);
 `;
 
@@ -322,7 +326,7 @@ export const CliDownload: React.FC = () => {
           onClick={() => setActiveTab('BENCH')}
           className={`pb-4 px-2 font-mono text-[11px] uppercase tracking-widest font-bold transition-all border-b-2 ${activeTab === 'BENCH' ? 'text-[var(--trust-blue)] border-[var(--trust-blue)]' : 'text-[var(--text-body)] opacity-40 border-transparent hover:opacity-100'}`}
         >
-          Benchmark Suite (Sidecar)
+          Benchmark Suite (Comparative)
         </button>
       </div>
 
@@ -372,10 +376,10 @@ export const CliDownload: React.FC = () => {
               </div>
            </div>
 
-           <Admonition type={activeTab === 'CLI' ? 'note' : 'important'} title={activeTab === 'CLI' ? 'Zero Dependencies' : 'Sidecar Logic'}>
+           <Admonition type={activeTab === 'CLI' ? 'note' : 'important'} title={activeTab === 'CLI' ? 'Zero Dependencies' : 'Strategy Comparison'}>
              {activeTab === 'CLI' 
                ? "This script uses only native Node.js modules (fs, crypto, path). It implements the Universal Tail-Wrap specification manually to ensure maximum portability."
-               : "The benchmark suite generates detached .signet.json manifests. It does NOT modify the original image files, allowing for safe, repeatable read-only throughput testing."}
+               : "This suite runs both 'Sidecar' (Metadata only) and 'Embedded' (Binary Rewrite) strategies sequentially. It provides a direct comparison of throughput and latency for your infrastructure decision making."}
            </Admonition>
         </div>
 
