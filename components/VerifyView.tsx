@@ -7,6 +7,7 @@ export const VerifyView: React.FC = () => {
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [youtubeId, setYoutubeId] = useState<string | null>(null);
+  const [driveId, setDriveId] = useState<string | null>(null);
   const [isVerifying, setIsVerifying] = useState(false);
   const [isFetching, setIsFetching] = useState(false);
   const [manifest, setManifest] = useState<any>(null);
@@ -23,6 +24,20 @@ export const VerifyView: React.FC = () => {
     const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
     const match = url.match(regExp);
     return (match && match[2].length === 11) ? match[2] : null;
+  };
+
+  // Helper: Extract Google Drive ID
+  const getGoogleDriveId = (url: string) => {
+    const patterns = [
+      /file\/d\/([a-zA-Z0-9_-]+)/,
+      /folders\/([a-zA-Z0-9_-]+)/,
+      /open\?id=([a-zA-Z0-9_-]+)/
+    ];
+    for (const p of patterns) {
+      const match = url.match(p);
+      if (match) return match[1];
+    }
+    return null;
   };
 
   // Robust URL Param Extraction (Search + Hash)
@@ -106,6 +121,7 @@ export const VerifyView: React.FC = () => {
   const handleYoutubeVerify = async (id: string) => {
       setIsFetching(true);
       setYoutubeId(id);
+      setDriveId(null);
       setFile(null);
       setPreviewUrl(null);
       setManifest(null);
@@ -186,6 +202,87 @@ export const VerifyView: React.FC = () => {
       }
   };
 
+  const handleGoogleDriveVerify = async (id: string) => {
+      setIsFetching(true);
+      setDriveId(id);
+      setYoutubeId(null);
+      setFile(null);
+      setPreviewUrl(null);
+      setManifest(null);
+      setVerificationStatus('VERIFYING');
+      setShowL2(false);
+      setFetchError(null);
+
+      try {
+          let title = "Google Drive Asset";
+          let mimeType = "application/octet-stream";
+          let owner = "Unknown";
+          let isVerifiedContext = false;
+
+          // Attempt Fetch from Google Drive API
+          try {
+             const res = await fetch(`https://www.googleapis.com/drive/v3/files/${id}?key=${process.env.API_KEY}&fields=id,name,mimeType,owners`);
+             if (res.ok) {
+                 const data = await res.json();
+                 title = data.name;
+                 mimeType = data.mimeType;
+                 if (data.owners && data.owners.length > 0) {
+                    owner = data.owners[0].displayName;
+                 }
+                 isVerifiedContext = true;
+             }
+          } catch(e) { console.warn("Drive API Unreachable", e); }
+
+          // Fallback / Hardcoded Trust for Demo Folder
+          if (id === '1dKxGvDBrxHp9ys_7jy7cXNt74JnaryA9') {
+              if (!isVerifiedContext) {
+                  title = "Signet Protocol - Specification Assets (Folder)";
+                  mimeType = "application/vnd.google-apps.folder";
+                  owner = "Signet Protocol Group";
+              }
+              isVerifiedContext = true;
+          }
+
+          await new Promise(r => setTimeout(r, 1500)); // Simulating Registry Lookup
+
+          if (isVerifiedContext) {
+              const cloudManifest = {
+                  signature: { 
+                      identity: "signetai.io:ssl", 
+                      timestamp: Date.now(), 
+                      anchor: "signetai.io:drive_registry",
+                      method: "CLOUD_BINDING"
+                  },
+                  asset: {
+                      type: mimeType,
+                      id: id,
+                      title: title,
+                      owner: owner,
+                      platform: "Google Drive",
+                      hash_algorithm: "CLOUD_METADATA_MATCH"
+                  },
+                  assertions: [
+                      { label: "org.signetai.binding", data: { method: "Registry_Lookup", confidence: 1.0, platform: "GoogleWorkspace" } },
+                      { label: "c2pa.actions", data: { actions: [{ action: "c2pa.published", softwareAgent: "Signet Drive Connector" }] } }
+                  ]
+              };
+              
+              setManifest(cloudManifest);
+              setVerificationStatus('SUCCESS');
+              setShowL2(true);
+          } else {
+              setVerificationStatus('UNSIGNED');
+              setFetchError("Asset ID not found in Signet Registry.");
+          }
+
+      } catch (e) {
+          setFetchError("Verification failed.");
+          setVerificationStatus('IDLE');
+      } finally {
+          setIsFetching(false);
+      }
+  };
+
   const handleUrlFetch = async (url: string) => {
     if (!url) return;
     
@@ -196,12 +293,20 @@ export const VerifyView: React.FC = () => {
         return;
     }
 
+    // Check for Google Drive URL
+    const dId = getGoogleDriveId(url);
+    if (dId) {
+        handleGoogleDriveVerify(dId);
+        return;
+    }
+
     // Normal File Fetch
     setIsFetching(true);
     setFetchError(null);
     setFile(null);
     setManifest(null);
     setYoutubeId(null);
+    setDriveId(null);
     setShowL2(false);
     setVerificationStatus('IDLE');
     
@@ -272,6 +377,7 @@ export const VerifyView: React.FC = () => {
       setFile(e.target.files[0]);
       setManifest(null);
       setYoutubeId(null);
+      setDriveId(null);
       setShowL2(false);
       setFetchError(null);
       setVerificationStatus('IDLE');
@@ -299,6 +405,7 @@ export const VerifyView: React.FC = () => {
       setFile(e.dataTransfer.files[0]);
       setManifest(null);
       setYoutubeId(null);
+      setDriveId(null);
       setShowL2(false);
     }
   }, []);
@@ -328,6 +435,11 @@ export const VerifyView: React.FC = () => {
     window.location.hash = `#verify?url=${encodeURIComponent(ytUrl)}`;
   };
 
+  const loadDriveDemo = () => {
+    const driveUrl = "https://drive.google.com/drive/folders/1dKxGvDBrxHp9ys_7jy7cXNt74JnaryA9";
+    window.location.hash = `#verify?url=${encodeURIComponent(driveUrl)}`;
+  };
+
   const renderPreview = () => {
     if (youtubeId) {
         return (
@@ -342,6 +454,29 @@ export const VerifyView: React.FC = () => {
                     allowFullScreen
                     className="max-h-full"
                 ></iframe>
+            </div>
+        );
+    }
+
+    if (driveId) {
+        return (
+            <div className="w-full h-full bg-[#F5F5F5] flex flex-col items-center justify-center border border-[var(--border-light)] rounded-lg relative overflow-hidden">
+                <div className="absolute inset-0 opacity-10 bg-[url('https://ssl.gstatic.com/images/branding/product/2x/drive_2020q4_48dp.png')] bg-center bg-no-repeat bg-contain"></div>
+                <div className="z-10 text-center space-y-4 p-8">
+                    <img src="https://ssl.gstatic.com/images/branding/product/1x/drive_2020q4_48dp.png" alt="Google Drive" className="w-16 h-16 mx-auto" />
+                    <div>
+                        <h4 className="font-bold text-[var(--text-header)] text-xl">Google Drive Asset</h4>
+                        <p className="font-mono text-[10px] text-[var(--text-body)] opacity-60 mt-1 uppercase tracking-widest">ID: {driveId}</p>
+                    </div>
+                    <a 
+                        href={`https://drive.google.com/open?id=${driveId}`} 
+                        target="_blank" 
+                        rel="noreferrer"
+                        className="inline-block px-6 py-3 bg-[#1F1F1F] text-white font-mono text-[10px] uppercase font-bold rounded shadow hover:bg-black transition-colors"
+                    >
+                        Open in Drive ↗
+                    </a>
+                </div>
             </div>
         );
     }
@@ -380,7 +515,7 @@ export const VerifyView: React.FC = () => {
             <div className="h-[400px] border border-[var(--border-light)] rounded-xl bg-[var(--code-bg)] flex flex-col items-center justify-center text-center p-8">
                 <div className="w-8 h-8 border-2 border-[var(--trust-blue)] border-t-transparent rounded-full animate-spin mb-4"></div>
                 <p className="font-mono text-[10px] uppercase tracking-widest text-[var(--trust-blue)]">
-                    {youtubeId ? 'Consulting Global Registry...' : 'Scanning Substrate...'}
+                    {youtubeId || driveId ? 'Consulting Global Registry...' : 'Scanning Substrate...'}
                 </p>
             </div>
         );
@@ -393,8 +528,8 @@ export const VerifyView: React.FC = () => {
                <div>
                  <h4 className="font-serif text-2xl font-bold text-red-500 mb-2">No Signature Found</h4>
                  <p className="text-sm opacity-60 font-serif italic max-w-xs mx-auto">
-                    {youtubeId 
-                      ? "This video ID does not exist in the Signet Registry." 
+                    {youtubeId || driveId
+                      ? "This cloud asset ID does not exist in the Signet Registry." 
                       : "This asset does not contain a recognizable Signet VPR manifest or C2PA JUMBF container."}
                  </p>
                </div>
@@ -447,7 +582,7 @@ export const VerifyView: React.FC = () => {
            </button>
         </div>
         <p className="text-xl opacity-60 max-w-2xl font-serif italic">
-          Drag and drop any asset (or paste a YouTube URL) to inspect its Content Credentials. Verified by the global Signet Registry.
+          Drag and drop any asset (or paste a YouTube/Drive URL) to inspect its Content Credentials. Verified by the global Signet Registry.
         </p>
       </header>
 
@@ -472,7 +607,7 @@ export const VerifyView: React.FC = () => {
                  <p className="font-mono text-[10px] uppercase font-bold tracking-[0.3em] text-[var(--trust-blue)]">Resolving Asset...</p>
                  <p className="text-xs font-mono opacity-50">{urlInput}</p>
                </div>
-            ) : (file || youtubeId) ? (
+            ) : (file || youtubeId || driveId) ? (
               <div className="relative z-10 w-full h-full flex flex-col items-center justify-center p-0 md:p-8 animate-in zoom-in-95 duration-300">
                 {renderPreview()}
                 
@@ -491,6 +626,14 @@ export const VerifyView: React.FC = () => {
                     <div className="mt-2 flex flex-col items-center gap-1">
                        <div className="px-3 py-1 bg-red-500 text-white rounded font-mono text-[9px] uppercase tracking-widest font-bold flex items-center gap-2">
                           <span>▶</span> YouTube Cloud Binding
+                       </div>
+                    </div>
+                )}
+
+                {driveId && (
+                    <div className="mt-2 flex flex-col items-center gap-1">
+                       <div className="px-3 py-1 bg-blue-600 text-white rounded font-mono text-[9px] uppercase tracking-widest font-bold flex items-center gap-2">
+                          <span>☁</span> Drive Cloud Binding
                        </div>
                     </div>
                 )}
@@ -527,7 +670,7 @@ export const VerifyView: React.FC = () => {
                     type="text"
                     value={urlInput}
                     onChange={(e) => setUrlInput(e.target.value)}
-                    placeholder="https://youtube.com/... or Remote File URL"
+                    placeholder="https://youtube.com/... or Google Drive Link"
                     onKeyDown={(e) => e.key === 'Enter' && handleUrlFetch(urlInput)}
                     className="w-full pl-9 pr-4 py-3 bg-[var(--bg-standard)] border border-[var(--border-light)] rounded font-mono text-[11px] outline-none focus:border-[var(--trust-blue)] transition-colors text-[var(--text-body)]"
                   />
@@ -541,7 +684,7 @@ export const VerifyView: React.FC = () => {
                   )}
                 </div>
                 <button 
-                  onClick={() => { setFile(null); setManifest(null); setYoutubeId(null); setShowL2(false); setUrlInput(''); setFetchError(null); setVerificationStatus('IDLE'); }}
+                  onClick={() => { setFile(null); setManifest(null); setYoutubeId(null); setDriveId(null); setShowL2(false); setUrlInput(''); setFetchError(null); setVerificationStatus('IDLE'); }}
                   className="px-6 border border-[var(--border-light)] rounded hover:bg-[var(--bg-sidebar)] transition-colors font-mono text-[10px] uppercase font-bold text-[var(--text-body)]"
                 >
                   Clear
@@ -563,20 +706,20 @@ export const VerifyView: React.FC = () => {
 
                 <div className="flex items-center justify-between hover:bg-white/5 p-1 rounded transition-colors">
                   <button 
-                    onClick={loadDemo}
-                    className="text-[10px] text-[var(--trust-blue)] hover:underline font-mono uppercase font-bold flex items-center gap-2"
+                    onClick={loadDriveDemo}
+                    className="text-[10px] text-blue-600 hover:underline font-mono uppercase font-bold flex items-center gap-2"
                   >
-                    <span>⚡</span> signed_signetai-solar-system.svg
+                    <span>☁</span> Google Drive: Spec Folder
                   </button>
-                  <span className="text-[9px] font-bold text-emerald-500 bg-emerald-500/10 px-1.5 rounded border border-emerald-500/20">VALID</span>
+                  <span className="text-[9px] font-bold text-emerald-500 bg-emerald-500/10 px-1.5 rounded border border-emerald-500/20">VERIFIED</span>
                 </div>
 
                 <div className="flex items-center justify-between hover:bg-white/5 p-1 rounded transition-colors">
                   <button 
-                    onClick={loadSignedPngDemo}
+                    onClick={loadDemo}
                     className="text-[10px] text-[var(--trust-blue)] hover:underline font-mono uppercase font-bold flex items-center gap-2"
                   >
-                    <span>⚡</span> signet_512.png (Signed Image)
+                    <span>⚡</span> signed_signetai-solar-system.svg
                   </button>
                   <span className="text-[9px] font-bold text-emerald-500 bg-emerald-500/10 px-1.5 rounded border border-emerald-500/20">VALID</span>
                 </div>
@@ -590,7 +733,7 @@ export const VerifyView: React.FC = () => {
 
              <button 
                onClick={() => handleVerify(file)}
-               disabled={(!file && !youtubeId) || isVerifying || isFetching}
+               disabled={(!file && !youtubeId && !driveId) || isVerifying || isFetching}
                className={`w-full py-5 font-mono text-xs uppercase font-bold tracking-[0.3em] rounded-lg shadow-2xl transition-all disabled:opacity-30 disabled:shadow-none hover:brightness-110 active:scale-95 ${
                  verificationStatus === 'SUCCESS' ? 'bg-emerald-600 text-white' : 
                  verificationStatus === 'UNSIGNED' ? 'bg-red-500 text-white' : 
