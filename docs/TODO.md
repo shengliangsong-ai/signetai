@@ -75,7 +75,6 @@
     - [ ] Cloud HSM Stub for Enterprise Tier
 
 ## Known Issues / Optimization
-- **Safari iOS Audio**: AudioContext suspension state needs explicit user-gesture handling on some iOS versions.
 - **PDF Incremental Updates**: Post-EOF injection is valid, but multiple signs need a formal xref table update to be "Adobe Compliant" (currently "Signet Compliant").
 
 ---
