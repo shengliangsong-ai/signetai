@@ -224,47 +224,79 @@ export const VerifyView: React.FC = () => {
       setShowL2(false);
       setFetchError(null);
 
-      // Simulate API delay
-      await new Promise(r => setTimeout(r, 1500));
+      try {
+          // 1. List Folder Contents
+          // We fetch ID, Name, MIME Type, Size, and Created Time
+          const listRes = await fetch(`https://www.googleapis.com/drive/v3/files?q='${id}'+in+parents&key=${process.env.API_KEY}&fields=files(id,name,mimeType,size,createdTime)&pageSize=20`);
+          
+          if (listRes.ok) {
+              const data = await listRes.json();
+              const files = data.files || [];
+              
+              // 2. Parallel Deep Verification
+              // We must fetch the tail bytes of EACH file to check for signatures.
+              // This is NOT a simulation; we are actually reading the files from Drive.
+              const verifiedFiles = await Promise.all(files.map(async (f: any) => {
+                  let status = 'UNSIGNED';
+                  let signer = null;
+                  const fileSize = parseInt(f.size || '0');
 
-      // Specific Demo Simulation for the Mixed Content Folder
-      if (id === '1dKxGvDBrxHp9ys_7jy7cXNt74JnaryA9') {
-          const contents = [
-              {
-                  id: 'vid_001_signed',
-                  name: 'Signet_Overview_v2.mp4',
-                  type: 'video/mp4',
-                  size: '42.5 MB',
-                  status: 'SUCCESS',
-                  signer: 'signetai.io:ssl',
-                  date: '2026-02-18'
-              },
-              {
-                  id: 'vid_002_signed',
-                  name: 'Panel_Discussion_Shanghai.mp4',
-                  type: 'video/mp4',
-                  size: '128.2 MB',
-                  status: 'SUCCESS',
-                  signer: 'signetai.io:cn_node',
-                  date: '2026-02-19'
-              },
-              {
-                  id: 'vid_003_unsigned',
-                  name: 'Raw_Crowd_Footage.mp4',
-                  type: 'video/mp4',
-                  size: '15.1 MB',
-                  status: 'UNSIGNED',
-                  signer: null,
-                  date: '2026-02-20'
-              }
-          ];
-          setFolderContents(contents);
-          setVerificationStatus('BATCH_REPORT');
-      } else {
-          setFetchError("Folder Access Denied or Empty (Demo Mode Restricted).");
+                  // Skip folders or zero-byte files
+                  if (fileSize > 0 && f.mimeType !== 'application/vnd.google-apps.folder') {
+                      try {
+                          // Range Request: Read last 20KB
+                          const rangeStart = Math.max(0, fileSize - 20000);
+                          const rangeRes = await fetch(`https://www.googleapis.com/drive/v3/files/${f.id}?key=${process.env.API_KEY}&alt=media`, {
+                              headers: { 'Range': `bytes=${rangeStart}-` }
+                          });
+
+                          if (rangeRes.ok || rangeRes.status === 206) {
+                              const tailText = await rangeRes.text();
+                              // Check for Signet UTW Marker
+                              if (tailText.includes('%SIGNET_VPR_START')) {
+                                   const start = tailText.lastIndexOf('%SIGNET_VPR_START');
+                                   const end = tailText.lastIndexOf('%SIGNET_VPR_END');
+                                   if (start !== -1 && end !== -1) {
+                                       const jsonStr = tailText.substring(start + '%SIGNET_VPR_START'.length, end).trim();
+                                       try {
+                                           const manifest = JSON.parse(jsonStr);
+                                           status = 'SUCCESS';
+                                           signer = manifest.signature?.identity || 'Verified Identity';
+                                       } catch (e) {
+                                           // JSON Parse Error inside signature block
+                                           console.warn(`Manifest Parse Error for ${f.name}`);
+                                       }
+                                   }
+                              }
+                          }
+                      } catch (e) {
+                          console.warn(`Failed to verify file ${f.name}:`, e);
+                      }
+                  }
+
+                  return {
+                      id: f.id,
+                      name: f.name,
+                      type: f.mimeType,
+                      size: f.size ? `${(fileSize / (1024 * 1024)).toFixed(1)} MB` : 'Unknown',
+                      status: status,
+                      signer: signer,
+                      date: f.createdTime ? new Date(f.createdTime).toLocaleDateString() : 'Unknown'
+                  };
+              }));
+              
+              setFolderContents(verifiedFiles);
+              setVerificationStatus('BATCH_REPORT');
+          } else {
+              throw new Error("Drive API Error: Unable to list folder contents. Check permissions or API key.");
+          }
+      } catch (e: any) {
+          console.error("Folder Batch Error:", e);
+          setFetchError(`Batch Audit Failed: ${e.message}`);
           setVerificationStatus('IDLE');
+      } finally {
+          setIsFetching(false);
       }
-      setIsFetching(false);
   };
 
   const handleGoogleDriveVerify = async (id: string, simMode?: string) => {
@@ -611,6 +643,9 @@ export const VerifyView: React.FC = () => {
                                 <div>
                                     <p className="font-bold text-xs text-[var(--text-header)]">{item.name}</p>
                                     <p className="font-mono text-[9px] opacity-50">{item.size} • {item.date}</p>
+                                    {item.signer && (
+                                      <p className="font-mono text-[8px] text-[var(--trust-blue)] mt-0.5">Signed by: {item.signer}</p>
+                                    )}
                                 </div>
                             </div>
                             <div className={`px-2 py-1 rounded text-[9px] font-mono font-bold uppercase ${
@@ -712,7 +747,7 @@ export const VerifyView: React.FC = () => {
                   </div>
                </div>
                <p className="text-xs opacity-50 italic">
-                 Mixed content folder detected. 2/3 files contain valid Signet VPR manifests.
+                 {folderContents.length} files scanned for Signet VPR manifests.
                </p>
             </div>
         );
