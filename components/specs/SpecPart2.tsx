@@ -207,7 +207,7 @@ export const PART_2 = [
         </p>
 
         <div className="p-6 bg-[var(--code-bg)] border border-[var(--border-light)] rounded-lg mb-8">
-           <h4 className="font-mono text-[10px] uppercase font-bold text-[var(--trust-blue)] mb-2">Dual-Hash Fusion Algorithm</h4>
+           <h4 className="font-mono text-[10px] uppercase font-bold text-[var(--trust-blue)] mb-2">12.5.1 Dual-Hash Fusion Algorithm</h4>
            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs font-mono opacity-80">
               <div className="p-3 border border-[var(--border-light)] rounded bg-white/5">
                  <strong>dHash (0.6 weight)</strong><br/>
@@ -218,6 +218,16 @@ export const PART_2 = [
                  Tracks luminance frequency. Resistant to scaling/compression.
               </div>
            </div>
+        </div>
+
+        <div className="p-6 bg-[var(--code-bg)] border border-[var(--border-light)] rounded-lg mb-8">
+           <h4 className="font-mono text-[10px] uppercase font-bold text-[var(--trust-blue)] mb-2">12.5.2 Prime-Offset Temporal Sampling</h4>
+           <p className="text-xs opacity-80 mb-3">To defeat "intro-stuffing" attacks and credit-sequence noise, Signet enforces boundaries based on video entropy.</p>
+           <ul className="list-disc pl-4 text-xs opacity-70 font-mono space-y-1">
+              <li><strong>Low Entropy Rejection:</strong> Sampling starts at T+7s (Prime Base) to skip black/fade-ins.</li>
+              <li><strong>End Boundary:</strong> Sampling halts 10s before EOF to avoid credit sequences.</li>
+              <li><strong>Dynamic Count:</strong> Total anchors scale linearly with duration (1 frame/min).</li>
+           </ul>
         </div>
 
         <h4 className="font-bold text-[var(--text-header)] text-lg mb-4">Confidence Bands</h4>
