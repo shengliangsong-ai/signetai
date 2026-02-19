@@ -35,7 +35,7 @@ export const VerifyView: React.FC = () => {
   
   // Inputs
   const [urlInput, setUrlInput] = useState('');
-  const [referenceInput, setReferenceInput] = useState(''); // Source A
+  const [referenceInput, setReferenceInput] = useState('https://www.youtube.com/playlist?list=PLjnwycFexttARFrzatvBjzL0BEH-78Bft'); // Default Source A
 
   const [dragActive, setDragActive] = useState(false);
   const [fetchError, setFetchError] = useState<string | null>(null);
@@ -311,16 +311,17 @@ export const VerifyView: React.FC = () => {
   useEffect(() => {
       // Deep Link Handler
       const deepLinkUrl = getUrlParam('url') || getUrlParam('verify_url');
-      const refUrl = getUrlParam('ref');
-      if (deepLinkUrl) {
-          const decodedTarget = decodeURIComponent(deepLinkUrl);
-          const decodedRef = refUrl ? decodeURIComponent(refUrl) : '';
-          
-          if (urlInput !== decodedTarget) setUrlInput(decodedTarget);
-          if (decodedRef && referenceInput !== decodedRef) setReferenceInput(decodedRef);
-          
-          // Trigger load
-          handleUrlFetch(decodedTarget, decodedRef);
+      const refUrlParam = getUrlParam('ref');
+      
+      const targetToLoad = deepLinkUrl ? decodeURIComponent(deepLinkUrl) : '';
+      const refToLoad = refUrlParam ? decodeURIComponent(refUrlParam) : referenceInput; // Default to initial state
+
+      if (targetToLoad && urlInput !== targetToLoad) setUrlInput(targetToLoad);
+      if (refToLoad && refToLoad !== referenceInput) setReferenceInput(refToLoad);
+      
+      // Trigger load
+      if (targetToLoad || refToLoad) {
+          handleUrlFetch(targetToLoad, refToLoad);
       }
   }, []);
 
