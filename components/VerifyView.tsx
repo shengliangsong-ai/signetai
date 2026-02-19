@@ -66,7 +66,6 @@ export const VerifyView: React.FC = () => {
   // Folder State
   const [folderId, setFolderId] = useState<string | null>(null);
   const [folderContents, setFolderContents] = useState<any[]>([]);
-  const [referenceThumbnail, setReferenceThumbnail] = useState<string | null>(null);
   const [showVisuals, setShowVisuals] = useState(false);
 
   const [isVerifying, setIsVerifying] = useState(false);
@@ -143,7 +142,6 @@ export const VerifyView: React.FC = () => {
     setManifest(null);
     setFolderContents([]);
     setFolderId(null);
-    setReferenceThumbnail(null);
     setDebugLog([]); 
     addLog(`Starting Local File Verification: ${targetFile.name} (${targetFile.size} bytes)`);
     
@@ -222,7 +220,6 @@ export const VerifyView: React.FC = () => {
       setDriveId(null);
       setFolderId(null);
       setFile(null);
-      setReferenceThumbnail(null);
       setManifest(null);
       setVerificationStatus('VERIFYING');
       setVerificationMethod('CLOUD_BINDING'); 
@@ -317,7 +314,6 @@ export const VerifyView: React.FC = () => {
       setShowL2(false);
       setFetchError(null);
       setDebugLog([]);
-      setReferenceThumbnail(null);
       addLog(`Starting Drive Folder Audit: ${id}`);
 
       try {
@@ -350,22 +346,31 @@ export const VerifyView: React.FC = () => {
           const files = data.files || [];
           addLog(`Folder scan complete. Found ${files.length} items.`);
 
+          // --- MULTI-FRAME CONSENSUS LOGIC ---
           const YOUTUBE_REF_ID = 'UatpGRr-wA0';
-          const YOUTUBE_IMG_URL = `https://img.youtube.com/vi/${YOUTUBE_REF_ID}/maxresdefault.jpg`;
-          setReferenceThumbnail(YOUTUBE_IMG_URL);
-          let youtubePHash: string | null = null;
           
-          try {
-              youtubePHash = await generateVisualHash(YOUTUBE_IMG_URL);
-              if (!youtubePHash) {
-                  youtubePHash = await generateVisualHash(`https://img.youtube.com/vi/${YOUTUBE_REF_ID}/hqdefault.jpg`);
+          // Enhanced Reference Strategy: Scan all 5 YouTube candidate frames
+          // 1.jpg, 2.jpg, 3.jpg are auto-generated from Start, Middle, End of video.
+          // maxresdefault is the custom cover art.
+          const candidates = [
+              { label: 'Cover Art', url: `https://img.youtube.com/vi/${YOUTUBE_REF_ID}/maxresdefault.jpg` },
+              { label: 'Frame 1 (Start)', url: `https://img.youtube.com/vi/${YOUTUBE_REF_ID}/1.jpg` },
+              { label: 'Frame 2 (Mid)', url: `https://img.youtube.com/vi/${YOUTUBE_REF_ID}/2.jpg` },
+              { label: 'Frame 3 (End)', url: `https://img.youtube.com/vi/${YOUTUBE_REF_ID}/3.jpg` },
+              { label: 'HQ Default', url: `https://img.youtube.com/vi/${YOUTUBE_REF_ID}/hqdefault.jpg` }
+          ];
+
+          const baselineFingerprints: { label: string, url: string, hash: string }[] = [];
+          
+          addLog("Cross-Ref: Scanning YouTube candidate frames...");
+          
+          await Promise.all(candidates.map(async (c) => {
+              const hash = await generateVisualHash(c.url);
+              if (hash) {
+                  baselineFingerprints.push({ ...c, hash });
+                  addLog(`Ref Hash [${c.label}]: ${hash.substring(0,16)}...`);
               }
-              if (youtubePHash) {
-                  addLog(`Cross-Ref: YouTube Baseline pHash (${YOUTUBE_REF_ID}): ${youtubePHash}`);
-              }
-          } catch(e) {
-              addLog("Cross-Ref: Failed to fetch YouTube reference.");
-          }
+          }));
           
           const processedFiles = await Promise.all(files.map(async (f: any) => {
               let status = 'UNSIGNED';
@@ -421,27 +426,46 @@ export const VerifyView: React.FC = () => {
                   signer: signer,
                   date: f.createdTime ? new Date(f.createdTime).toLocaleDateString() : 'Unknown',
                   pHash: pHash,
-                  distanceToRef: null as number | null,
+                  bestMatch: null as { label: string, url: string, dist: number } | null,
                   softBindingMatch: null as string | null
               };
           }));
 
-          const THRESHOLD = 5;
+          const THRESHOLD = 10; // Relaxed slightly for cross-platform encoding artifacts
           
           for (let i = 0; i < processedFiles.length; i++) {
               const fileA = processedFiles[i];
               if (!fileA.pHash) continue;
 
-              if (youtubePHash) {
-                  const ytDist = getHammingDistance(fileA.pHash, youtubePHash);
-                  fileA.distanceToRef = ytDist;
-                  addLog(`Hamming Distance: ${fileA.name} ↔ YouTube = ${ytDist}`);
-                  if (ytDist < THRESHOLD) {
-                      const matchMsg = `Visual Match: YouTube ${YOUTUBE_REF_ID} (Dist: ${ytDist})`;
-                      fileA.softBindingMatch = fileA.softBindingMatch ? fileA.softBindingMatch + " | " + matchMsg : matchMsg;
+              // Find Best Consensus Match against YouTube Candidates
+              if (baselineFingerprints.length > 0) {
+                  let bestDist = 1024;
+                  let bestCandidate = null;
+
+                  for (const ref of baselineFingerprints) {
+                      const dist = getHammingDistance(fileA.pHash, ref.hash);
+                      if (dist < bestDist) {
+                          bestDist = dist;
+                          bestCandidate = ref;
+                      }
+                  }
+
+                  if (bestCandidate) {
+                      fileA.bestMatch = { 
+                          label: bestCandidate.label, 
+                          url: bestCandidate.url, 
+                          dist: bestDist 
+                      };
+                      addLog(`Best Match [${fileA.name}]: ${bestCandidate.label} (Dist: ${bestDist})`);
+
+                      if (bestDist < THRESHOLD) {
+                          const matchMsg = `Visual Match: YouTube ${YOUTUBE_REF_ID} via ${bestCandidate.label}`;
+                          fileA.softBindingMatch = fileA.softBindingMatch ? fileA.softBindingMatch + " | " + matchMsg : matchMsg;
+                      }
                   }
               }
 
+              // Peer check
               for (let j = 0; j < processedFiles.length; j++) {
                   if (i === j) continue;
                   const fileB = processedFiles[j];
@@ -449,10 +473,10 @@ export const VerifyView: React.FC = () => {
 
                   const distance = getHammingDistance(fileA.pHash, fileB.pHash);
                   
-                  if (distance < THRESHOLD) {
+                  if (distance < 5) {
                       if (fileA.status === 'UNSIGNED' && fileB.status === 'SUCCESS') {
                           addLog(`Hamming Distance: ${fileA.name} ↔ ${fileB.name} = ${distance}`);
-                          const matchMsg = `Matches Signed File: ${fileB.name} (Dist: ${distance})`;
+                          const matchMsg = `Matches Signed File: ${fileB.name}`;
                           fileA.softBindingMatch = fileA.softBindingMatch ? fileA.softBindingMatch + " | " + matchMsg : matchMsg;
                       }
                   }
@@ -461,7 +485,7 @@ export const VerifyView: React.FC = () => {
           
           setFolderContents(processedFiles);
           setVerificationStatus('BATCH_REPORT');
-          addLog("Batch audit complete with Cross-Platform Soft-Binding.");
+          addLog("Batch audit complete with Multi-Frame Soft-Binding.");
 
       } catch (e: any) {
           addLog(`CRITICAL ERROR: ${e.message}`);
@@ -480,7 +504,6 @@ export const VerifyView: React.FC = () => {
       setFile(null);
       setPreviewUrl(null);
       setManifest(null);
-      setReferenceThumbnail(null);
       setVerificationStatus('VERIFYING');
       setShowL2(false);
       setFetchError(null);
@@ -796,17 +819,16 @@ export const VerifyView: React.FC = () => {
                             <p className="font-mono text-[9px] text-[var(--text-body)] opacity-60 uppercase">Folder ID: {folderId}</p>
                         </div>
                     </div>
-                    {referenceThumbnail && (
-                        <div className="flex items-center gap-2">
-                            <span className="font-mono text-[9px] uppercase font-bold text-[var(--trust-blue)]">Visual Compare</span>
-                            <button 
-                                onClick={() => setShowVisuals(!showVisuals)}
-                                className={`w-8 h-4 rounded-full transition-colors ${showVisuals ? 'bg-[var(--trust-blue)]' : 'bg-gray-300'}`}
-                            >
-                                <div className={`w-3 h-3 bg-white rounded-full shadow transform transition-transform ${showVisuals ? 'translate-x-4' : 'translate-x-1'} mt-0.5`}></div>
-                            </button>
-                        </div>
-                    )}
+                    {/* Visual Comparison Toggle */}
+                    <div className="flex items-center gap-2">
+                        <span className="font-mono text-[9px] uppercase font-bold text-[var(--trust-blue)]">Visual Compare</span>
+                        <button 
+                            onClick={() => setShowVisuals(!showVisuals)}
+                            className={`w-8 h-4 rounded-full transition-colors ${showVisuals ? 'bg-[var(--trust-blue)]' : 'bg-gray-300'}`}
+                        >
+                            <div className={`w-3 h-3 bg-white rounded-full shadow transform transition-transform ${showVisuals ? 'translate-x-4' : 'translate-x-1'} mt-0.5`}></div>
+                        </button>
+                    </div>
                 </div>
                 
                 <div className="flex-1 overflow-y-auto space-y-2">
@@ -833,11 +855,11 @@ export const VerifyView: React.FC = () => {
                             </div>
                             
                             {/* Visual Comparison Logic */}
-                            {showVisuals && referenceThumbnail && item.distanceToRef !== null && (
+                            {showVisuals && item.bestMatch && (
                                 <div className="mt-3 pt-3 border-t border-[var(--border-light)] flex gap-4 overflow-x-auto">
                                     <div className="flex-shrink-0">
-                                        <p className="font-mono text-[8px] uppercase opacity-50 mb-1">Ref: YouTube Cover</p>
-                                        <img src={referenceThumbnail} className="h-16 rounded border border-[var(--border-light)]" alt="Reference" />
+                                        <p className="font-mono text-[8px] uppercase opacity-50 mb-1">Ref: {item.bestMatch.label}</p>
+                                        <img src={item.bestMatch.url} className="h-16 rounded border border-[var(--border-light)]" alt="Reference" />
                                     </div>
                                     <div className="flex-shrink-0">
                                         <p className="font-mono text-[8px] uppercase opacity-50 mb-1">Cand: Drive Thumb</p>
@@ -848,8 +870,12 @@ export const VerifyView: React.FC = () => {
                                         )}
                                     </div>
                                     <div className="flex flex-col justify-center">
-                                        <p className="font-mono text-[9px] font-bold text-amber-600">Dist: {item.distanceToRef}</p>
-                                        <p className="text-[8px] opacity-60 leading-tight w-32">High distance due to Title Card (Ref) vs Video Frame (Cand) mismatch.</p>
+                                        <p className={`font-mono text-[9px] font-bold ${item.bestMatch.dist < 10 ? 'text-emerald-600' : 'text-amber-600'}`}>Dist: {item.bestMatch.dist}</p>
+                                        <p className="text-[8px] opacity-60 leading-tight w-32">
+                                            {item.bestMatch.dist < 10 
+                                                ? "High Confidence Match. Content is visually identical." 
+                                                : "High distance. Check visual artifacts."}
+                                        </p>
                                     </div>
                                 </div>
                             )}
