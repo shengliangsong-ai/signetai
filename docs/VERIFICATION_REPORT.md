@@ -31,7 +31,7 @@ Neural Prism now operates as a specialized **Cognitive Assertion Provider**. Whi
 
 ## 5. Attestation Signature
 **Anchor**: `signetai.io:ssl`  
-**Public Key**: `ed25519:signet_v2.7_sovereign_5b9878a8583b7b38d719c7c8498f8981adc17bec0c311d76269e1275e4a8bdf9`
+**Public Key**: `ed25519:signet_v3.1_sovereign_5b9878a8583b7b38d719c7c8498f8981adc17bec0c311d76269e1275e4a8bdf9`
 
 ---
 *Signed: Lead Architect, Signet Protocol Group*

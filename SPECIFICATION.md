@@ -56,5 +56,5 @@ All Signet-compliant API responses MUST include the `X-Signet-VPR` header.
 **Official Master Signatory (v0.3.2):**
 **Anchor:** `signetai.io:ssl`
 **Organization:** [signetai-io](https://github.com/signetai-io)
-**Public Key:** `ed25519:signet_v2.7_sovereign_5b9878a8583b7b38d719c7c8498f8981adc17bec0c311d76269e1275e4a8bdf9`
+**Public Key:** `ed25519:signet_v3.1_sovereign_5b9878a8583b7b38d719c7c8498f8981adc17bec0c311d76269e1275e4a8bdf9`
 **Attested By:** Signet Protocol Labs Authority (signetai-io)

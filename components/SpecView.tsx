@@ -269,7 +269,9 @@ export const SpecView: React.FC = () => {
     doc.setFont("courier", "normal");
     doc.text("SIGNED BY PUBLIC KEY:", width/2, barcodeY + barcodeH + 45, { align: 'center' });
     doc.setTextColor(0, 85, 255); 
-    doc.text("ed25519:signet_v3.1_sovereign_5b98...8bdf9", width/2, barcodeY + barcodeH + 50, { align: 'center' });
+    doc.setFontSize(8);
+    // Display FULL key (v3.1)
+    doc.text("ed25519:signet_v3.1_sovereign_5b9878a8583b7b38d719c7c8498f8981adc17bec0c311d76269e1275e4a8bdf9", width/2, barcodeY + barcodeH + 50, { align: 'center' });
     
     // --- SIGNATURE INJECTION (UTW) ---
     const pdfBuffer = doc.output('arraybuffer');
