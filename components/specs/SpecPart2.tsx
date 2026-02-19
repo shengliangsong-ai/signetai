@@ -195,6 +195,53 @@ export const PART_2 = [
     )
   },
   {
+    category: "TECHNICAL AUDIT",
+    title: "12.5 The Difference Engine (Audit Scoring)",
+    text: "12.5.1 Deterministic Quantization\nTo move beyond binary Pass/Fail verification for lossy formats (JPEG/MP4), Signet introduces an Audit-Grade Difference Engine. \n\nFormula:\nScore = (0.6 * dHash_Dist) + (0.4 * pHash_Dist)\n\nConfidence Bands:\n0-30: Verified Original\n30-120: Platform Consistent\n120-300: Modified Content\n>300: Divergent Source",
+    content: (
+      <div className="space-y-8 animate-in fade-in duration-500">
+        <h2 className="text-[var(--text-header)] font-serif text-2xl font-bold mb-6 italic">12.5 The Difference Engine</h2>
+        
+        <p className="opacity-80 leading-loose mb-6">
+          To quantify "How modified is this?", Signet introduces a deterministic scoring engine normalized to a <strong>0-1023</strong> integer scale.
+        </p>
+
+        <div className="p-6 bg-[var(--code-bg)] border border-[var(--border-light)] rounded-lg mb-8">
+           <h4 className="font-mono text-[10px] uppercase font-bold text-[var(--trust-blue)] mb-2">Dual-Hash Fusion Algorithm</h4>
+           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs font-mono opacity-80">
+              <div className="p-3 border border-[var(--border-light)] rounded bg-white/5">
+                 <strong>dHash (0.6 weight)</strong><br/>
+                 Tracks gradient structure. Resistant to brightness/contrast shifts.
+              </div>
+              <div className="p-3 border border-[var(--border-light)] rounded bg-white/5">
+                 <strong>pHash (0.4 weight)</strong><br/>
+                 Tracks luminance frequency. Resistant to scaling/compression.
+              </div>
+           </div>
+        </div>
+
+        <h4 className="font-bold text-[var(--text-header)] text-lg mb-4">Confidence Bands</h4>
+        <div className="space-y-2">
+           {[
+             { band: "0 - 30", label: "VERIFIED ORIGINAL", desc: "Bit-perfect or negligible drift.", color: "bg-emerald-500" },
+             { band: "30 - 120", label: "PLATFORM CONSISTENT", desc: "Transcoding artifacts (YouTube/compression) detected but accepted.", color: "bg-blue-500" },
+             { band: "120 - 300", label: "MODIFIED CONTENT", desc: "Valid derivation (cropping, filters, text overlay).", color: "bg-amber-500" },
+             { band: "> 300", label: "DIVERGENT SOURCE", desc: "Fundamental disconnect. Likely deepfake or unrelated asset.", color: "bg-red-500" }
+           ].map((b, i) => (
+             <div key={i} className="flex items-center gap-4 p-3 border-b border-[var(--border-light)]">
+                <div className={`w-24 font-mono text-xs font-bold ${b.color.replace('bg-', 'text-')}`}>{b.band}</div>
+                <div className="flex-1">
+                   <strong className="block text-sm text-[var(--text-header)]">{b.label}</strong>
+                   <span className="text-xs opacity-60">{b.desc}</span>
+                </div>
+                <div className={`w-2 h-2 rounded-full ${b.color}`}></div>
+             </div>
+           ))}
+        </div>
+      </div>
+    )
+  },
+  {
     category: "PROTOCOL GOVERNANCE",
     title: "13. Trust Economy & Penalties",
     text: "To discourage the stripping of provenance data, the Signet Protocol introduces Trust Score Attrition.\n\n12.1 Malicious Actor Penalties\nRepeated 'Clean Slate' signatures on assets found to be stripped versions of existing registry entries lead to Trust Score Decay.",
