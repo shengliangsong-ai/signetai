@@ -16,13 +16,8 @@ const getHammingDistance = (str1: string, str2: string) => {
 };
 
 // Generate Difference Hash (dHash) from an image URL
-// 1. Fetch image -> Bitmap
-// 2. Resize to 32x33 (for row comparison)
-// 3. Grayscale
-// 4. Compare pixel[x] > pixel[x+1]
 const generateVisualHash = async (imageUrl: string): Promise<string | null> => {
     try {
-        // Try to fetch (handle potential 404s for maxresdefault gracefully)
         const response = await fetch(imageUrl, { mode: 'cors' });
         if (!response.ok) return null;
         
@@ -37,13 +32,11 @@ const generateVisualHash = async (imageUrl: string): Promise<string | null> => {
         const ctx = canvas.getContext('2d');
         if (!ctx) return null;
 
-        // Draw resized (This stretch normalizes aspect ratios for hashing)
         ctx.drawImage(imgBitmap, 0, 0, width, height);
         const imageData = ctx.getImageData(0, 0, width, height);
         const data = imageData.data;
 
         let hash = '';
-        // Calculate grayscale average
         let total = 0;
         const grays = [];
         for (let i = 0; i < data.length; i += 4) {
@@ -54,14 +47,12 @@ const generateVisualHash = async (imageUrl: string): Promise<string | null> => {
         
         const mean = total / grays.length;
 
-        // Simple Mean Hash (aHash) - robust for exact thumbnail duplicates
         for (let i = 0; i < grays.length; i++) {
             hash += (grays[i] >= mean) ? '1' : '0';
         }
 
         return hash;
     } catch (e) {
-        // console.warn("pHash Gen Failed", imageUrl, e); 
         return null;
     }
 };
@@ -71,9 +62,12 @@ export const VerifyView: React.FC = () => {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [youtubeId, setYoutubeId] = useState<string | null>(null);
   const [driveId, setDriveId] = useState<string | null>(null);
+  
   // Folder State
   const [folderId, setFolderId] = useState<string | null>(null);
   const [folderContents, setFolderContents] = useState<any[]>([]);
+  const [referenceThumbnail, setReferenceThumbnail] = useState<string | null>(null);
+  const [showVisuals, setShowVisuals] = useState(false);
 
   const [isVerifying, setIsVerifying] = useState(false);
   const [isFetching, setIsFetching] = useState(false);
@@ -95,14 +89,12 @@ export const VerifyView: React.FC = () => {
     setDebugLog(prev => [...prev, `${new Date().toISOString().split('T')[1].slice(0, -1)} > ${msg}`]);
   };
 
-  // Helper: Extract YouTube ID
   const getYoutubeId = (url: string) => {
     const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
     const match = url.match(regExp);
     return (match && match[2].length === 11) ? match[2] : null;
   };
 
-  // Helper: Extract Google Drive ID
   const getGoogleDriveId = (url: string) => {
     const patterns = [
       /file\/d\/([a-zA-Z0-9_-]+)/,
@@ -118,7 +110,6 @@ export const VerifyView: React.FC = () => {
 
   const isFolderUrl = (url: string) => url.includes('/folders/') || url.includes('id=') && !url.includes('/file/');
 
-  // Robust URL Param Extraction (Search + Hash)
   const getUrlParam = (param: string) => {
     const searchParams = new URLSearchParams(window.location.search);
     if (searchParams.get(param)) return searchParams.get(param);
@@ -132,24 +123,18 @@ export const VerifyView: React.FC = () => {
   };
 
   const getApiKey = () => {
-      // 1. Primary: Dedicated Gemini/Drive Key (private_keys.ts)
       if (GOOGLE_GEMINI_KEY && GOOGLE_GEMINI_KEY.startsWith("AIza")) {
-          // addLog("Using Primary GOOGLE_GEMINI_KEY.");
           return GOOGLE_GEMINI_KEY;
       }
-
-      // 2. Secondary: Environment Variable (CI/CD override)
       const envKey = process.env.API_KEY;
       if (envKey && envKey.startsWith("AIza") && !envKey.includes("UNUSED")) {
           addLog("Using process.env.API_KEY override.");
           return envKey;
       }
-
       addLog("CRITICAL: No valid GOOGLE_GEMINI_KEY found.");
       throw new Error("Client Configuration Error: GOOGLE_GEMINI_KEY is missing/invalid.");
   };
 
-  // Define handleVerify early to be used in auto-trigger
   const handleVerify = async (targetFile: File | null = file) => {
     if (!targetFile) return;
     setIsVerifying(true);
@@ -158,13 +143,13 @@ export const VerifyView: React.FC = () => {
     setManifest(null);
     setFolderContents([]);
     setFolderId(null);
-    setDebugLog([]); // Clear log on new run
+    setReferenceThumbnail(null);
+    setDebugLog([]); 
     addLog(`Starting Local File Verification: ${targetFile.name} (${targetFile.size} bytes)`);
     
     try {
         let foundManifest = null;
         
-        // 1. Tail Scan Optimization
         const TAIL_SIZE = 20480; 
         const tailSlice = targetFile.slice(Math.max(0, targetFile.size - TAIL_SIZE));
         const tailText = await tailSlice.text(); 
@@ -186,7 +171,6 @@ export const VerifyView: React.FC = () => {
              }
         }
 
-        // 2. Head Scan
         if (!foundManifest && (targetFile.type.includes('xml') || targetFile.type.includes('svg'))) {
              addLog("Checking XML/SVG head...");
              const headText = await targetFile.slice(0, 50000).text(); 
@@ -201,7 +185,6 @@ export const VerifyView: React.FC = () => {
              }
         }
 
-        // 3. Mock Check
         if (!foundManifest) {
              if (targetFile.name.includes('ca.jpg') || targetFile.name.includes('vpr_enhanced') || targetFile.name.includes('signet_512.png')) {
                  addLog("Simulating manifest for demo file.");
@@ -239,7 +222,7 @@ export const VerifyView: React.FC = () => {
       setDriveId(null);
       setFolderId(null);
       setFile(null);
-      setPreviewUrl(null);
+      setReferenceThumbnail(null);
       setManifest(null);
       setVerificationStatus('VERIFYING');
       setVerificationMethod('CLOUD_BINDING'); 
@@ -334,6 +317,7 @@ export const VerifyView: React.FC = () => {
       setShowL2(false);
       setFetchError(null);
       setDebugLog([]);
+      setReferenceThumbnail(null);
       addLog(`Starting Drive Folder Audit: ${id}`);
 
       try {
@@ -346,7 +330,7 @@ export const VerifyView: React.FC = () => {
           const params = new URLSearchParams({
               q: q,
               key: apiKey,
-              fields: "files(id,name,mimeType,size,createdTime,thumbnailLink)", // Added thumbnailLink
+              fields: "files(id,name,mimeType,size,createdTime,thumbnailLink)", 
               pageSize: "50",
               supportsAllDrives: "true",
               includeItemsFromAllDrives: "true"
@@ -366,16 +350,14 @@ export const VerifyView: React.FC = () => {
           const files = data.files || [];
           addLog(`Folder scan complete. Found ${files.length} items.`);
 
-          // --- 1. Generate Baseline for Cross-Platform Audit (YouTube) ---
           const YOUTUBE_REF_ID = 'UatpGRr-wA0';
           const YOUTUBE_IMG_URL = `https://img.youtube.com/vi/${YOUTUBE_REF_ID}/maxresdefault.jpg`;
+          setReferenceThumbnail(YOUTUBE_IMG_URL);
           let youtubePHash: string | null = null;
           
           try {
-              // Note: YouTube thumbnails often have CORS enabled, but if not, this will fail gracefully.
               youtubePHash = await generateVisualHash(YOUTUBE_IMG_URL);
               if (!youtubePHash) {
-                  // Fallback to HQ if MaxRes unavailable
                   youtubePHash = await generateVisualHash(`https://img.youtube.com/vi/${YOUTUBE_REF_ID}/hqdefault.jpg`);
               }
               if (youtubePHash) {
@@ -385,17 +367,14 @@ export const VerifyView: React.FC = () => {
               addLog("Cross-Ref: Failed to fetch YouTube reference.");
           }
           
-          // --- 2. Parallel Deep Verification + pHash Generation ---
           const processedFiles = await Promise.all(files.map(async (f: any) => {
               let status = 'UNSIGNED';
               let signer = null;
               let pHash = null;
               const fileSize = parseInt(f.size || '0');
 
-              // A. Signature Check (Tail Scan)
               if (fileSize > 0 && f.mimeType !== 'application/vnd.google-apps.folder') {
                   try {
-                      // Range Request
                       const rangeStart = Math.max(0, fileSize - 20480);
                       const fileUrl = `https://www.googleapis.com/drive/v3/files/${f.id}?key=${apiKey}&alt=media`;
                       
@@ -425,10 +404,7 @@ export const VerifyView: React.FC = () => {
                   }
               }
 
-              // B. pHash Generation (Thumbnails)
               if (f.thumbnailLink) {
-                  // Use CORS proxy or fetch mode if possible, mostly Drive thumbs are public enough for this context
-                  // We treat the thumbnail as a "Visual Fingerprint" of the video content
                   pHash = await generateVisualHash(f.thumbnailLink);
                   if (pHash) {
                       addLog(`pHash Computed [${f.name}]: ${pHash}`);
@@ -440,24 +416,25 @@ export const VerifyView: React.FC = () => {
                   name: f.name, 
                   type: f.mimeType,
                   size: f.size ? `${(fileSize / (1024 * 1024)).toFixed(1)} MB` : 'Unknown',
+                  thumbnailLink: f.thumbnailLink,
                   status: status,
                   signer: signer,
                   date: f.createdTime ? new Date(f.createdTime).toLocaleDateString() : 'Unknown',
                   pHash: pHash,
+                  distanceToRef: null as number | null,
                   softBindingMatch: null as string | null
               };
           }));
 
-          // --- 3. Cross-Reference for Soft-Binding (Duplicate/Stripped Detection) ---
           const THRESHOLD = 5;
           
           for (let i = 0; i < processedFiles.length; i++) {
               const fileA = processedFiles[i];
               if (!fileA.pHash) continue;
 
-              // 3a. Check against YouTube Reference
               if (youtubePHash) {
                   const ytDist = getHammingDistance(fileA.pHash, youtubePHash);
+                  fileA.distanceToRef = ytDist;
                   addLog(`Hamming Distance: ${fileA.name} ↔ YouTube = ${ytDist}`);
                   if (ytDist < THRESHOLD) {
                       const matchMsg = `Visual Match: YouTube ${YOUTUBE_REF_ID} (Dist: ${ytDist})`;
@@ -465,7 +442,6 @@ export const VerifyView: React.FC = () => {
                   }
               }
 
-              // 3b. Check against other files in folder
               for (let j = 0; j < processedFiles.length; j++) {
                   if (i === j) continue;
                   const fileB = processedFiles[j];
@@ -474,7 +450,6 @@ export const VerifyView: React.FC = () => {
                   const distance = getHammingDistance(fileA.pHash, fileB.pHash);
                   
                   if (distance < THRESHOLD) {
-                      // Scenario: File A is unsigned, File B is signed. File A is likely a stripped copy.
                       if (fileA.status === 'UNSIGNED' && fileB.status === 'SUCCESS') {
                           addLog(`Hamming Distance: ${fileA.name} ↔ ${fileB.name} = ${distance}`);
                           const matchMsg = `Matches Signed File: ${fileB.name} (Dist: ${distance})`;
@@ -505,6 +480,7 @@ export const VerifyView: React.FC = () => {
       setFile(null);
       setPreviewUrl(null);
       setManifest(null);
+      setReferenceThumbnail(null);
       setVerificationStatus('VERIFYING');
       setShowL2(false);
       setFetchError(null);
@@ -522,7 +498,6 @@ export const VerifyView: React.FC = () => {
           let isVerifiedContext = false;
           let deepScanSuccess = false;
 
-          // 1. Metadata Fetch
           try {
              addLog("Fetching File Metadata...");
              const res = await fetch(`https://www.googleapis.com/drive/v3/files/${id}?key=${apiKey}&fields=id,name,mimeType,size,owners`);
@@ -546,7 +521,6 @@ export const VerifyView: React.FC = () => {
              throw e; // Rethrow to trigger main catch
           }
 
-          // 2. Deep Tail Scan
           if (fileSize > 0) {
              try {
                  addLog("Attempting Tail Scan (Range Request)...");
@@ -577,7 +551,6 @@ export const VerifyView: React.FC = () => {
              } catch (e: any) { addLog(`Deep Scan Exception: ${e.message}`); }
           }
 
-          // Demo Fallbacks
           if (!deepScanSuccess && id === '1BnQia9H0dWGVQPoninDzW2JDjxBUBM1_') {
               addLog("Activating Demo Simulation (Signed)");
               title = "Signet Protocol - Signed Video.mp4";
@@ -632,14 +605,12 @@ export const VerifyView: React.FC = () => {
   const handleUrlFetch = async (url: string) => {
     if (!url) return;
     
-    // Check for YouTube URL
     const ytId = getYoutubeId(url);
     if (ytId) {
         handleYoutubeVerify(ytId);
         return;
     }
 
-    // Check for Google Drive URL
     const dId = getGoogleDriveId(url);
     if (dId) {
         if (isFolderUrl(url)) {
@@ -651,7 +622,6 @@ export const VerifyView: React.FC = () => {
         return;
     }
 
-    // Normal File Fetch
     setIsFetching(true);
     setFetchError(null);
     setFile(null);
@@ -696,7 +666,6 @@ export const VerifyView: React.FC = () => {
     }
   };
 
-  // Memoized check function to safely use in useEffect
   const checkParams = useCallback(() => {
         const deepLinkUrl = getUrlParam('url') || getUrlParam('verify_url');
         if (deepLinkUrl) {
@@ -819,12 +788,25 @@ export const VerifyView: React.FC = () => {
                 className="w-full h-full bg-[#F8F9FA] flex flex-col p-6 overflow-hidden cursor-default"
                 onClick={(e) => e.stopPropagation()}
             >
-                <div className="flex items-center gap-4 mb-6 border-b border-[var(--border-light)] pb-4">
-                    <img src="https://ssl.gstatic.com/images/branding/product/1x/drive_2020q4_48dp.png" alt="Google Drive" className="w-8 h-8" />
-                    <div>
-                        <h4 className="font-bold text-[var(--text-header)]">Cloud Batch Audit</h4>
-                        <p className="font-mono text-[9px] text-[var(--text-body)] opacity-60 uppercase">Folder ID: {folderId}</p>
+                <div className="flex items-center justify-between mb-6 border-b border-[var(--border-light)] pb-4">
+                    <div className="flex items-center gap-4">
+                        <img src="https://ssl.gstatic.com/images/branding/product/1x/drive_2020q4_48dp.png" alt="Google Drive" className="w-8 h-8" />
+                        <div>
+                            <h4 className="font-bold text-[var(--text-header)]">Cloud Batch Audit</h4>
+                            <p className="font-mono text-[9px] text-[var(--text-body)] opacity-60 uppercase">Folder ID: {folderId}</p>
+                        </div>
                     </div>
+                    {referenceThumbnail && (
+                        <div className="flex items-center gap-2">
+                            <span className="font-mono text-[9px] uppercase font-bold text-[var(--trust-blue)]">Visual Compare</span>
+                            <button 
+                                onClick={() => setShowVisuals(!showVisuals)}
+                                className={`w-8 h-4 rounded-full transition-colors ${showVisuals ? 'bg-[var(--trust-blue)]' : 'bg-gray-300'}`}
+                            >
+                                <div className={`w-3 h-3 bg-white rounded-full shadow transform transition-transform ${showVisuals ? 'translate-x-4' : 'translate-x-1'} mt-0.5`}></div>
+                            </button>
+                        </div>
+                    )}
                 </div>
                 
                 <div className="flex-1 overflow-y-auto space-y-2">
@@ -849,6 +831,28 @@ export const VerifyView: React.FC = () => {
                                     {item.status === 'SUCCESS' ? '✓ Verified' : '✕ Unsigned'}
                                 </div>
                             </div>
+                            
+                            {/* Visual Comparison Logic */}
+                            {showVisuals && referenceThumbnail && item.distanceToRef !== null && (
+                                <div className="mt-3 pt-3 border-t border-[var(--border-light)] flex gap-4 overflow-x-auto">
+                                    <div className="flex-shrink-0">
+                                        <p className="font-mono text-[8px] uppercase opacity-50 mb-1">Ref: YouTube Cover</p>
+                                        <img src={referenceThumbnail} className="h-16 rounded border border-[var(--border-light)]" alt="Reference" />
+                                    </div>
+                                    <div className="flex-shrink-0">
+                                        <p className="font-mono text-[8px] uppercase opacity-50 mb-1">Cand: Drive Thumb</p>
+                                        {item.thumbnailLink ? (
+                                            <img src={item.thumbnailLink} className="h-16 rounded border border-[var(--border-light)]" alt="Candidate" referrerPolicy="no-referrer" />
+                                        ) : (
+                                            <div className="h-16 w-24 bg-gray-100 flex items-center justify-center text-[8px]">No Thumb</div>
+                                        )}
+                                    </div>
+                                    <div className="flex flex-col justify-center">
+                                        <p className="font-mono text-[9px] font-bold text-amber-600">Dist: {item.distanceToRef}</p>
+                                        <p className="text-[8px] opacity-60 leading-tight w-32">High distance due to Title Card (Ref) vs Video Frame (Cand) mismatch.</p>
+                                    </div>
+                                </div>
+                            )}
                             
                             {/* pHash Soft-Binding Alerts */}
                             {item.softBindingMatch && (
