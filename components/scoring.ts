@@ -19,6 +19,7 @@ export interface FrameCandidate {
   id: string;
   timestamp?: number;
   hashes: DualHash;
+  imageUrl?: string; // Base64 Data URL for UI preview
 }
 
 export interface ReferenceFrame {
@@ -48,6 +49,7 @@ export interface AuditResult {
   signals: AuditSignals;
   bestMatchLabel?: string;
   bestMatchMeta?: any; // The metadata of the best matching reference frame
+  bestMatchCandId?: string; // ID of the candidate that matched best
   confidence: number;
   frameDetails?: FrameMatchResult[];
 }
@@ -62,6 +64,49 @@ export const getHammingDistance = (str1: string, str2: string): number => {
     if (str1[i] !== str2[i]) dist++;
   }
   return dist;
+};
+
+// Internal: Compute Hash from Canvas Context
+const computeHashFromContext = (ctx: CanvasRenderingContext2D, width: number, height: number, originalW: number, originalH: number, byteSize: number = 0): DualHash => {
+    const imageData = ctx.getImageData(0, 0, width, height);
+    const data = imageData.data;
+
+    // Convert to Grayscale
+    const grays: number[] = [];
+    let totalLum = 0;
+    for (let i = 0; i < data.length; i += 4) {
+      const lum = data[i] * 0.299 + data[i + 1] * 0.587 + data[i + 2] * 0.114;
+      grays.push(lum);
+      totalLum += lum;
+    }
+    const mean = totalLum / grays.length;
+
+    // 1. pHash (Simulated Mean-Based)
+    let pHash = '';
+    const step = 4; // 32/4 = 8x8 grid
+    for (let y = 0; y < 8; y++) {
+      for (let x = 0; x < 8; x++) {
+        const idx = (y * step * width) + (x * step);
+        pHash += (grays[idx] >= mean) ? '1' : '0';
+      }
+    }
+
+    // 2. dHash (Gradient-Based)
+    let dHash = '';
+    for (let y = 0; y < 8; y++) {
+      for (let x = 0; x < 8; x++) {
+        const idx = (y * step * width) + (x * step);
+        const rightIdx = idx + 1; // Comparison neighbor
+        dHash += (grays[idx] < grays[rightIdx]) ? '1' : '0';
+      }
+    }
+
+    return { 
+        dHash, 
+        pHash, 
+        originalSize: `${originalW}x${originalH}`, 
+        byteSize 
+    };
 };
 
 // Generate Dual-Hash from Image URL (Canvas API)
@@ -83,11 +128,8 @@ export const generateDualHash = async (imageUrl: string, logFn?: (msg: string) =
     
     const blob = await response.blob();
     const imgBitmap = await createImageBitmap(blob);
-    const originalSize = `${imgBitmap.width}x${imgBitmap.height}`;
-    const byteSize = blob.size;
-
-    // Standardize to 32x32 for calculation (produces 1024 pixels)
-    // We utilize 8x8 blocks for final 64-bit hashes
+    
+    // Standardize to 32x32 for calculation
     const width = 32; 
     const height = 32;
     const canvas = document.createElement('canvas');
@@ -97,51 +139,98 @@ export const generateDualHash = async (imageUrl: string, logFn?: (msg: string) =
     if (!ctx) return null;
 
     ctx.drawImage(imgBitmap, 0, 0, width, height);
-    const imageData = ctx.getImageData(0, 0, width, height);
-    const data = imageData.data;
-
-    // Convert to Grayscale
-    const grays: number[] = [];
-    let totalLum = 0;
-    for (let i = 0; i < data.length; i += 4) {
-      const lum = data[i] * 0.299 + data[i + 1] * 0.587 + data[i + 2] * 0.114;
-      grays.push(lum);
-      totalLum += lum;
-    }
-    const mean = totalLum / grays.length;
-
-    // 1. pHash (Simulated Mean-Based)
-    // Robust against resizing and compression artifacts
-    // Logic: 1 if pixel > global_mean, else 0. (Simplified pHash for JS)
-    // We sample center 8x8 grid to reduce noise
-    let pHash = '';
-    const step = 4; // 32/4 = 8x8 grid
-    for (let y = 0; y < 8; y++) {
-      for (let x = 0; x < 8; x++) {
-        // Sample center pixel of the block
-        const idx = (y * step * width) + (x * step);
-        pHash += (grays[idx] >= mean) ? '1' : '0';
-      }
-    }
-
-    // 2. dHash (Gradient-Based)
-    // Captures structural gradients. Very fast.
-    // Logic: 1 if pixel[i] < pixel[i+1]
-    let dHash = '';
-    for (let y = 0; y < 8; y++) {
-      for (let x = 0; x < 8; x++) {
-        const idx = (y * step * width) + (x * step);
-        const rightIdx = idx + 1; // Comparison neighbor
-        dHash += (grays[idx] < grays[rightIdx]) ? '1' : '0';
-      }
-    }
-
-    return { dHash, pHash, originalSize, byteSize };
+    
+    return computeHashFromContext(ctx, width, height, imgBitmap.width, imgBitmap.height, blob.size);
   } catch (e: any) {
     console.error("Hash Gen Error", e);
     if (logFn) logFn(`Hash Gen Exception: ${e.message}`);
     return null;
   }
+};
+
+// Extract and Hash Frames from Video URL
+export const extractVideoFrames = async (
+    videoUrl: string, 
+    timestamps: number[], 
+    logFn?: (msg: string) => void
+): Promise<FrameCandidate[]> => {
+    return new Promise((resolve) => {
+        const video = document.createElement('video');
+        video.crossOrigin = "anonymous";
+        video.src = videoUrl;
+        video.muted = true;
+        
+        const candidates: FrameCandidate[] = [];
+        const width = 32;
+        const height = 32;
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+
+        // Preview Canvas (Larger for UI)
+        const prevWidth = 160;
+        const prevHeight = 90;
+        const prevCanvas = document.createElement('canvas');
+        prevCanvas.width = prevWidth;
+        prevCanvas.height = prevHeight;
+        const prevCtx = prevCanvas.getContext('2d');
+
+        let currentIdx = 0;
+
+        // Timeout safety
+        const timeout = setTimeout(() => {
+            if (logFn) logFn("Video Extraction Timeout (10s)");
+            resolve(candidates);
+        }, 10000);
+
+        const processNext = async () => {
+            if (currentIdx >= timestamps.length) {
+                clearTimeout(timeout);
+                resolve(candidates);
+                return;
+            }
+
+            const time = timestamps[currentIdx];
+            video.currentTime = time;
+        };
+
+        video.onloadedmetadata = () => {
+            processNext();
+        };
+
+        video.onseeked = () => {
+            if (!ctx || !prevCtx) return;
+            try {
+                // 1. Draw Hash Version
+                ctx.drawImage(video, 0, 0, width, height);
+                const hashes = computeHashFromContext(ctx, width, height, video.videoWidth, video.videoHeight, 0);
+                
+                // 2. Draw Preview Version
+                prevCtx.drawImage(video, 0, 0, prevWidth, prevHeight);
+                const imageUrl = prevCanvas.toDataURL('image/jpeg', 0.7);
+
+                candidates.push({
+                    id: `frame_${timestamps[currentIdx]}`,
+                    timestamp: timestamps[currentIdx],
+                    hashes,
+                    imageUrl
+                });
+                if (logFn) logFn(`Extracted Frame B at T+${timestamps[currentIdx]}s`);
+            } catch (e: any) {
+                if (logFn) logFn(`Frame Capture Error T+${timestamps[currentIdx]}s: ${e.message}`);
+            }
+            
+            currentIdx++;
+            processNext();
+        };
+
+        video.onerror = (e) => {
+            if (logFn) logFn(`Video Load Error: ${video.error?.message || 'Unknown'}`);
+            clearTimeout(timeout);
+            resolve(candidates);
+        };
+    });
 };
 
 // --- CORE SCORING ENGINE ---
@@ -157,6 +246,7 @@ export const computeAuditScore = (
   let minVisualDist = 1.0;
   let bestMatchLabel = "None";
   let bestMatchMeta = null;
+  let bestMatchCandId = undefined;
 
   // Thresholds for "Match" counting (Temporal Signal)
   const VISUAL_MATCH_THRESHOLD = 0.25; // 25% Normalized Distance (~16 bits on 64-bit hash)
@@ -189,6 +279,7 @@ export const computeAuditScore = (
       minVisualDist = bestRefDist;
       bestMatchLabel = ref.label;
       bestMatchMeta = ref.meta;
+      bestMatchCandId = bestCandId;
     }
 
     // Temporal Accounting
@@ -213,7 +304,7 @@ export const computeAuditScore = (
   matchedReferenceCount = satisfiedRefs.size;
   const coverageRatio = references.length > 0 ? matchedReferenceCount / references.length : 0;
   const D_temporal = 1.0 - coverageRatio; 
-
+  
   // 3. Final Fusion
   let D_total = 0;
 
@@ -240,6 +331,7 @@ export const computeAuditScore = (
     },
     bestMatchLabel,
     bestMatchMeta,
+    bestMatchCandId,
     confidence: Math.max(0, 1.0 - D_total),
     frameDetails
   };

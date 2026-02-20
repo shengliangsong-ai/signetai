@@ -6,6 +6,7 @@ import { GOOGLE_GEMINI_KEY } from '../private_keys';
 import { 
   generateDualHash, 
   computeAuditScore, 
+  extractVideoFrames,
   AuditResult, 
   FrameCandidate, 
   ReferenceFrame 
@@ -42,7 +43,8 @@ export const VerifyView: React.FC = () => {
   
   // Audit Engine State
   const [auditResult, setAuditResult] = useState<AuditResult | null>(null);
-  const [visualEvidence, setVisualEvidence] = useState<{ refUrl: string, candUrl: string, label: string } | null>(null);
+  const [auditCandidates, setAuditCandidates] = useState<FrameCandidate[]>([]);
+  const [visualEvidence, setVisualEvidence] = useState<{ refUrl: string, candUrl: string, label: string, isFrame: boolean } | null>(null);
   
   // Trace Log for Debugging
   const [debugLog, setDebugLog] = useState<string[]>([]);
@@ -123,7 +125,8 @@ export const VerifyView: React.FC = () => {
           const data = await res.json();
           if (data.items) {
               const items = data.items.map((item: any) => ({
-                  id: item.snippet.resourceId.videoId,
+                  playlistItemId: item.id, // Unique ID within the playlist
+                  id: item.snippet.resourceId.videoId, // Video ID (kept as 'id' for compatibility with rest of code)
                   title: item.snippet.title,
                   thumbnail: item.snippet.thumbnails?.default?.url,
                   channel: item.snippet.videoOwnerChannelTitle,
@@ -168,7 +171,7 @@ export const VerifyView: React.FC = () => {
           const params = new URLSearchParams({
               q: q,
               key: apiKey,
-              fields: "files(id,name,mimeType,size,createdTime,thumbnailLink)", 
+              fields: "files(id,name,mimeType,size,createdTime,thumbnailLink,webContentLink)", 
               pageSize: "50"
           });
 
@@ -183,6 +186,7 @@ export const VerifyView: React.FC = () => {
               type: f.mimeType,
               size: f.size ? `${(parseInt(f.size) / (1024 * 1024)).toFixed(1)} MB` : 'Unknown',
               thumbnailLink: f.thumbnailLink,
+              webContentLink: f.webContentLink, // Added for video playback
               diffScore: null, // Reset score
               date: f.createdTime ? new Date(f.createdTime).toLocaleDateString() : 'Unknown'
           }));
@@ -280,11 +284,36 @@ export const VerifyView: React.FC = () => {
           const targetFile = folderContents.find(f => f.id === selectedSourceB);
           if (!targetFile?.thumbnailLink) throw new Error("Source B has no visual preview.");
           
-          const bHashes = await generateDualHash(targetFile.thumbnailLink, addLog);
-          if (!bHashes) throw new Error("Failed to hash Source B.");
-          addLog(`Source B Hash: ${bHashes.originalSize} (${bHashes.byteSize}B) | pHash: ${bHashes.pHash.substring(0,8)}...`);
+          let candidates: FrameCandidate[] = [];
+          
+          // Try Video Extraction if it's a video and we have a link
+          if (targetFile.type.includes('video') && targetFile.webContentLink) {
+              addLog(`Attempting Video Frame Extraction for Source B...`);
+              // Extract timestamps from reference anchors (excluding Cover)
+              const timestamps = referenceUrls
+                  .filter(r => r.label.startsWith('T+'))
+                  .map(r => parseInt(r.label.match(/T\+(\d+)s/)?.[1] || '0'));
+              
+              if (timestamps.length > 0) {
+                  // Use API URL for direct stream (bypasses virus scan interstitial on large files)
+                  const videoUrl = `https://www.googleapis.com/drive/v3/files/${targetFile.id}?alt=media&key=${apiKey}`;
+                  const frames = await extractVideoFrames(videoUrl, timestamps, addLog);
+                  if (frames.length > 0) {
+                      candidates = frames;
+                      addLog(`Successfully extracted ${frames.length} frames from Source B video.`);
+                  } else {
+                      addLog(`Video extraction yielded 0 frames. Fallback to thumbnail.`);
+                  }
+              }
+          }
 
-          const candidates: FrameCandidate[] = [{ id: selectedSourceB, hashes: bHashes }];
+          // Fallback to Thumbnail if no candidates found (or not a video)
+          if (candidates.length === 0) {
+              const bHashes = await generateDualHash(targetFile.thumbnailLink, addLog);
+              if (!bHashes) throw new Error("Failed to hash Source B.");
+              addLog(`Source B Hash (Thumbnail): ${bHashes.originalSize} (${bHashes.byteSize}B) | pHash: ${bHashes.pHash.substring(0,8)}...`);
+              candidates = [{ id: selectedSourceB, hashes: bHashes }];
+          }
 
           // 4. Compute
           const result = computeAuditScore(candidates, referenceUrls);
@@ -299,13 +328,19 @@ export const VerifyView: React.FC = () => {
           addLog(`Final Score Calculation: (0.65 * ${result.signals.dVisual}) + (0.35 * ${result.signals.dTemporal}) = ${(0.65 * result.signals.dVisual + 0.35 * result.signals.dTemporal).toFixed(4)} -> Scaled: ${result.score}`);
 
           setAuditResult(result);
+          setAuditCandidates(candidates);
           
           // Set Visual Debugging Evidence
           if (result.bestMatchMeta?.url) {
+              const bestCand = candidates.find(c => c.id === result.bestMatchCandId);
+              const candUrl = bestCand?.imageUrl || targetFile.thumbnailLink;
+              const isFrame = !!bestCand?.imageUrl;
+
               setVisualEvidence({
                   refUrl: result.bestMatchMeta.url,
-                  candUrl: targetFile.thumbnailLink,
-                  label: result.bestMatchLabel || 'Best Match'
+                  candUrl: candUrl,
+                  label: result.bestMatchLabel || 'Best Match',
+                  isFrame
               });
           }
           
@@ -431,7 +466,7 @@ export const VerifyView: React.FC = () => {
                                    <img src={visualEvidence.candUrl} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" />
                                    <div className="absolute top-2 left-2 px-2 py-1 bg-black/70 text-white text-[8px] font-mono rounded">SOURCE B (Candidate)</div>
                                </div>
-                               <p className="font-mono text-[9px] opacity-60 truncate">Target Thumbnail</p>
+                               <p className="font-mono text-[9px] opacity-60 truncate">{visualEvidence.isFrame ? 'Extracted Frame (Best Match)' : 'Target Thumbnail'}</p>
                            </div>
                        </div>
                        <p className="text-[10px] mt-4 opacity-60 italic font-serif leading-relaxed">
@@ -472,13 +507,20 @@ export const VerifyView: React.FC = () => {
 
                                    {/* Candidate Frame (Source B) */}
                                    <div className="relative w-16 h-9 bg-black rounded overflow-hidden flex-shrink-0 border border-[var(--border-light)]">
-                                       {visualEvidence?.candUrl ? (
-                                           <img src={visualEvidence.candUrl} className="w-full h-full object-cover" alt="Cand" />
-                                       ) : (
-                                           <div className="w-full h-full flex items-center justify-center text-[6px] text-white/50">NO IMG</div>
-                                       )}
+                                       {(() => {
+                                            const cand = auditCandidates.find(c => c.id === fd.bestCandId);
+                                            const url = cand?.imageUrl || visualEvidence?.candUrl;
+                                            return url ? (
+                                                <img src={url} className="w-full h-full object-cover" alt="Cand" />
+                                            ) : (
+                                                <div className="w-full h-full flex items-center justify-center text-[6px] text-white/50">NO IMG</div>
+                                            );
+                                       })()}
                                        <div className="absolute bottom-0 left-0 right-0 bg-black/60 text-[6px] text-white px-1 truncate">
-                                           Target
+                                           {(() => {
+                                                const cand = auditCandidates.find(c => c.id === fd.bestCandId);
+                                                return cand?.imageUrl ? 'Extracted' : 'Target';
+                                           })()}
                                        </div>
                                    </div>
 
@@ -529,7 +571,7 @@ export const VerifyView: React.FC = () => {
                    <div className="flex-1 overflow-y-auto p-2 space-y-1">
                        {sourceAItems.length > 0 ? sourceAItems.map((item) => (
                            <div 
-                             key={item.id} 
+                             key={item.playlistItemId || item.id} 
                              onClick={() => setSelectedSourceA(item.id)}
                              className={`p-2 border rounded cursor-pointer transition-all flex gap-2 items-center ${selectedSourceA === item.id ? 'border-[var(--trust-blue)] bg-blue-50' : 'border-transparent hover:bg-neutral-50'}`}
                            >
