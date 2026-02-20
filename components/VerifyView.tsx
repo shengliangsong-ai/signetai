@@ -12,6 +12,8 @@ import {
   ReferenceFrame 
 } from './scoring';
 
+import { FrameAnalysisTable } from './FrameAnalysisTable';
+
 export const VerifyView: React.FC = () => {
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -27,6 +29,7 @@ export const VerifyView: React.FC = () => {
   // Folder State
   const [folderId, setFolderId] = useState<string | null>(null);
   const [showL2, setShowL2] = useState(false);
+  const [showAnalysis, setShowAnalysis] = useState(false); // New View Toggle
   
   // Operation State
   const [isVerifying, setIsVerifying] = useState(false);
@@ -290,17 +293,30 @@ export const VerifyView: React.FC = () => {
           if (targetFile.type.includes('video') && targetFile.webContentLink) {
               addLog(`Attempting Video Frame Extraction for Source B...`);
               // Extract timestamps from reference anchors (excluding Cover)
-              const timestamps = referenceUrls
+              const baseTimestamps = referenceUrls
                   .filter(r => r.label.startsWith('T+'))
                   .map(r => parseInt(r.label.match(/T\+(\d+)s/)?.[1] || '0'));
               
-              if (timestamps.length > 0) {
+              // ALIGNMENT FIX: Generate "Cloud" of timestamps around each anchor
+              // Window: Expanded to [-10...10] with finer granularity
+              const timestamps: number[] = [];
+              baseTimestamps.forEach(t => {
+                  // Check offsets: 0, +/-1, +/-2, +/-3, +/-4, +/-5, +/-10
+                  [0, -1, 1, -2, 2, -3, 3, -4, 4, -5, 5, -10, 10].forEach(offset => {
+                      const val = t + offset;
+                      if (val >= 0 && val < durationSec) timestamps.push(val);
+                  });
+              });
+              // Deduplicate and sort
+              const uniqueTimestamps = Array.from(new Set(timestamps)).sort((a, b) => a - b);
+              
+              if (uniqueTimestamps.length > 0) {
                   // Use API URL for direct stream (bypasses virus scan interstitial on large files)
                   const videoUrl = `https://www.googleapis.com/drive/v3/files/${targetFile.id}?alt=media&key=${apiKey}`;
-                  const frames = await extractVideoFrames(videoUrl, timestamps, addLog);
+                  const frames = await extractVideoFrames(videoUrl, uniqueTimestamps, addLog);
                   if (frames.length > 0) {
                       candidates = frames;
-                      addLog(`Successfully extracted ${frames.length} frames from Source B video.`);
+                      addLog(`Successfully extracted ${frames.length} frames (Cloud Search) from Source B video.`);
                   } else {
                       addLog(`Video extraction yielded 0 frames. Fallback to thumbnail.`);
                   }
@@ -482,7 +498,15 @@ export const VerifyView: React.FC = () => {
                {/* Frame-by-Frame Scoring Table */}
                {auditResult.frameDetails && auditResult.frameDetails.length > 0 && (
                    <div className="mt-4 border-t border-[var(--border-light)] pt-4">
-                       <h5 className="font-mono text-[10px] uppercase font-bold text-[var(--text-header)] mb-4">Frame Analysis (Visual Chain)</h5>
+                       <div className="flex items-center justify-between mb-4">
+                           <h5 className="font-mono text-[10px] uppercase font-bold text-[var(--text-header)]">Frame Analysis (Visual Chain)</h5>
+                           <button 
+                               onClick={() => setShowAnalysis(true)}
+                               className="text-[10px] font-mono uppercase font-bold text-[var(--trust-blue)] hover:underline"
+                           >
+                               View Full Analysis →
+                           </button>
+                       </div>
                        
                        <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2">
                            {auditResult.frameDetails.map((fd, idx) => (
@@ -641,6 +665,16 @@ export const VerifyView: React.FC = () => {
       const dId = getGoogleDriveId(urlInput);
       if (dId) handleGoogleDriveFolderVerify(dId);
   };
+
+  if (showAnalysis && auditResult) {
+      return (
+          <FrameAnalysisTable 
+              auditResult={auditResult} 
+              candidates={auditCandidates} 
+              onBack={() => setShowAnalysis(false)} 
+          />
+      );
+  }
 
   return (
     <div className="py-12 space-y-12 animate-in fade-in duration-700">
