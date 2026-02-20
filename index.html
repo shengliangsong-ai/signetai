@@ -26,20 +26,6 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
     
-    <!-- Tailwind CDN for Preview/Runtime Safety -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-      tailwind.config = {
-        theme: {
-          extend: {
-            colors: {
-              'trust-blue': '#0055FF'
-            }
-          }
-        }
-      }
-    </script>
-
     <style>
       :root {
         /* C2PA Industrial Palette (Standard Light) */
@@ -153,21 +139,6 @@
       .prose-signet code { font-family: 'JetBrains Mono', monospace; font-size: 12px; background: rgba(0,0,0,0.05); padding: 2px 4px; border-radius: 3px; }
       [data-theme='midnight'] .prose-signet code { background: rgba(255,255,255,0.1); }
     </style>
-<script type="importmap">
-{
-  "imports": {
-    "react": "https://esm.sh/react@^19.2.4",
-    "react-dom/": "https://esm.sh/react-dom@^19.2.4/",
-    "react/": "https://esm.sh/react@^19.2.4/",
-    "jspdf": "https://esm.sh/jspdf@^4.1.0",
-    "firebase/": "https://esm.sh/firebase@^12.9.0/",
-    "@google/genai": "https://esm.sh/@google/genai@^1.41.0",
-    "react-markdown": "https://esm.sh/react-markdown@^10.1.0",
-    "vite": "https://esm.sh/vite@^7.3.1",
-    "@vitejs/plugin-react": "https://esm.sh/@vitejs/plugin-react@^5.1.4"
-  }
-}
-</script>
 </head>
   <body>
     <div id="root"></div>
