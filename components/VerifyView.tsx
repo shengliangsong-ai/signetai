@@ -236,7 +236,7 @@ export const VerifyView: React.FC = () => {
           const INTERVAL = 60; // Tighter sampling for pair comparison
           const referenceUrls: ReferenceFrame[] = [];
           
-          addLog(`Generating Anchors for Source A...`);
+          addLog(`Generating Anchors for Source A (v2)...`);
           // Cover
           const coverUrl = `https://img.youtube.com/vi/${selectedSourceA}/maxresdefault.jpg`;
           const coverHash = await generateDualHash(coverUrl);
@@ -248,6 +248,8 @@ export const VerifyView: React.FC = () => {
                   meta: { url: coverUrl, size: coverHash.originalSize, bytes: coverHash.byteSize } 
               });
               addLog(`Anchor [Meta: Cover]: ${coverHash.originalSize} (${coverHash.byteSize}B)`);
+          } else {
+              addLog(`Anchor [Meta: Cover]: Failed to hash.`);
           }
 
           // Temporal
@@ -266,6 +268,8 @@ export const VerifyView: React.FC = () => {
                       meta: { url: thumbUrl, size: hashes.originalSize, bytes: hashes.byteSize } 
                   });
                   addLog(`Anchor [T+${cursor}s]: ${hashes.originalSize} (${hashes.byteSize}B) | pHash: ${hashes.pHash.substring(0,8)}...`);
+              } else {
+                  addLog(`Anchor [T+${cursor}s]: Failed to hash.`);
               }
               cursor += INTERVAL;
               idx++;
