@@ -424,6 +424,59 @@ export const VerifyView: React.FC = () => {
                    Comparison: Source A [{selectedSourceA}] vs Source B [{folderContents.find(f=>f.id===selectedSourceB)?.name.substring(0,15)}...]
                </div>
 
+               {/* Frame-by-Frame Scoring Table */}
+               {auditResult.frameDetails && auditResult.frameDetails.length > 0 && (
+                   <div className="mt-4 border-t border-[var(--border-light)] pt-4">
+                       <h5 className="font-mono text-[10px] uppercase font-bold text-[var(--text-header)] mb-4">Frame Analysis (Visual Chain)</h5>
+                       
+                       <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2">
+                           {auditResult.frameDetails.map((fd, idx) => (
+                               <div key={idx} className="flex items-center gap-3 p-2 border border-[var(--border-light)] rounded bg-white/50 hover:bg-white transition-colors">
+                                   {/* Reference Frame */}
+                                   <div className="relative w-16 h-9 bg-black rounded overflow-hidden flex-shrink-0 border border-[var(--border-light)]">
+                                       {fd.refMeta?.url ? (
+                                           <img src={fd.refMeta.url} className="w-full h-full object-cover" alt="Ref" />
+                                       ) : (
+                                           <div className="w-full h-full flex items-center justify-center text-[6px] text-white/50">NO IMG</div>
+                                       )}
+                                       <div className="absolute bottom-0 left-0 right-0 bg-black/60 text-[6px] text-white px-1 truncate">
+                                           {fd.refLabel}
+                                       </div>
+                                   </div>
+
+                                   {/* VS Indicator */}
+                                   <div className="flex flex-col items-center gap-0.5">
+                                       <span className="text-[8px] font-mono opacity-30">VS</span>
+                                       <div className={`h-px w-4 ${fd.isMatch ? 'bg-emerald-500' : 'bg-red-500/30'}`}></div>
+                                   </div>
+
+                                   {/* Candidate Frame (Source B) */}
+                                   <div className="relative w-16 h-9 bg-black rounded overflow-hidden flex-shrink-0 border border-[var(--border-light)]">
+                                       {visualEvidence?.candUrl ? (
+                                           <img src={visualEvidence.candUrl} className="w-full h-full object-cover" alt="Cand" />
+                                       ) : (
+                                           <div className="w-full h-full flex items-center justify-center text-[6px] text-white/50">NO IMG</div>
+                                       )}
+                                       <div className="absolute bottom-0 left-0 right-0 bg-black/60 text-[6px] text-white px-1 truncate">
+                                           Target
+                                       </div>
+                                   </div>
+
+                                   {/* Metrics */}
+                                   <div className="flex-1 text-right min-w-0">
+                                       <div className={`font-bold font-mono text-[10px] ${fd.isMatch ? 'text-emerald-600' : 'text-red-500'}`}>
+                                           {fd.isMatch ? 'MATCH' : 'MISS'}
+                                       </div>
+                                       <div className="text-[8px] font-mono opacity-50">
+                                           Δ: {fd.visualDistance.toFixed(3)}
+                                       </div>
+                                   </div>
+                               </div>
+                           ))}
+                       </div>
+                   </div>
+               )}
+
                {/* Feature Request Placeholder */}
                <div className="flex items-center gap-2 pt-2 opacity-40 hover:opacity-100 transition-opacity cursor-not-allowed">
                    <div className="w-2 h-2 rounded-full bg-neutral-400"></div>

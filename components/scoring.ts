@@ -34,6 +34,7 @@ export interface AuditSignals {
 
 export interface FrameMatchResult {
   refLabel: string;
+  refMeta?: any; // Added for visual rendering
   bestCandId: string;
   visualDistance: number;
   isMatch: boolean;
@@ -183,6 +184,7 @@ export const computeAuditScore = (
 
     frameDetails.push({
       refLabel: ref.label,
+      refMeta: ref.meta,
       bestCandId,
       visualDistance: bestRefDist,
       isMatch
