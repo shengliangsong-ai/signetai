@@ -34,7 +34,7 @@ export const VerifyView: React.FC = () => {
   const [verificationStatus, setVerificationStatus] = useState<'IDLE' | 'VERIFYING' | 'SUCCESS' | 'UNSIGNED' | 'TAMPERED' | 'BATCH_REPORT'>('IDLE');
   
   // Inputs
-  const [urlInput, setUrlInput] = useState('');
+  const [urlInput, setUrlInput] = useState('https://drive.google.com/drive/folders/1dKxGvDBrxHp9ys_7jy7cXNt74JnaryA9'); // Default Source B
   const [referenceInput, setReferenceInput] = useState('https://www.youtube.com/playlist?list=PLjnwycFexttARFrzatvBjzL0BEH-78Bft'); // Default Source A
 
   const [dragActive, setDragActive] = useState(false);
@@ -313,16 +313,14 @@ export const VerifyView: React.FC = () => {
       const deepLinkUrl = getUrlParam('url') || getUrlParam('verify_url');
       const refUrlParam = getUrlParam('ref');
       
-      const targetToLoad = deepLinkUrl ? decodeURIComponent(deepLinkUrl) : '';
+      const targetToLoad = deepLinkUrl ? decodeURIComponent(deepLinkUrl) : urlInput; // Default to initial state
       const refToLoad = refUrlParam ? decodeURIComponent(refUrlParam) : referenceInput; // Default to initial state
 
-      if (targetToLoad && urlInput !== targetToLoad) setUrlInput(targetToLoad);
-      if (refToLoad && refToLoad !== referenceInput) setReferenceInput(refToLoad);
+      if (deepLinkUrl && urlInput !== targetToLoad) setUrlInput(targetToLoad);
+      if (refUrlParam && referenceInput !== refToLoad) setReferenceInput(refToLoad);
       
-      // Trigger load
-      if (targetToLoad || refToLoad) {
-          handleUrlFetch(targetToLoad, refToLoad);
-      }
+      // Trigger load automatically
+      handleUrlFetch(targetToLoad, refToLoad);
   }, []);
 
   // --- UI RENDERERS ---
