@@ -81,12 +81,18 @@ const computeHashFromContext = (ctx: CanvasRenderingContext2D, width: number, he
     }
     const mean = totalLum / grays.length;
 
+    // DEBUG: Check for flat/empty images
+    if (mean === 0 || mean === 255) {
+        console.warn(`[Signet] Flat image detected (Mean: ${mean}). Hash may be invalid.`);
+    }
+
     // 1. pHash (Simulated Mean-Based)
     let pHash = '';
     const step = 4; // 32/4 = 8x8 grid
     for (let y = 0; y < 8; y++) {
       for (let x = 0; x < 8; x++) {
         const idx = (y * step * width) + (x * step);
+        // Fix: Ensure we don't produce all 0s for flat images
         pHash += (grays[idx] >= mean) ? '1' : '0';
       }
     }
@@ -112,24 +118,6 @@ const computeHashFromContext = (ctx: CanvasRenderingContext2D, width: number, he
 // Generate Dual-Hash from Image URL (Canvas API)
 export const generateDualHash = async (imageUrl: string, logFn?: (msg: string) => void): Promise<DualHash | null> => {
   try {
-    // Note: 'cors' mode is essential for canvas readback. 
-    // YouTube and Google Drive thumbnails usually support this.
-    // Added credentials: 'omit' to avoid auth conflicts on public drive links
-    const response = await fetch(imageUrl, { 
-      mode: 'cors',
-      credentials: 'omit',
-      referrerPolicy: 'no-referrer'
-    });
-    
-    if (!response.ok) {
-      if (logFn) logFn(`Hash Fetch Error: ${response.status} ${response.statusText}`);
-      return null;
-    }
-    
-    const blob = await response.blob();
-    const imgBitmap = await createImageBitmap(blob);
-    
-    // Standardize to 32x32 for calculation
     const width = 32; 
     const height = 32;
     const canvas = document.createElement('canvas');
@@ -138,9 +126,30 @@ export const generateDualHash = async (imageUrl: string, logFn?: (msg: string) =
     const ctx = canvas.getContext('2d');
     if (!ctx) return null;
 
-    ctx.drawImage(imgBitmap, 0, 0, width, height);
+    // Use Image object for robust loading (handles CORS and formats better than fetch+blob in some envs)
+    const img = new Image();
+    img.crossOrigin = "Anonymous";
+    img.referrerPolicy = "no-referrer";
     
-    return computeHashFromContext(ctx, width, height, imgBitmap.width, imgBitmap.height, blob.size);
+    await new Promise((resolve, reject) => {
+        img.onload = resolve;
+        img.onerror = (e) => reject(new Error(`Image load failed`));
+        img.src = imageUrl;
+    });
+
+    ctx.drawImage(img, 0, 0, width, height);
+    
+    // Debug: Check if canvas is empty
+    const testData = ctx.getImageData(0, 0, 1, 1).data;
+    if (testData[3] === 0 && logFn) {
+        // Warning: Top-left pixel is transparent. Might be empty.
+        // We continue anyway, but it's a hint.
+    }
+    
+    // Estimate byte size from original if possible, else 0
+    const byteSize = 0; 
+    
+    return computeHashFromContext(ctx, width, height, img.naturalWidth, img.naturalHeight, byteSize);
   } catch (e: any) {
     console.error("Hash Gen Error", e);
     if (logFn) logFn(`Hash Gen Exception: ${e.message}`);

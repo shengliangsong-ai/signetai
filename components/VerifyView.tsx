@@ -244,27 +244,13 @@ export const VerifyView: React.FC = () => {
           const referenceUrls: ReferenceFrame[] = [];
           
           addLog(`Generating Anchors for Source A (v2)...`);
-          // Cover
-          const coverUrl = `https://img.youtube.com/vi/${selectedSourceA}/maxresdefault.jpg`;
-          const coverHash = await generateDualHash(coverUrl, addLog);
-          if (coverHash) {
-              referenceUrls.push({ 
-                  label: 'Meta: Cover', 
-                  hashes: coverHash, 
-                  weight: 1.0, 
-                  meta: { url: coverUrl, size: coverHash.originalSize, bytes: coverHash.byteSize } 
-              });
-              addLog(`Anchor [Meta: Cover]: ${coverHash.originalSize} (${coverHash.byteSize}B)`);
-          } else {
-              addLog(`Anchor [Meta: Cover]: Failed to hash.`);
-          }
 
-          // Temporal
-          let cursor = PRIME_OFFSET;
-          let idx = 0;
-          // Limit to max 10 anchors for speed in demo
-          while (cursor < durationSec - 10 && idx < 10) {
-              const ytAssetId = (idx % 3) + 1; // Simulation: Rotate through available thumbs
+          // Temporal (Hardcoded for 7min Demo)
+          const TARGET_TIMESTAMPS = [28, 83, 156, 245, 340, 396];
+          
+          for (let i = 0; i < TARGET_TIMESTAMPS.length; i++) {
+              const cursor = TARGET_TIMESTAMPS[i];
+              const ytAssetId = (i % 3) + 1; // Simulation: Rotate through available thumbs
               const thumbUrl = `https://img.youtube.com/vi/${selectedSourceA}/${ytAssetId}.jpg`;
               const hashes = await generateDualHash(thumbUrl, addLog);
               if (hashes) {
@@ -272,14 +258,18 @@ export const VerifyView: React.FC = () => {
                       label: `T+${cursor}s (Thumb ${ytAssetId})`, 
                       hashes, 
                       weight: 1.0, 
-                      meta: { url: thumbUrl, size: hashes.originalSize, bytes: hashes.byteSize } 
+                      meta: { 
+                          url: thumbUrl, 
+                          size: hashes.originalSize, 
+                          bytes: hashes.byteSize,
+                          videoId: selectedSourceA, // Pass ID for player embed
+                          timestamp: cursor         // Pass exact time for player seek
+                      } 
                   });
                   addLog(`Anchor [T+${cursor}s]: ${hashes.originalSize} (${hashes.byteSize}B) | pHash: ${hashes.pHash.substring(0,8)}...`);
               } else {
                   addLog(`Anchor [T+${cursor}s]: Failed to hash.`);
               }
-              cursor += INTERVAL;
-              idx++;
           }
 
           // 3. Generate Candidate Hash (Source B)
@@ -292,21 +282,8 @@ export const VerifyView: React.FC = () => {
           // Try Video Extraction if it's a video and we have a link
           if (targetFile.type.includes('video') && targetFile.webContentLink) {
               addLog(`Attempting Video Frame Extraction for Source B...`);
-              // Extract timestamps from reference anchors (excluding Cover)
-              const baseTimestamps = referenceUrls
-                  .filter(r => r.label.startsWith('T+'))
-                  .map(r => parseInt(r.label.match(/T\+(\d+)s/)?.[1] || '0'));
-              
-              // ALIGNMENT FIX: Generate "Cloud" of timestamps around each anchor
-              // Window: Expanded to [-10...10] with finer granularity
-              const timestamps: number[] = [];
-              baseTimestamps.forEach(t => {
-                  // Check offsets: 0, +/-1, +/-2, +/-3, +/-4, +/-5, +/-10
-                  [0, -1, 1, -2, 2, -3, 3, -4, 4, -5, 5, -10, 10].forEach(offset => {
-                      const val = t + offset;
-                      if (val >= 0 && val < durationSec) timestamps.push(val);
-                  });
-              });
+              // ALIGNMENT: Hardcoded Exact Match (User Request)
+              const timestamps: number[] = TARGET_TIMESTAMPS;
               // Deduplicate and sort
               const uniqueTimestamps = Array.from(new Set(timestamps)).sort((a, b) => a - b);
               
