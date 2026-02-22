@@ -81,6 +81,13 @@ export const TrustKeyService: React.FC = () => {
   const [phoneLoading, setPhoneLoading] = useState(false);
   const [phoneCooldownSec, setPhoneCooldownSec] = useState(0);
   const [phoneDebugLog, setPhoneDebugLog] = useState<string[]>([]);
+  const [linkingLoading, setLinkingLoading] = useState(false);
+  const [accountConflict, setAccountConflict] = useState<{
+    email: string;
+    methods: string[];
+    pendingCred: AuthCredential | null;
+    requestedProvider: 'google' | 'github';
+  } | null>(null);
   const [availability, setAvailability] = useState<{ status: 'loading' | 'available' | 'owned' | 'taken' | 'idle', owner?: string, uid?: string } | null>(null);
 
   const isAdmin = currentUser?.email?.toLowerCase() === 'shengliang.song.ai@gmail.com' || currentUser?.email?.toLowerCase() === 'shengliang.song@gmail.com';
@@ -209,6 +216,7 @@ export const TrustKeyService: React.FC = () => {
       setStatus(`Connecting to ${providerName.toUpperCase()}...`);
       const credential = await signInWithPopup(auth, provider);
       setCurrentUser(credential.user);
+      setAccountConflict(null);
       setStatus(`SESSION VERIFIED: Ready for Global Registry sync.`);
     } catch (err: any) {
       if (err?.code === 'auth/account-exists-with-different-credential') {
@@ -220,23 +228,13 @@ export const TrustKeyService: React.FC = () => {
 
         try {
           const methods = email ? await fetchSignInMethodsForEmail(auth, email) : [];
-          if (methods.includes('google.com')) {
-            setStatus(`Account exists for ${email}. Sign in with Google to link ${providerName.toUpperCase()}...`);
-            const base = await signInWithPopup(auth, new GoogleAuthProvider());
-            if (pendingCred) await linkWithCredential(base.user, pendingCred);
-            setCurrentUser(base.user);
-            setStatus(`SESSION VERIFIED: Accounts linked (${methods.join(',')}) and ready for Global Registry sync.`);
-            return;
-          }
-          if (methods.includes('github.com')) {
-            setStatus(`Account exists for ${email}. Sign in with GitHub to link ${providerName.toUpperCase()}...`);
-            const base = await signInWithPopup(auth, new GithubAuthProvider());
-            if (pendingCred) await linkWithCredential(base.user, pendingCred);
-            setCurrentUser(base.user);
-            setStatus(`SESSION VERIFIED: Accounts linked (${methods.join(',')}) and ready for Global Registry sync.`);
-            return;
-          }
-          setStatus(`Auth Error: account exists with different credential for ${email || 'this email'}. Existing methods: ${methods.join(', ') || 'unknown'}. Sign in with existing provider first.`);
+          setAccountConflict({
+            email,
+            methods,
+            pendingCred,
+            requestedProvider: providerName
+          });
+          setStatus(`Account conflict for ${email || 'this email'}. Choose an existing login method to link ${providerName.toUpperCase()}.`);
           return;
         } catch (linkErr: any) {
           setStatus(`Auth Link Error: ${linkErr?.message || 'failed to link credentials'}`);
@@ -244,6 +242,30 @@ export const TrustKeyService: React.FC = () => {
         }
       }
       setStatus(`Auth Error: ${err.message}`);
+    }
+  };
+
+  const resolveAccountConflict = async (method: 'google.com' | 'github.com') => {
+    if (!auth || !accountConflict) return;
+    if (!accountConflict.methods.includes(method)) {
+      setStatus(`Link Error: ${method} is not listed as an existing sign-in method for ${accountConflict.email}.`);
+      return;
+    }
+    setLinkingLoading(true);
+    try {
+      const baseProvider = method === 'google.com' ? new GoogleAuthProvider() : new GithubAuthProvider();
+      setStatus(`Linking flow: sign in with ${method} to complete account merge...`);
+      const base = await signInWithPopup(auth, baseProvider);
+      if (accountConflict.pendingCred) {
+        await linkWithCredential(base.user, accountConflict.pendingCred);
+      }
+      setCurrentUser(base.user);
+      setAccountConflict(null);
+      setStatus(`SESSION VERIFIED: Accounts linked successfully. Ready for Global Registry sync.`);
+    } catch (err: any) {
+      setStatus(`Auth Link Error: ${err?.message || 'failed to link credentials'}`);
+    } finally {
+      setLinkingLoading(false);
     }
   };
 
@@ -550,6 +572,37 @@ export const TrustKeyService: React.FC = () => {
                       <div className="md:col-span-2">Anchor Status: <span className="font-bold">{availability?.status || 'idle'}{availability?.owner ? ` (${availability.owner})` : ''}</span></div>
                     </div>
                   </div>
+                  {accountConflict && (
+                    <div className="p-3 border border-amber-300 rounded bg-amber-50 space-y-2">
+                      <p className="font-mono text-[9px] uppercase font-bold text-amber-700">Account Linking Required</p>
+                      <p className="font-mono text-[10px] text-amber-800 break-all">
+                        Email: {accountConflict.email || 'unknown'} | Existing methods: {accountConflict.methods.join(', ') || 'unknown'}
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          onClick={() => resolveAccountConflict('google.com')}
+                          disabled={linkingLoading || !accountConflict.methods.includes('google.com')}
+                          className="px-3 py-2 border border-[var(--border-light)] rounded font-mono text-[10px] font-bold bg-white disabled:opacity-40"
+                        >
+                          Link via Google
+                        </button>
+                        <button
+                          onClick={() => resolveAccountConflict('github.com')}
+                          disabled={linkingLoading || !accountConflict.methods.includes('github.com')}
+                          className="px-3 py-2 border border-[var(--border-light)] rounded font-mono text-[10px] font-bold bg-white disabled:opacity-40"
+                        >
+                          Link via GitHub
+                        </button>
+                        <button
+                          onClick={() => setAccountConflict(null)}
+                          disabled={linkingLoading}
+                          className="px-3 py-2 border border-[var(--border-light)] rounded font-mono text-[10px] font-bold bg-white"
+                        >
+                          Dismiss
+                        </button>
+                      </div>
+                    </div>
+                  )}
                   <div className="flex flex-wrap gap-2">
                     {[
                       { id: 'google', label: 'Google', color: 'hover:border-red-500' },
