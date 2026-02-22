@@ -64,32 +64,32 @@ const Sidebar: React.FC<{ currentView: string; isOpen: boolean }> = ({ currentVi
       <nav className="space-y-1 flex-1 overflow-y-auto">
         <p className="px-4 text-[10px] uppercase tracking-widest font-bold text-[var(--text-body)] opacity-40 mb-4">Core Specification</p>
         <a href="/" className={`sidebar-link ${currentView === 'home' ? 'active' : ''}`}>0. Introduction</a>
-        <a href="#mission" className={`sidebar-link ${currentView === 'mission' ? 'active' : ''}`}>0.1 Mission & Team</a>
-        <a href="#standards" className={`sidebar-link ${currentView === 'standards' ? 'active' : ''}`}>1. Standards & C2PA</a>
-        <a href="#compliance" className={`sidebar-link ${currentView === 'compliance' ? 'active' : ''}`}>1.5. 2026 Strategy</a>
+        <a href="/mission" className={`sidebar-link ${currentView === 'mission' ? 'active' : ''}`}>0.1 Mission & Team</a>
+        <a href="/standards" className={`sidebar-link ${currentView === 'standards' ? 'active' : ''}`}>1. Standards & C2PA</a>
+        <a href="/compliance" className={`sidebar-link ${currentView === 'compliance' ? 'active' : ''}`}>1.5. 2026 Strategy</a>
         <a href="#developers" className="sidebar-link">2. Neural Prism Pipeline</a>
-        <a href="#schema" className={`sidebar-link ${currentView === 'schema' ? 'active' : ''}`}>3. VPR JSON Manifest</a>
+        <a href="/schema" className={`sidebar-link ${currentView === 'schema' ? 'active' : ''}`}>3. VPR JSON Manifest</a>
         <a href="/spec" className={`sidebar-link ${currentView === 'spec' ? 'active' : ''}`}>4. Technical Draft</a>
         <p className="px-4 py-2 text-[9px] text-[var(--text-body)] opacity-40 font-mono">v0.3.3 (C2PA 2.3)</p>
         
         <p className="px-4 pt-8 text-[10px] uppercase tracking-widest font-bold text-[var(--text-body)] opacity-40 mb-4">Identity & Trust</p>
-        <a href="#identity" className={`sidebar-link ${currentView === 'identity' ? 'active' : ''}`}>5. TrustKey Registry (Register)</a>
-        <a href="#verify" className={`sidebar-link ${currentView === 'verify' ? 'active' : ''}`}>6. Public Verifier (/verify)</a>
-        <a href="#batch" className={`sidebar-link ml-4 opacity-70 ${currentView === 'batch' ? 'active' : ''}`}>↳ Batch Mode (Local)</a>
-        <a href="#cli" className={`sidebar-link ml-4 opacity-70 ${currentView === 'cli' ? 'active' : ''}`}>↳ CLI Tool (Download)</a>
-        <a href="#auditor" className={`sidebar-link ${currentView === 'auditor' ? 'active' : ''}`}>7. Provenance Lab (Sim)</a>
-        <a href="#branding" className={`sidebar-link ${currentView === 'branding' ? 'active' : ''}`}>8. Branding Kit</a>
-        <a href="#manual" className={`sidebar-link ${currentView === 'manual' ? 'active' : ''}`}>9. Operator's Manual</a>
-        <a href="#ecosystem" className={`sidebar-link ${currentView === 'ecosystem' ? 'active' : ''}`}>10. Ecosystem Repositories</a>
+        <a href="/identity" className={`sidebar-link ${currentView === 'identity' ? 'active' : ''}`}>5. TrustKey Registry (Register)</a>
+        <a href="/verify" className={`sidebar-link ${currentView === 'verify' ? 'active' : ''}`}>6. Public Verifier (/verify)</a>
+        <a href="/batch" className={`sidebar-link ml-4 opacity-70 ${currentView === 'batch' ? 'active' : ''}`}>↳ Batch Mode (Local)</a>
+        <a href="/cli" className={`sidebar-link ml-4 opacity-70 ${currentView === 'cli' ? 'active' : ''}`}>↳ CLI Tool (Download)</a>
+        <a href="/auditor" className={`sidebar-link ${currentView === 'auditor' ? 'active' : ''}`}>7. Provenance Lab (Sim)</a>
+        <a href="/branding" className={`sidebar-link ${currentView === 'branding' ? 'active' : ''}`}>8. Branding Kit</a>
+        <a href="/manual" className={`sidebar-link ${currentView === 'manual' ? 'active' : ''}`}>9. Operator's Manual</a>
+        <a href="/ecosystem" className={`sidebar-link ${currentView === 'ecosystem' ? 'active' : ''}`}>10. Ecosystem Repositories</a>
         
         <p className="px-4 pt-8 text-[10px] uppercase tracking-widest font-bold text-[var(--text-body)] opacity-40 mb-4">Media Labs (Active)</p>
-        <a href="#universal-lab" className={`sidebar-link ${currentView === 'universal-lab' ? 'active' : ''}`}>11. Universal Media Lab</a>
-        <a href="#svg-lab" className={`sidebar-link ml-4 opacity-70 ${currentView === 'svg-lab' ? 'active' : ''}`}>↳ SVG Vector Lab</a>
-        <a href="#pdf-lab" className={`sidebar-link ml-4 opacity-70 ${currentView === 'pdf-lab' ? 'active' : ''}`}>↳ PDF Doc Lab</a>
+        <a href="/universal-lab" className={`sidebar-link ${currentView === 'universal-lab' ? 'active' : ''}`}>11. Universal Media Lab</a>
+        <a href="/svg-lab" className={`sidebar-link ml-4 opacity-70 ${currentView === 'svg-lab' ? 'active' : ''}`}>↳ SVG Vector Lab</a>
+        <a href="/pdf-lab" className={`sidebar-link ml-4 opacity-70 ${currentView === 'pdf-lab' ? 'active' : ''}`}>↳ PDF Doc Lab</a>
         
         <p className="px-4 pt-8 text-[10px] uppercase tracking-widest font-bold text-[var(--text-body)] opacity-40 mb-4">Meta</p>
-        <a href="#status" className={`sidebar-link ${currentView === 'status' ? 'active' : ''}`}>12. Project Status & Log</a>
-        <a href="#donate" className={`sidebar-link text-[var(--trust-blue)] font-bold ${currentView === 'donate' ? 'active' : ''}`}>13. Donate & Grants</a>
+        <a href="/status" className={`sidebar-link ${currentView === 'status' ? 'active' : ''}`}>12. Project Status & Log</a>
+        <a href="/donate" className={`sidebar-link text-[var(--trust-blue)] font-bold ${currentView === 'donate' ? 'active' : ''}`}>13. Donate & Grants</a>
         <a href="/privacy" className={`sidebar-link opacity-60 ${currentView === 'privacy' ? 'active' : ''}`}>14. Privacy & Legal</a>
         <a href="/terms" className={`sidebar-link opacity-60 ${currentView === 'terms' ? 'active' : ''}`}>15. Terms of Service</a>
         <a href="/data-deletion" className={`sidebar-link opacity-60 ${currentView === 'data-deletion' ? 'active' : ''}`}>16. User Data Deletion</a>
@@ -190,10 +190,44 @@ const App: React.FC = () => {
       const path = window.location.pathname.replace(/\/+$/, '') || '/';
       const hash = window.location.hash;
       const route = hash.split('?')[0]; // Ignore query params for routing match
-      if (path === '/spec') {
+      if (path === '/mission') {
+        setView('mission');
+      } else if (path === '/auditor') {
+        setView('auditor');
+      } else if (path === '/identity') {
+        setView('identity');
+      } else if (path === '/spec') {
         setView('spec');
+      } else if (path === '/standards') {
+        setView('standards');
+      } else if (path === '/schema') {
+        setView('schema');
+      } else if (path === '/branding') {
+        setView('branding');
+      } else if (path === '/manual') {
+        setView('manual');
+      } else if (path === '/compliance') {
+        setView('compliance');
+      } else if (path === '/verify') {
+        setView('verify');
+      } else if (path === '/ecosystem') {
+        setView('ecosystem');
+      } else if (path === '/svg-lab') {
+        setView('svg-lab');
+      } else if (path === '/pdf-lab') {
+        setView('pdf-lab');
+      } else if (path === '/universal-lab') {
+        setView('universal-lab');
+      } else if (path === '/status') {
+        setView('status');
+      } else if (path === '/batch') {
+        setView('batch');
+      } else if (path === '/cli') {
+        setView('cli');
       } else if (path === '/privacy') {
         setView('privacy');
+      } else if (path === '/donate') {
+        setView('donate');
       } else if (path === '/terms') {
         setView('terms');
       } else if (path === '/data-deletion') {
@@ -248,7 +282,11 @@ const App: React.FC = () => {
 
     handleNavigation();
     window.addEventListener('hashchange', handleNavigation);
-    return () => window.removeEventListener('hashchange', handleNavigation);
+    window.addEventListener('popstate', handleNavigation);
+    return () => {
+      window.removeEventListener('hashchange', handleNavigation);
+      window.removeEventListener('popstate', handleNavigation);
+    };
   }, []);
 
   // PWA Install Prompt Listener
@@ -336,11 +374,11 @@ const App: React.FC = () => {
               <span>Signet Protocol Group © 2026 | Master Signatory: signetai.io:ssl</span>
             </div>
             <div className="flex gap-4">
-              <a href="#mission" className="hover:text-[var(--trust-blue)]">About</a>
+              <a href="/mission" className="hover:text-[var(--trust-blue)]">About</a>
               <a href="/privacy" className="hover:text-[var(--trust-blue)]">Privacy</a>
               <a href="/terms" className="hover:text-[var(--trust-blue)]">Terms</a>
               <a href="/data-deletion" className="hover:text-[var(--trust-blue)]">Data Deletion</a>
-              <a href="#donate" className="hover:text-[var(--trust-blue)]">Grants</a>
+              <a href="/donate" className="hover:text-[var(--trust-blue)]">Grants</a>
               <span>VERSION: 0.3.3_UTW</span>
               <span>UPDATED: {new Date().toISOString().replace('T', ' ').split('.')[0]} UTC</span>
             </div>
