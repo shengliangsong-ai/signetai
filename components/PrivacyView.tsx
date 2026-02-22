@@ -53,10 +53,10 @@ export const PrivacyView: React.FC = () => {
         <section className="space-y-4">
           <h3 className="font-bold text-xl text-[var(--text-header)]">5. Legal Endpoints</h3>
           <p className="text-[var(--text-body)] opacity-80 leading-relaxed">
-            Terms of Service URL: <a href="#terms" className="text-[var(--trust-blue)] underline">https://www.signetai.io/#terms</a>
+            Terms of Service URL: <a href="/terms" className="text-[var(--trust-blue)] underline">https://www.signetai.io/terms</a>
           </p>
           <p className="text-[var(--text-body)] opacity-80 leading-relaxed">
-            User Data Deletion URL: <a href="#data-deletion" className="text-[var(--trust-blue)] underline">https://www.signetai.io/#data-deletion</a>
+            User Data Deletion URL: <a href="/data-deletion" className="text-[var(--trust-blue)] underline">https://www.signetai.io/data-deletion</a>
           </p>
         </section>
       </div>

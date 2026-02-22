@@ -53,7 +53,7 @@ export const UserDataDeletionView: React.FC = () => {
       </div>
 
       <div className="mt-20 pt-10 border-t border-[var(--border-light)] text-sm opacity-50 font-mono">
-        Effective Date: February 22, 2026 | URL: <code>https://www.signetai.io/#data-deletion</code>
+        Effective Date: February 22, 2026 | URL: <code>https://www.signetai.io/data-deletion</code>
       </div>
     </article>
   );

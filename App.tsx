@@ -56,20 +56,20 @@ const Sidebar: React.FC<{ currentView: string; isOpen: boolean }> = ({ currentVi
     ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}
   >
     <div className="p-8 h-full flex flex-col">
-      <div className="flex items-center gap-3 mb-12 cursor-pointer" onClick={() => window.location.hash = ''}>
+      <div className="flex items-center gap-3 mb-12 cursor-pointer" onClick={() => window.location.href = '/'}>
         <SignetLogo className="w-8 h-8 rounded-lg shadow-sm" />
         <span className="font-bold tracking-tight text-xl text-[var(--text-header)]">Signet v0.3.3</span>
       </div>
 
       <nav className="space-y-1 flex-1 overflow-y-auto">
         <p className="px-4 text-[10px] uppercase tracking-widest font-bold text-[var(--text-body)] opacity-40 mb-4">Core Specification</p>
-        <a href="#" onClick={(e) => { e.preventDefault(); window.location.hash = ''; }} className={`sidebar-link ${currentView === 'home' ? 'active' : ''}`}>0. Introduction</a>
+        <a href="/" className={`sidebar-link ${currentView === 'home' ? 'active' : ''}`}>0. Introduction</a>
         <a href="#mission" className={`sidebar-link ${currentView === 'mission' ? 'active' : ''}`}>0.1 Mission & Team</a>
         <a href="#standards" className={`sidebar-link ${currentView === 'standards' ? 'active' : ''}`}>1. Standards & C2PA</a>
         <a href="#compliance" className={`sidebar-link ${currentView === 'compliance' ? 'active' : ''}`}>1.5. 2026 Strategy</a>
         <a href="#developers" className="sidebar-link">2. Neural Prism Pipeline</a>
         <a href="#schema" className={`sidebar-link ${currentView === 'schema' ? 'active' : ''}`}>3. VPR JSON Manifest</a>
-        <a href="#spec" className={`sidebar-link ${currentView === 'spec' ? 'active' : ''}`}>4. Technical Draft</a>
+        <a href="/spec" className={`sidebar-link ${currentView === 'spec' ? 'active' : ''}`}>4. Technical Draft</a>
         <p className="px-4 py-2 text-[9px] text-[var(--text-body)] opacity-40 font-mono">v0.3.3 (C2PA 2.3)</p>
         
         <p className="px-4 pt-8 text-[10px] uppercase tracking-widest font-bold text-[var(--text-body)] opacity-40 mb-4">Identity & Trust</p>
@@ -90,9 +90,9 @@ const Sidebar: React.FC<{ currentView: string; isOpen: boolean }> = ({ currentVi
         <p className="px-4 pt-8 text-[10px] uppercase tracking-widest font-bold text-[var(--text-body)] opacity-40 mb-4">Meta</p>
         <a href="#status" className={`sidebar-link ${currentView === 'status' ? 'active' : ''}`}>12. Project Status & Log</a>
         <a href="#donate" className={`sidebar-link text-[var(--trust-blue)] font-bold ${currentView === 'donate' ? 'active' : ''}`}>13. Donate & Grants</a>
-        <a href="#privacy" className={`sidebar-link opacity-60 ${currentView === 'privacy' ? 'active' : ''}`}>14. Privacy & Legal</a>
-        <a href="#terms" className={`sidebar-link opacity-60 ${currentView === 'terms' ? 'active' : ''}`}>15. Terms of Service</a>
-        <a href="#data-deletion" className={`sidebar-link opacity-60 ${currentView === 'data-deletion' ? 'active' : ''}`}>16. User Data Deletion</a>
+        <a href="/privacy" className={`sidebar-link opacity-60 ${currentView === 'privacy' ? 'active' : ''}`}>14. Privacy & Legal</a>
+        <a href="/terms" className={`sidebar-link opacity-60 ${currentView === 'terms' ? 'active' : ''}`}>15. Terms of Service</a>
+        <a href="/data-deletion" className={`sidebar-link opacity-60 ${currentView === 'data-deletion' ? 'active' : ''}`}>16. User Data Deletion</a>
       </nav>
 
       <div className="pt-8 mt-8 border-t border-[var(--border-light)] space-y-6">
@@ -187,10 +187,18 @@ const App: React.FC = () => {
 
   useEffect(() => {
     const handleNavigation = () => {
+      const path = window.location.pathname.replace(/\/+$/, '') || '/';
       const hash = window.location.hash;
       const route = hash.split('?')[0]; // Ignore query params for routing match
-
-      if (route === '#mission') {
+      if (path === '/spec') {
+        setView('spec');
+      } else if (path === '/privacy') {
+        setView('privacy');
+      } else if (path === '/terms') {
+        setView('terms');
+      } else if (path === '/data-deletion') {
+        setView('data-deletion');
+      } else if (route === '#mission') {
         setView('mission');
       } else if (route === '#auditor') {
         setView('auditor');
@@ -329,9 +337,9 @@ const App: React.FC = () => {
             </div>
             <div className="flex gap-4">
               <a href="#mission" className="hover:text-[var(--trust-blue)]">About</a>
-              <a href="#privacy" className="hover:text-[var(--trust-blue)]">Privacy</a>
-              <a href="#terms" className="hover:text-[var(--trust-blue)]">Terms</a>
-              <a href="#data-deletion" className="hover:text-[var(--trust-blue)]">Data Deletion</a>
+              <a href="/privacy" className="hover:text-[var(--trust-blue)]">Privacy</a>
+              <a href="/terms" className="hover:text-[var(--trust-blue)]">Terms</a>
+              <a href="/data-deletion" className="hover:text-[var(--trust-blue)]">Data Deletion</a>
               <a href="#donate" className="hover:text-[var(--trust-blue)]">Grants</a>
               <span>VERSION: 0.3.3_UTW</span>
               <span>UPDATED: {new Date().toISOString().replace('T', ' ').split('.')[0]} UTC</span>
