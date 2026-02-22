@@ -303,6 +303,41 @@ export const ManualView: React.FC = () => {
         </div>
       </ManualSection>
 
+      <ManualSection title="11. Universal Lab (MP4 + YouTube)">
+        <p className="text-lg leading-loose text-[var(--text-body)] opacity-80 font-serif mb-8">
+          The <strong>Any Size. Zero RAM.</strong> tool in <code>/#universal-lab</code> now supports end-to-end MP4 provenance operations: local signing, automatic verification, and direct YouTube publish.
+        </p>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div className="p-6 bg-[var(--bg-standard)] border border-[var(--border-light)] rounded">
+            <h5 className="font-bold text-[var(--text-header)] mb-2">Sign + Verify Pipeline</h5>
+            <ul className="list-disc pl-5 space-y-1 text-xs opacity-80 font-mono">
+              <li>Streaming UTW signature with block-chained SHA-256 (5MB chunks).</li>
+              <li>Automatic verification result after signing (no extra click required).</li>
+              <li>Adaptive tail scan for large manifests to avoid false "No signature found".</li>
+            </ul>
+          </div>
+          <div className="p-6 bg-[var(--bg-standard)] border border-[var(--border-light)] rounded">
+            <h5 className="font-bold text-[var(--text-header)] mb-2">Frame Metadata Policy</h5>
+            <ul className="list-disc pl-5 space-y-1 text-xs opacity-80 font-mono">
+              <li>Sampling profile: <code>1_FRAME_PER_MINUTE</code>.</li>
+              <li>Sampling offset: <code>+7s</code>.</li>
+              <li>Per sample fields: timestamp, frame preview, frame size, pHash64, dHash64, capture status.</li>
+            </ul>
+          </div>
+        </div>
+
+        <div className="mt-6 p-4 border-l-4 border-[var(--trust-blue)] bg-[var(--admonition-bg)] text-xs font-mono">
+          <strong className="block mb-2 text-[var(--trust-blue)]">YouTube Publish Notes</strong>
+          <ul className="list-disc pl-5 space-y-1">
+            <li>Uses OAuth + YouTube resumable upload (API key alone is insufficient).</li>
+            <li>Description is auto-generated with human-readable verification summary and embedded <code>SIGNET_VPR_BLOCK</code>.</li>
+            <li>Frame metadata block is auto-posted as a top-level comment; pinning remains manual in YouTube Studio.</li>
+            <li>Operator can inspect detailed publish diagnostics in <strong>YouTube Debug Trace</strong>.</li>
+          </ul>
+        </div>
+      </ManualSection>
+
       <div className="mt-20 pt-10 border-t border-[var(--border-light)] flex justify-between items-center">
         <a href="#" onClick={(e) => { e.preventDefault(); window.location.hash = ''; }} className="text-[var(--trust-blue)] hover:underline font-mono text-[10px] uppercase tracking-widest font-bold">
           &larr; Return to Dashboard

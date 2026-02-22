@@ -5,7 +5,7 @@ export const PART_2 = [
   {
     category: "TECHNICAL AUDIT",
     title: "8. Zero-Copy Streaming Engine",
-    text: "7.1 The Problem\nLoading large assets (e.g., 2GB Video) into browser RAM (ArrayBuffer) causes crash loops on mobile devices.\n\n7.2 The Solution: Block-Chained Hashing\nSignet implements a stream reader that processes files in 5MB chunks. \nFormula: H(n) = SHA256( H(n-1) + Chunk(n) )",
+    text: "7.1 The Problem\nLoading large assets (e.g., 2GB Video) into browser RAM (ArrayBuffer) causes crash loops on mobile devices.\n\n7.2 The Solution: Block-Chained Hashing\nSignet implements a stream reader that processes files in 5MB chunks. \nFormula: H(n) = SHA256( H(n-1) + Chunk(n) )\n\n7.3 Universal Lab Deployment\nThe public '/universal-lab' flow signs local MP4 files with UTW, generates 1-frame/min pHash metadata (offset +7s), verifies integrity locally, and can publish directly to YouTube via OAuth resumable upload with auto-generated human-readable + machine-readable metadata blocks.",
     content: (
       <div className="space-y-8 animate-in fade-in duration-500">
         <h2 className="text-[var(--text-header)] font-serif text-2xl font-bold mb-6 italic">8. Zero-Copy Streaming</h2>
@@ -23,6 +23,17 @@ export const PART_2 = [
                  <span className="self-center">→</span>
                  <div className="p-2 bg-emerald-100 border border-emerald-200 rounded min-w-[80px] font-bold">Final Hash</div>
               </div>
+           </div>
+
+           <div className="p-6 bg-[var(--code-bg)] border border-[var(--border-light)] rounded-lg">
+              <h4 className="font-bold text-[var(--text-header)] text-sm uppercase mb-4">7.3 Any Size. Zero RAM. (Universal Lab)</h4>
+              <ul className="list-disc pl-5 text-xs opacity-80 font-mono space-y-1">
+                <li><strong>Input:</strong> Operator selects local MP4 from disk.</li>
+                <li><strong>Sign:</strong> Streamed SHA-256 block-chain hash + UTW tail manifest injection.</li>
+                <li><strong>Frame Metadata:</strong> 1 frame/min sampling with <code>offset=7s</code>; stores preview, frame size, dHash64, pHash64, and capture status.</li>
+                <li><strong>Verify:</strong> Automatic post-sign integrity verification (no extra click required).</li>
+                <li><strong>Publish:</strong> OAuth-based YouTube resumable upload; auto writes human-readable provenance summary and Signet VPR blocks.</li>
+              </ul>
            </div>
         </div>
       </div>

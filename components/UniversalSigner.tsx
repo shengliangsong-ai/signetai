@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import { PersistenceService } from '../services/PersistenceService';
 import { Admonition } from './Admonition';
 import { buildMinuteSamplingTimestamps, generateDualHash } from './scoring';
+import { GOOGLE_OAUTH_CLIENT_ID } from '../private_keys';
 
 // --- STREAMING HELPERS ---
 
@@ -74,8 +75,17 @@ export const UniversalSigner: React.FC = () => {
   const [verificationResult, setVerificationResult] = useState<any>(null);
   const [youtubeDescriptionMeta, setYoutubeDescriptionMeta] = useState<string>('');
   const [youtubeCommentMeta, setYoutubeCommentMeta] = useState<string>('');
+  const [youtubeTitle, setYoutubeTitle] = useState<string>('');
+  const [youtubePrivacy, setYoutubePrivacy] = useState<'private' | 'unlisted' | 'public'>('unlisted');
+  const [isPublishingYouTube, setIsPublishingYouTube] = useState(false);
+  const [youtubePublishError, setYoutubePublishError] = useState<string | null>(null);
+  const [youtubePublishStatus, setYoutubePublishStatus] = useState<string>('');
+  const [publishedVideoId, setPublishedVideoId] = useState<string | null>(null);
+  const [youtubeDebugLog, setYoutubeDebugLog] = useState<string[]>([]);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || GOOGLE_OAUTH_CLIENT_ID || '';
+  const YT_UPLOAD_SCOPE = 'https://www.googleapis.com/auth/youtube.upload https://www.googleapis.com/auth/youtube.force-ssl';
 
   const buildYouTubeMetadataBlocks = (manifest: any) => {
     const frameSamples = Array.isArray(manifest?.asset?.frame_samples) ? manifest.asset.frame_samples : [];
@@ -120,13 +130,39 @@ export const UniversalSigner: React.FC = () => {
       "[SIGNET_VPR_BLOCK_END]"
     ].join("\n");
 
+    const humanReadableDescription = [
+      "## Universal Integrity Verified",
+      "Authentic. video/mp4 integrity verified.",
+      "",
+      "This video is Signet-signed for provenance verification.",
+      "",
+      "Verification summary:",
+      `- Signer: ${descriptionPayload.signer} (${descriptionPayload.anchor})`,
+      `- Signed at: ${descriptionPayload.signed_at}`,
+      `- File: ${descriptionPayload.asset.filename} (${descriptionPayload.asset.type})`,
+      `- Size: ${descriptionPayload.asset.byte_length.toLocaleString()} bytes`,
+      `- Hash algorithm: ${descriptionPayload.asset.hash_algorithm}`,
+      `- Content hash: ${descriptionPayload.asset.content_hash}`,
+      `- Frame sampling policy: ${descriptionPayload.sampling.profile || 'N/A'}`,
+      `- Sampling offset: +${descriptionPayload.sampling.offset_sec ?? 0} seconds`,
+      `- Total sampled frames: ${descriptionPayload.sampling.frames_total}`,
+      "",
+      "How to verify:",
+      "- Compare SHA-256 hash against the signed hash above.",
+      "- Use frame-level pHash checks from the Signet metadata comment block.",
+      "- If hashes and sampled-frame fingerprints match, the uploaded artifact is consistent with the signed source.",
+      "",
+      "Machine-readable Signet metadata:",
+      descriptionBlock
+    ].join("\n");
+
     const commentBlock = [
       "[SIGNET_VPR_FRAMES_START]",
       JSON.stringify(commentPayload),
       "[SIGNET_VPR_FRAMES_END]"
     ].join("\n");
 
-    return { descriptionBlock, commentBlock };
+    return { descriptionBlock: humanReadableDescription, commentBlock };
   };
 
   const copyToClipboard = async (text: string) => {
@@ -134,6 +170,202 @@ export const UniversalSigner: React.FC = () => {
       await navigator.clipboard.writeText(text);
     } catch (_e) {
       // no-op fallback; users can still copy manually from textarea
+    }
+  };
+
+  const addYouTubeDebug = (msg: string) => {
+    const ts = new Date().toISOString().split('T')[1].slice(0, -1);
+    setYoutubeDebugLog((prev) => [...prev, `${ts} > ${msg}`]);
+    console.log(`[YouTubePublish] ${msg}`);
+  };
+
+  const clampChars = (s: string, n: number) => (s.length <= n ? s : s.slice(0, n));
+
+  const loadGoogleIdentityScript = async (): Promise<void> => {
+    if ((window as any).google?.accounts?.oauth2) return;
+    await new Promise<void>((resolve, reject) => {
+      const existing = document.querySelector('script[data-google-identity="1"]') as HTMLScriptElement | null;
+      if (existing) {
+        existing.addEventListener('load', () => resolve(), { once: true });
+        existing.addEventListener('error', () => reject(new Error('Failed to load Google Identity Services script.')), { once: true });
+        return;
+      }
+      const s = document.createElement('script');
+      s.src = 'https://accounts.google.com/gsi/client';
+      s.async = true;
+      s.defer = true;
+      s.setAttribute('data-google-identity', '1');
+      s.onload = () => resolve();
+      s.onerror = () => reject(new Error('Failed to load Google Identity Services script.'));
+      document.head.appendChild(s);
+    });
+  };
+
+  const getYouTubeAccessToken = async (): Promise<string> => {
+    if (!googleClientId) throw new Error('Missing VITE_GOOGLE_CLIENT_ID. Add it to your env and restart dev server.');
+    await loadGoogleIdentityScript();
+    return await new Promise<string>((resolve, reject) => {
+      const tokenClient = (window as any).google.accounts.oauth2.initTokenClient({
+        client_id: googleClientId,
+        scope: YT_UPLOAD_SCOPE,
+        callback: (resp: any) => {
+          if (resp?.error) reject(new Error(resp.error));
+          else if (resp?.access_token) resolve(resp.access_token);
+          else reject(new Error('No access token returned.'));
+        }
+      });
+      tokenClient.requestAccessToken({ prompt: 'consent' });
+    });
+  };
+
+  const publishSignedVideoToYouTube = async () => {
+    if (!signedBlob || !file) {
+      setYoutubePublishError('No signed video found. Sign a video first.');
+      return;
+    }
+    if (!file.type.includes('video')) {
+      setYoutubePublishError('Only signed video files can be uploaded to YouTube.');
+      return;
+    }
+
+    setIsPublishingYouTube(true);
+    setYoutubePublishError(null);
+    setPublishedVideoId(null);
+    setYoutubePublishStatus('Authorizing YouTube upload...');
+    setYoutubeDebugLog([]);
+    addYouTubeDebug(`Start publish flow. origin=${window.location.origin}`);
+    addYouTubeDebug(`Network status: ${navigator.onLine ? 'online' : 'offline'}`);
+    addYouTubeDebug(`OAuth client configured: ${googleClientId ? 'yes' : 'no'}`);
+
+    try {
+      const token = await getYouTubeAccessToken();
+      addYouTubeDebug(`OAuth token acquired. token_len=${token?.length || 0}`);
+      setYoutubePublishStatus('Initializing YouTube resumable upload...');
+
+      const title = clampChars((youtubeTitle || file.name.replace(/\.[^.]+$/, '')).trim() || 'Signet Signed Video', 100);
+      const description = clampChars(youtubeDescriptionMeta || '', 5000);
+      const metadata = {
+        snippet: {
+          title,
+          description,
+          categoryId: '27'
+        },
+        status: {
+          privacyStatus: youtubePrivacy,
+          selfDeclaredMadeForKids: false
+        }
+      };
+
+      // Step 0: Optional channel pre-check.
+      try {
+        addYouTubeDebug('Pre-check: GET /youtube/v3/channels?part=id&mine=true');
+        const chRes = await fetch('https://www.googleapis.com/youtube/v3/channels?part=id&mine=true', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        addYouTubeDebug(`Pre-check response: HTTP ${chRes.status}`);
+        if (!chRes.ok) {
+          const txt = await chRes.text();
+          addYouTubeDebug(`Pre-check body: ${txt.slice(0, 300)}`);
+        }
+      } catch (_e) {
+        addYouTubeDebug(`Pre-check network error: ${(_e as any)?.message || 'unknown'}`);
+      }
+
+      // Step 1: Initialize resumable session.
+      const mimeType = signedBlob.type || 'video/mp4';
+      const size = signedBlob.size;
+      addYouTubeDebug(`Init resumable session: size=${size} mime=${mimeType} privacy=${youtubePrivacy}`);
+      let initRes: Response;
+      try {
+        initRes = await fetch('https://www.googleapis.com/upload/youtube/v3/videos?uploadType=resumable&part=snippet,status', {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json; charset=UTF-8',
+            'X-Upload-Content-Type': mimeType,
+            'X-Upload-Content-Length': size.toString()
+          },
+          body: JSON.stringify(metadata)
+        });
+      } catch (e: any) {
+        addYouTubeDebug(`Init fetch failed: ${e?.message || 'unknown'}`);
+        addYouTubeDebug(`Hint: check OAuth Authorized JavaScript origins include ${window.location.origin}`);
+        throw new Error(`Resumable init network failure: ${e?.message || 'Failed to fetch'}`);
+      }
+      addYouTubeDebug(`Init response: HTTP ${initRes.status}`);
+      if (!initRes.ok) {
+        const errText = await initRes.text();
+        addYouTubeDebug(`Init error body: ${errText.slice(0, 500)}`);
+        throw new Error(`Resumable init failed (${initRes.status}): ${errText}`);
+      }
+      const uploadUrl = initRes.headers.get('Location');
+      if (!uploadUrl) throw new Error('Missing resumable upload URL (Location header).');
+      addYouTubeDebug(`Resumable upload URL received (len=${uploadUrl.length}).`);
+
+      // Step 2: Upload media bytes.
+      setYoutubePublishStatus('Streaming signed video bytes to YouTube...');
+      addYouTubeDebug('Uploading binary via PUT to resumable session URL...');
+      let uploadRes: Response;
+      try {
+        uploadRes = await fetch(uploadUrl, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': mimeType,
+            'Content-Length': size.toString()
+          },
+          body: signedBlob
+        });
+      } catch (e: any) {
+        addYouTubeDebug(`Upload PUT failed: ${e?.message || 'unknown'}`);
+        throw new Error(`Resumable upload network failure: ${e?.message || 'Failed to fetch'}`);
+      }
+      addYouTubeDebug(`Upload response: HTTP ${uploadRes.status}`);
+      if (!uploadRes.ok) {
+        const errText = await uploadRes.text();
+        addYouTubeDebug(`Upload error body: ${errText.slice(0, 500)}`);
+        throw new Error(`Resumable upload failed (${uploadRes.status}): ${errText}`);
+      }
+      const uploadJson = await uploadRes.json();
+      const videoId = uploadJson?.id as string | undefined;
+      if (!videoId) throw new Error('YouTube upload completed but no video id was returned.');
+      setPublishedVideoId(videoId);
+      setYoutubePublishStatus(`Upload complete: https://www.youtube.com/watch?v=${videoId}`);
+
+      if (youtubeCommentMeta) {
+        setYoutubePublishStatus('Upload complete. Posting Signet metadata comment...');
+        addYouTubeDebug(`Posting metadata comment for video=${videoId}`);
+        const commentRes = await fetch('https://www.googleapis.com/youtube/v3/commentThreads?part=snippet', {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            snippet: {
+              videoId,
+              topLevelComment: {
+                snippet: {
+                  textOriginal: clampChars(youtubeCommentMeta, 10000)
+                }
+              }
+            }
+          })
+        });
+        addYouTubeDebug(`Comment response: HTTP ${commentRes.status}`);
+        if (!commentRes.ok) {
+          const cErr = await commentRes.text();
+          addYouTubeDebug(`Comment error body: ${cErr.slice(0, 500)}`);
+          setYoutubePublishStatus(`Video uploaded. Metadata comment failed (${commentRes.status}). You can paste comment manually. ${cErr}`);
+        } else {
+          setYoutubePublishStatus(`Uploaded and posted metadata comment. Pinning comment is manual in YouTube Studio.`);
+        }
+      }
+    } catch (e: any) {
+      addYouTubeDebug(`Publish failed: ${e?.message || 'unknown error'}`);
+      setYoutubePublishError(e?.message || 'YouTube publish failed.');
+      setYoutubePublishStatus('');
+    } finally {
+      setIsPublishingYouTube(false);
     }
   };
 
@@ -372,6 +604,11 @@ export const UniversalSigner: React.FC = () => {
       setSignedSvgString(null);
       setVerificationResult(null);
       setProgress(0);
+      setYoutubePublishError(null);
+      setYoutubePublishStatus('');
+      setPublishedVideoId(null);
+      setYoutubeDebugLog([]);
+      setYoutubeTitle(f.name.replace(/\.[^.]+$/, ''));
 
       // Auto-Detect Existing Signature
       const strategy = getStrategy(f.type);
@@ -776,6 +1013,9 @@ export const UniversalSigner: React.FC = () => {
           <p className="text-xs opacity-70 font-mono">
             Paste Description block into YouTube video description, and Frames block into pinned comment.
           </p>
+          <p className="text-xs opacity-70 font-mono">
+            Publish button requires OAuth Client ID (<code>VITE_GOOGLE_CLIENT_ID</code>). API key alone cannot upload.
+          </p>
 
           <div className="space-y-2">
             <div className="flex items-center justify-between">
@@ -799,6 +1039,69 @@ export const UniversalSigner: React.FC = () => {
               value={youtubeCommentMeta}
               className="w-full h-40 p-2 font-mono text-[10px] border border-[var(--border-light)] rounded bg-[var(--code-bg)] text-[var(--text-body)]"
             />
+          </div>
+
+          <div className="pt-2 border-t border-[var(--border-light)] space-y-3">
+            <h5 className="font-mono text-[10px] uppercase font-bold opacity-60">Publish Signed Video</h5>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+              <input
+                type="text"
+                value={youtubeTitle}
+                onChange={(e) => setYoutubeTitle(e.target.value)}
+                placeholder="YouTube title"
+                maxLength={100}
+                className="md:col-span-2 px-2 py-2 font-mono text-[11px] border border-[var(--border-light)] rounded bg-white text-[var(--text-body)]"
+              />
+              <select
+                value={youtubePrivacy}
+                onChange={(e) => setYoutubePrivacy(e.target.value as 'private' | 'unlisted' | 'public')}
+                className="px-2 py-2 font-mono text-[11px] border border-[var(--border-light)] rounded bg-white text-[var(--text-body)]"
+              >
+                <option value="unlisted">Unlisted</option>
+                <option value="private">Private</option>
+                <option value="public">Public</option>
+              </select>
+            </div>
+
+            <button
+              onClick={publishSignedVideoToYouTube}
+              disabled={!signedBlob || !file || isPublishingYouTube || !file.type.includes('video')}
+              className="w-full py-3 bg-red-600 text-white font-mono text-[10px] uppercase font-bold tracking-widest rounded shadow hover:brightness-110 transition-all disabled:opacity-40"
+            >
+              {isPublishingYouTube ? 'Publishing To YouTube...' : 'Upload / Publish Signed Video To YouTube'}
+            </button>
+
+            {youtubePublishStatus && (
+              <div className="text-[10px] font-mono text-emerald-700 bg-emerald-50 border border-emerald-200 rounded p-2 break-all">
+                {youtubePublishStatus}
+              </div>
+            )}
+            {youtubePublishError && (
+              <div className="text-[10px] font-mono text-red-700 bg-red-50 border border-red-200 rounded p-2 break-all">
+                {youtubePublishError}
+              </div>
+            )}
+            {publishedVideoId && (
+              <a
+                href={`https://www.youtube.com/watch?v=${publishedVideoId}`}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-block text-[10px] font-mono uppercase font-bold text-[var(--trust-blue)] hover:underline"
+              >
+                Open Uploaded Video →
+              </a>
+            )}
+
+            {youtubeDebugLog.length > 0 && (
+              <div className="mt-2 border border-[var(--border-light)] rounded bg-[var(--code-bg)] p-2 max-h-48 overflow-y-auto">
+                <div className="font-mono text-[9px] uppercase font-bold opacity-50 mb-1">YouTube Debug Trace</div>
+                <div className="font-mono text-[9px] space-y-1 opacity-80 break-all">
+                  {youtubeDebugLog.map((line, idx) => (
+                    <div key={idx}>{line}</div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
