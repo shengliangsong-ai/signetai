@@ -263,6 +263,17 @@ export const ProjectStatusView: React.FC = () => {
         <p className="text-xl opacity-60 max-w-2xl font-serif italic">
             Direct rendering of the <code>TODO.md</code> and <code>LOG.md</code> artifacts tracking the platform's autonomous evolution.
         </p>
+        <div className="p-4 border border-[var(--border-light)] rounded-lg bg-[var(--bg-standard)]">
+          <div className="font-mono text-[9px] uppercase font-bold opacity-50 mb-2">Release Notes</div>
+          <div className="flex flex-wrap gap-3 text-[11px] font-mono">
+            <a href="https://www.signetai.io/docs/release-notes/2026-02-22-v0.3.3_UTW.md" target="_blank" rel="noreferrer" className="text-[var(--trust-blue)] hover:underline">
+              Latest: v0.3.3_UTW (2026-02-22)
+            </a>
+            <a href="https://www.signetai.io/docs/release-notes/README.md" target="_blank" rel="noreferrer" className="opacity-70 hover:underline">
+              Release Notes Index
+            </a>
+          </div>
+        </div>
       </header>
 
       <div className="flex gap-4 border-b border-[var(--border-light)]">

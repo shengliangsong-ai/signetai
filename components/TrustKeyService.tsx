@@ -79,6 +79,7 @@ export const TrustKeyService: React.FC = () => {
   const [smsCode, setSmsCode] = useState('');
   const [phoneConfirmation, setPhoneConfirmation] = useState<ConfirmationResult | null>(null);
   const [phoneLoading, setPhoneLoading] = useState(false);
+  const [phoneCooldownSec, setPhoneCooldownSec] = useState(0);
   const [phoneDebugLog, setPhoneDebugLog] = useState<string[]>([]);
   const [availability, setAvailability] = useState<{ status: 'loading' | 'available' | 'owned' | 'taken' | 'idle', owner?: string, uid?: string } | null>(null);
 
@@ -107,6 +108,16 @@ export const TrustKeyService: React.FC = () => {
     if (v.length <= 4) return v;
     return `${v.slice(0, 3)}***${v.slice(-2)}`;
   };
+  const authProviderIds = ((auth?.currentUser || currentUser)?.providerData || []).map((p) => p.providerId).filter(Boolean);
+  const diagnosticsActor = auth?.currentUser || currentUser;
+
+  useEffect(() => {
+    if (phoneCooldownSec <= 0) return;
+    const t = setInterval(() => {
+      setPhoneCooldownSec((s) => (s > 0 ? s - 1 : 0));
+    }, 1000);
+    return () => clearInterval(t);
+  }, [phoneCooldownSec]);
 
   const refreshVaults = useCallback(async () => {
     const vaults = await PersistenceService.getAllVaults();
@@ -271,6 +282,10 @@ export const TrustKeyService: React.FC = () => {
 
   const handlePhoneSendCode = async () => {
     if (!auth) return;
+    if (phoneCooldownSec > 0) {
+      setStatus(`Phone Auth Cooldown: wait ${phoneCooldownSec}s before requesting a new code.`);
+      return;
+    }
     const phone = phoneInput.trim();
     if (!phone) {
       setStatus('Phone Error: enter phone number in E.164 format (example: +14155551234)');
@@ -286,6 +301,7 @@ export const TrustKeyService: React.FC = () => {
       const confirmation = await signInWithPhoneNumber(auth, phone, verifier);
       setPhoneConfirmation(confirmation);
       addPhoneDebug('SMS send request accepted by Firebase.');
+      setPhoneCooldownSec(60);
       setStatus('SMS sent. Enter verification code to complete phone login.');
     } catch (err: any) {
       const msg = err?.message || 'Unknown error';
@@ -302,6 +318,7 @@ export const TrustKeyService: React.FC = () => {
         return;
       }
       if (code === 'auth/too-many-requests' || msg.includes('too-many-requests')) {
+        setPhoneCooldownSec(300);
         setStatus('Phone Auth Error: too many requests. Firebase rate-limited this device/IP. Wait 15-60 minutes, then retry. For local testing, use Firebase test phone numbers.');
         return;
       }
@@ -524,6 +541,15 @@ export const TrustKeyService: React.FC = () => {
                       <span className="font-mono text-[9px] text-amber-500 font-bold uppercase">Not Signed In (Local Only)</span>
                     )}
                   </div>
+                  <div className="p-3 border border-[var(--border-light)] rounded bg-[var(--bg-sidebar)]">
+                    <p className="font-mono text-[9px] uppercase font-bold opacity-50 mb-2">Identity Diagnostics</p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2 font-mono text-[9px] opacity-80">
+                      <div>Project: <span className="font-bold">{firebaseConfig?.projectId || 'unknown'}</span></div>
+                      <div>UID: <span className="font-bold break-all">{diagnosticsActor?.uid || 'none'}</span></div>
+                      <div className="md:col-span-2">Providers: <span className="font-bold break-all">{authProviderIds.join(',') || 'none'}</span></div>
+                      <div className="md:col-span-2">Anchor Status: <span className="font-bold">{availability?.status || 'idle'}{availability?.owner ? ` (${availability.owner})` : ''}</span></div>
+                    </div>
+                  </div>
                   <div className="flex flex-wrap gap-2">
                     {[
                       { id: 'google', label: 'Google', color: 'hover:border-red-500' },
@@ -558,10 +584,10 @@ export const TrustKeyService: React.FC = () => {
                       />
                       <button
                         onClick={handlePhoneSendCode}
-                        disabled={phoneLoading || isGenerating}
+                        disabled={phoneLoading || isGenerating || phoneCooldownSec > 0}
                         className="px-3 py-2 border border-[var(--border-light)] rounded font-mono text-[10px] font-bold hover:border-[var(--trust-blue)]"
                       >
-                        Send Code
+                        {phoneCooldownSec > 0 ? `Send Code (${phoneCooldownSec}s)` : 'Send Code'}
                       </button>
                     </div>
                     <div className="flex flex-wrap gap-2">
