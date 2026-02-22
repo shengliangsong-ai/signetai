@@ -4,8 +4,8 @@ import ReactMarkdown from 'react-markdown';
 
 const TODO_CONTENT = `# Signet AI Project Status & Roadmap
 
-**Current Version:** 0.3.3_DIFF  
-**Protocol Spec:** draft-song-03.2
+**Current Version:** 0.3.3_UTW  
+**Protocol Spec:** draft-song-03.3
 
 ## Phase 1: Core Architecture (Foundation)
 *Focus: Identity, Cryptography, and Basic Asset Signing*
@@ -38,7 +38,7 @@ const TODO_CONTENT = `# Signet AI Project Status & Roadmap
     - [x] C2PA v2.3 Alignment Documentation
     - [x] Comparison Tables (C2PA Native vs Signet UTW)
 
-## Phase 2: User Experience & PWA (Current)
+## Phase 2: User Experience & PWA
 *Focus: Accessibility and Mobile Performance*
 
 - [x] **PWA Implementation**
@@ -51,8 +51,8 @@ const TODO_CONTENT = `# Signet AI Project Status & Roadmap
     - [x] Specification-aware System Instructions
     - [x] Audio-in / Audio-out conversation loop
 
-## Phase 3: Public Verification & Ecosystem (Next)
-*Focus: Interoperability and Security*
+## Phase 3: Public Verification & Ecosystem (Current)
+*Focus: Interoperability, audit quality, and deployment hardening*
 
 - [x] **Public Verifier Deep-Linking**
     - [x] Handle URL params \`signetai.io/#verify?url=...\`
@@ -65,15 +65,33 @@ const TODO_CONTENT = `# Signet AI Project Status & Roadmap
     - [x] **Delta Scoring**: 0-1023 Difference Bands (Match -> Distinct).
     - [x] **Batch Processor**: Recursive directory scanning for drive comparisons.
 
-- [ ] **Resilience Layer (Soft-Binding)**
-    - [ ] **Client-side pHash** calculation (WASM/JS) for Images
-    - [ ] Audio Fingerprinting (Chromaprint/AcoustID) for WAV/MP3
-    - [ ] Visual Duplicate Detection in Batch Verifier
-    - [ ] Registry lookup for stripped assets (Recovery)
+- [x] **Difference Engine (YouTube-first Production Mode)**
+    - [x] Source A/B playlist-to-playlist compare
+    - [x] 4-thumbnail anchor policy with deterministic scoring
+    - [x] Frame analysis table with performance summary
+    - [x] Auto-run pairwise comparisons for selected items
+
+- [x] **Universal Media Lab: MP4 Production Flow**
+    - [x] 1 frame/minute frame-sampling metadata (offset +7s)
+    - [x] Signed MP4 verification report with frame sample table
+    - [x] YouTube upload + metadata comment publish flow
+    - [x] Human-readable VPR description generation
+
+- [x] **Batch Processor Hardening**
+    - [x] Directory scan + one-row-per-file result table
+    - [x] MP4 audit column with frame-check details
+    - [x] Detailed debug traces for UNSIGNED/TAMPERED reasons
+    - [x] MP4 results deep-link into full Universal verification report
 
 - [x] **CLI Tool Release**
     - [x] Node.js implementation of UTW for server-side pipelines
     - [ ] CI/CD Github Action for code provenance
+
+- [ ] **Identity & Account Hardening (In Progress)**
+    - [x] Google / GitHub / Phone provider integration in Identity Authority
+    - [x] Clearer auth error telemetry for phone and OAuth conflicts
+    - [x] Legal pages for policy compliance routes
+    - [ ] Finalize Firestore ownership model for multi-provider anchor updates
 
 - [ ] **Hardware Security**
     - [ ] WebAuthn / Passkey integration for Vault unlocking
@@ -82,9 +100,11 @@ const TODO_CONTENT = `# Signet AI Project Status & Roadmap
 ## Known Issues / Optimization
 - **Safari iOS Audio**: AudioContext suspension state needs explicit user-gesture handling on some iOS versions.
 - **PDF Incremental Updates**: Post-EOF injection is valid, but multiple signs need a formal xref table update to be "Adobe Compliant" (currently "Signet Compliant").
+- **Phone Auth Limits**: Firebase enforces anti-abuse rate limits; local testing should use configured test phone numbers.
+- **YouTube Frames**: Browser-safe production mode currently uses platform thumbnails (4 anchors), not arbitrary decoded timeline frames.
 
 ---
-*Last Updated: Feb 21, 2026 (Difference Engine Deployed)*`;
+*Last Updated: Feb 22, 2026 (UTW + Hosting + Identity/Legal updates)*`;
 
 const LOG_CONTENT = `# Signet AI Evolution Log
 
@@ -245,6 +265,56 @@ A text-only specification limits accessibility. We need "Cognitive Provenance" t
 - **Architecture**: Refactored Audit Engine to accept **Source A (Reference)** and **Source B (Candidate)**.
 - **Metric**: Introduced the **Difference Score (Δ)** on a 0-1023 scale.
 - **UX**: Added support for YouTube Playlists as Source A to compare against Drive Folders (Source B).
+
+## Entry 25: YouTube-First Comparison Stabilization
+**Date:** Feb 22, 2026
+**Task Goal:** Remove unreliable Drive/browser frame decode path and stabilize production compare flow.
+
+**Reasoning Path:**
+Drive media decode in browser frequently fails due to format/CORS constraints and causes non-deterministic audits.
+- **Policy**: Standardized to playlist-based YouTube Source A vs Source B comparison.
+- **Anchor Strategy**: Use 4 platform-provided thumbnails for deterministic, low-latency pHash comparison.
+- **Outcome**: Consistent scores, reliable batch-like operation from user selections.
+
+## Entry 26: Universal MP4 Metadata + Verification Surface
+**Date:** Feb 22, 2026
+**Task Goal:** Upgrade MP4 signing output to expose frame-sample provenance.
+
+**Reasoning Path:**
+Signed media should expose enough evidence to support fast human and machine audits.
+- **Signature Metadata**: Captures frame-sampling profile (1/min), offset, and per-frame hashes.
+- **Verifier UX**: "Universal Integrity Verified" now includes frame sample rows with size/hash details.
+- **Outcome**: Faster trust decisions with transparent, replayable evidence.
+
+## Entry 27: In-Browser YouTube Publish Flow
+**Date:** Feb 22, 2026
+**Task Goal:** Publish signed MP4 from browser and attach Signet metadata to YouTube context.
+
+**Reasoning Path:**
+The signing workflow is incomplete if users cannot ship artifact + metadata together.
+- **Implementation**: OAuth token flow + resumable upload + post-upload metadata comment.
+- **Content**: Added human-readable summary plus machine-readable VPR block.
+- **Outcome**: One-pass browser workflow from local MP4 to published provenance envelope.
+
+## Entry 28: Firebase Hosting + CI Deployment
+**Date:** Feb 22, 2026
+**Task Goal:** Convert local-only workflow into reproducible live deployment pipeline.
+
+**Reasoning Path:**
+Production reliability requires automated build/deploy with secret-based configuration.
+- **Hosting**: Live endpoints at signetai.web.app and signetai.firebaseapp.com.
+- **CI**: GitHub Actions injects generated private_keys.ts from repo secrets at build time.
+- **Routing**: Added rewrite strategy for app routes and legal/docs page migration.
+
+## Entry 29: Identity Authority + Legal Surface Hardening
+**Date:** Feb 22, 2026
+**Task Goal:** Improve account onboarding reliability and policy readiness.
+
+**Reasoning Path:**
+Identity layer must clearly communicate provider errors and satisfy app-review/legal requirements.
+- **Auth Providers**: Google, GitHub, Phone integrated (Facebook removed until app activation).
+- **Telemetry**: Expanded actionable error messages for credential collisions and rate limits.
+- **Legal Pages**: Added dedicated Privacy, Terms, and User Data Deletion routes.
 
 ---
 *Signed: Master Curator, signetai.io:ssl*`;
