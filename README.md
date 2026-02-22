@@ -153,5 +153,10 @@ The workflows now include:
 The official technical specification is served directly from the platform. Access it by navigating to:
 `https://signetai.io/#spec`
 
+## Live Hosting Endpoints
+- Primary Firebase Hosting URL: `https://signetai.web.app`
+- Secondary Firebase Hosting URL: `https://signetai.firebaseapp.com`
+- Canonical docs route example: `https://signetai.web.app/#spec`
+
 ---
 *Signet Protocol addresses "Agreeability Bias" and "Hallucination Masking" by ensuring architectural independence.*
