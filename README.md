@@ -2,7 +2,7 @@
 # Signet Protocol: Verifiable Proof of Reasoning (VPR)
 **Deterministic Telemetry for AI Assets**
 
-Official Repository: [github.com/signetai-io/website](https://github.com/signetai-io/website)
+Official Repository: [github.com/shengliangsong-ai/signetai](https://github.com/shengliangsong-ai/signetai)
 
 The Signet Protocol (draft-song-signet-03.2) defines a framework for the cryptographic attestation of AI-generated reasoning paths. It transforms non-deterministic LLM outputs into formally verified "Signets" aligned with C2PA 2.3.
 
@@ -54,8 +54,8 @@ To compile the full Signet Platform offline on your machine:
 
 1. **Clone the Repository**
    ```bash
-   git clone https://github.com/signetai-io/website.git
-   cd website
+   git clone https://github.com/shengliangsong-ai/signetai.git
+   cd signetai
    ```
 
 2. **Install Dependencies**
@@ -81,6 +81,73 @@ To compile the full Signet Platform offline on your machine:
    ```bash
    npm run preview
    ```
+
+## Firebase Hosting (Reproducible Setup)
+
+This repo includes Firebase Hosting config and GitHub Actions deploy workflows.
+
+### Prerequisites
+- Firebase CLI installed (`npm i -g firebase-tools`)
+- Access to a Firebase project (current production project id: `signetai`)
+- GitHub repo admin access (to create Actions secrets)
+
+### 1. Login and Select Project
+```bash
+firebase login
+firebase use signetai
+```
+
+### 2. Verify Hosting Config
+Check `firebase.json`:
+- `hosting.public` should be `dist`
+- SPA rewrite should point to `index.html`
+
+Example:
+```json
+{
+  "hosting": {
+    "public": "dist",
+    "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
+    "rewrites": [{ "source": "**", "destination": "/index.html" }]
+  }
+}
+```
+
+### 3. Local Build + Hosting Deploy
+```bash
+npm ci
+npm run build
+firebase deploy --only hosting
+```
+
+### 4. Firestore Rules Deploy (Identity Registry)
+If you modify identity ownership/auth rules:
+```bash
+firebase deploy --only firestore:rules
+```
+
+### 5. GitHub Actions Hosting Deploy
+Workflows:
+- `.github/workflows/firebase-hosting-merge.yml` (deploy on `main`)
+- `.github/workflows/firebase-hosting-pull-request.yml` (preview on PRs)
+
+Required GitHub secret:
+- `FIREBASE_SERVICE_ACCOUNT_SIGNETAI`
+
+The workflows now include:
+- explicit Node setup (`actions/setup-node@v4`, Node 20)
+- deterministic install/build (`npm ci`, `npm run build`)
+- secret preflight validation before deploy
+
+### 6. Common CI Failure Checks
+- **Missing secret**: add `FIREBASE_SERVICE_ACCOUNT_SIGNETAI` in GitHub Actions secrets.
+- **Wrong Firebase project**: confirm `projectId: signetai` in workflow and `firebase use signetai`.
+- **Route 404 in prod**: ensure SPA rewrite exists in `firebase.json`.
+
+## Runtime Configuration Notes
+- The app uses Firebase config from `private_keys.ts`.
+- YouTube upload flow requires OAuth Client ID (`VITE_GOOGLE_CLIENT_ID` or fallback key constant).
+- For phone auth development, use Firebase test phone numbers to avoid rate-limit lockouts.
 
 ## Live Documentation
 The official technical specification is served directly from the platform. Access it by navigating to:
