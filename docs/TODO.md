@@ -45,6 +45,9 @@
     - [x] Service Worker for offline capability
     - [x] Manifest.json with masked icons (192/512)
     - [x] Mobile-responsive Sidebar & Header
+    - [x] Firebase Hosting deployment (`signetai.web.app`, `signetai.firebaseapp.com`)
+    - [x] GitHub Actions auto-deploy pipelines (PR preview + main live deploy)
+    - [x] CI hardening (Node 20, lockfile sync, secret preflight, generated `private_keys.ts`)
 
 - [x] **Live Assistant**
     - [x] Gemini Real-time Audio API Integration
@@ -86,4 +89,4 @@
 - **YouTube Browser Frame Limits**: The `/verify` browser flow remains thumbnail-anchor based for YouTube sources (soft-binding), not arbitrary decoded frame extraction.
 
 ---
-*Last Updated: Feb 22, 2026 (Batch MP4 Report + Universal Handoff + YouTube Publish Integrated)*
+*Last Updated: Feb 22, 2026 (Firebase Hosting + CI Deploy Operational)*
