@@ -201,10 +201,28 @@ export class TridentEngine {
     const imageDataA = getImageData(imageA);
     const imageDataB = getImageData(imageB);
     const { mssim, ssim_map } = ssim(imageDataA, imageDataB);
+
+    let diffImageData;
+    // ssim.js v3 returns a Matrix object for ssim_map.
+    // We need to convert it to an ImageData object to render it on a canvas.
+    if (ssim_map) {
+      const { data, width, height } = ssim_map;
+      const rgba = new Uint8ClampedArray(width * height * 4);
+      for (let i = 0; i < data.length; i++) {
+        const pixelValue = data[i];
+        const j = i * 4;
+        rgba[j + 0] = pixelValue; // R
+        rgba[j + 1] = pixelValue; // G
+        rgba[j + 2] = pixelValue; // B
+        rgba[j + 3] = 255;        // A
+      }
+      diffImageData = new ImageData(rgba, width, height);
+    }
+
     const ssimResult = {
         score: mssim,
         normalized: ((1 - mssim) / 2) * 1000,
-        diffMap: ssim_map.imageData,
+        diffMap: diffImageData,
     };
 
     // Prong 3: Features & Semantic
