@@ -168,8 +168,8 @@ export class TridentEngine {
    *   This is highly effective at identifying localized edits, retouching, or changes
    *   in contrast. It produces a "diff map" to visualize where changes occurred.
    *
-   * - **Prong 3: Feature & Semantic Analysis (In Progress)**
-   *   This prong will use object detection to identify the actual content within the
+   * - **Prong 3: Feature & Semantic Analysis**
+   *   This prong uses object detection to identify the actual content within the
    *   image. This allows for comparing images based on their semantic meaning, making it
    *   possible to identify images as similar even if the subject is rotated, resized,
    *   or shifted within the frame.
