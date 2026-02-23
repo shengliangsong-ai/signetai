@@ -1,0 +1,6 @@
+# Treat these file types as binary, preventing line-ending normalization.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.svg binary
