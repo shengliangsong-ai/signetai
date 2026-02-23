@@ -28,7 +28,7 @@ export const ManualView: React.FC = () => {
       <header className="mb-20 space-y-4">
         <h1 className="text-6xl font-bold tracking-tighter italic text-[var(--text-header)]">Operator's Manual</h1>
         <p className="text-xl text-[var(--text-body)] opacity-60 font-serif leading-relaxed italic">
-          v0.3.1 — Standardized Guidance for the Signet Accountability Layer.
+          v0.3.2 — Standardized Guidance for the Signet Accountability Layer.
         </p>
       </header>
 
@@ -97,7 +97,25 @@ export const ManualView: React.FC = () => {
         </div>
       </ManualSection>
 
-      <ManualSection title="05. Document Signing (PDF)">
+      <ManualSection title="05. Image Comparison (Trident Engine)">
+        <p className="text-lg leading-loose text-[var(--text-body)] opacity-80 font-serif mb-8">
+          The <a href="/verify" className="font-bold text-[var(--trust-blue)] hover:underline">Image Comparator</a> is a web-based utility for visually and algorithmically comparing two images. This tool is a direct implementation of the <strong>Trident Engine</strong>, providing both a quantitative score and a visual map of any differences.
+        </p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <FeatureCard 
+            icon="🎯" 
+            title="Trident Score" 
+            desc="A quantitative score from 0 to 1 measuring the Structural Similarity (SSIM) between the two images. A score of 1 indicates a perfect match." 
+          />
+          <FeatureCard 
+            icon="🎨" 
+            title="Visual Diff Map" 
+            desc="An output image that visually highlights the exact areas of difference between Image A and Image B, making it easy to spot even subtle changes." 
+          />
+        </div>
+      </ManualSection>
+
+      <ManualSection title="06. Document Signing (PDF)">
         <p className="text-lg leading-loose text-[var(--text-body)] opacity-80 font-serif mb-8">
           For PDFs, Signet uses an "Append-Only" strategy. We do not rewrite the PDF structure (which risks breaking internal xref tables). Instead, we append a signed JSON block <strong>after the EOF marker</strong>.
         </p>
@@ -115,7 +133,7 @@ export const ManualView: React.FC = () => {
         </div>
       </ManualSection>
 
-      <ManualSection title="06. Headless Operations (CLI)">
+      <ManualSection title="07. Headless Operations (CLI)">
         <p className="text-lg leading-loose text-[var(--text-body)] opacity-80 font-serif mb-8">
           For server-side pipelines and batch processing, operators should use the <strong>Signet Node.js CLI</strong>. This tool implements the Universal Tail-Wrap specification in a zero-dependency environment.
         </p>
@@ -131,7 +149,7 @@ export const ManualView: React.FC = () => {
         </div>
       </ManualSection>
 
-      <ManualSection title="07. Performance Benchmarking">
+      <ManualSection title="08. Performance Benchmarking">
         <p className="text-lg leading-loose text-[var(--text-body)] opacity-80 font-serif mb-8">
           To verify infrastructure readiness, use the <strong>Benchmark Suite</strong>. This tool generates detached "Sidecar" manifests to measure pure cryptographic throughput without modifying source files.
         </p>
@@ -150,7 +168,7 @@ export const ManualView: React.FC = () => {
         </div>
       </ManualSection>
 
-      <ManualSection title="08. API Credential Resolution">
+      <ManualSection title="09. API Credential Resolution">
         <p className="text-lg leading-loose text-[var(--text-body)] opacity-80 font-serif mb-8">
           To maintain separation of concerns, the client now enforces strict API Key isolation. The internal `firebaseConfig` key is restricted to Firestore/Auth and is <strong>never</strong> used for Drive or Gemini calls.
         </p>
@@ -191,7 +209,7 @@ export const ManualView: React.FC = () => {
         </div>
       </ManualSection>
 
-      <ManualSection title="09. Cloud Audit Architecture">
+      <ManualSection title="10. Cloud Audit Architecture">
         <p className="text-lg leading-loose text-[var(--text-body)] opacity-80 font-serif mb-8">
           The logs you observe demonstrate Signet's <strong>Zero-Copy Cloud Audit</strong> capability. Instead of downloading gigabytes of data to verify a folder, the client uses precision <strong>HTTP Range Requests</strong>.
         </p>
@@ -233,7 +251,7 @@ export const ManualView: React.FC = () => {
         </div>
       </ManualSection>
 
-      <ManualSection title="10. Difference Engine Metrics">
+      <ManualSection title="11. Difference Engine Metrics">
         <p className="text-lg leading-loose text-[var(--text-body)] opacity-80 font-serif mb-8">
           The <strong>Performance Summary</strong> in <code>/verify</code> reports deterministic client-side metrics for each comparison run, including signed keyframe metadata and checker mode.
         </p>
@@ -303,7 +321,7 @@ export const ManualView: React.FC = () => {
         </div>
       </ManualSection>
 
-      <ManualSection title="11. Universal Lab (MP4 + YouTube)">
+      <ManualSection title="12. Universal Lab (MP4 + YouTube)">
         <p className="text-lg leading-loose text-[var(--text-body)] opacity-80 font-serif mb-8">
           The <strong>Any Size. Zero RAM.</strong> tool in <code>/#universal-lab</code> now supports end-to-end MP4 provenance operations: local signing, automatic verification, and direct YouTube publish.
         </p>
@@ -352,7 +370,7 @@ export const ManualView: React.FC = () => {
         <a href="#" onClick={(e) => { e.preventDefault(); window.location.hash = ''; }} className="text-[var(--trust-blue)] hover:underline font-mono text-[10px] uppercase tracking-widest font-bold">
           &larr; Return to Dashboard
         </a>
-        <p className="font-mono text-[9px] opacity-30 uppercase tracking-[0.2em]">Certified by signetai.io:ssl | v0.3.1</p>
+        <p className="font-mono text-[9px] opacity-30 uppercase tracking-[0.2em]">Certified by signetai.io:ssl | v0.3.2</p>
       </div>
     </div>
   );

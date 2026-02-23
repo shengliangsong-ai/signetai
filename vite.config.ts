@@ -136,6 +136,8 @@ export default defineConfig(({ mode }) => {
     build: {
       outDir: 'dist',
       sourcemap: false
-    }
+    },
+    assetsInclude: ['**/*.png', '**/*.svg', '**/*.jpg', '**/*.jpeg', '**/*.gif', '**/*.mp4', '**/*.wav'],
+    publicDir: 'public'
   };
 });

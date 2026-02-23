@@ -22,8 +22,8 @@ export const SecurityIntegrityMonitor: React.FC = () => {
   ];
 
   return (
-    <div className="p-6 bg-black/40 border border-white/5 rounded-lg space-y-4">
-      <div className="flex items-center justify-between border-b border-white/10 pb-2">
+    <div className="p-6 bg-gray-100 dark:bg-black/40 border border-gray-200 dark:border-white/5 rounded-lg space-y-4">
+      <div className="flex items-center justify-between border-b border-gray-200 dark:border-white/10 pb-2">
         <span className="font-mono text-[9px] text-blue-500 font-bold uppercase tracking-widest">Neural Audit 03.1</span>
         <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse"></div>
       </div>
@@ -31,18 +31,18 @@ export const SecurityIntegrityMonitor: React.FC = () => {
         {securityChecks.map((check, i) => (
           <div key={i} className="flex justify-between items-start">
             <div className="space-y-0.5">
-              <p className="font-mono text-[10px] text-white/40 uppercase font-bold">{check.label}</p>
-              <p className="font-mono text-[8px] text-white/20 italic">{check.detail}</p>
+              <p className="font-mono text-[10px] text-gray-500 dark:text-white/40 uppercase font-bold">{check.label}</p>
+              <p className="font-mono text-[8px] text-gray-400 dark:text-white/20 italic">{check.detail}</p>
             </div>
             <span className={`font-mono text-[9px] font-bold ${check.status === 'EMPTY' ? 'text-amber-500' : 'text-green-500'}`}>[{check.status}]</span>
           </div>
         ))}
       </div>
       <div className="pt-2">
-        <div className="h-1 bg-white/5 rounded-full overflow-hidden">
+        <div className="h-1 bg-gray-200 dark:bg-white/5 rounded-full overflow-hidden">
           <div className="h-full bg-blue-500 w-[100%]"></div>
         </div>
-        <p className="mt-2 font-mono text-[7px] text-white/20 uppercase text-center tracking-tighter">Integrity Confidence: 0.9997</p>
+        <p className="mt-2 font-mono text-[7px] text-gray-400 dark:text-white/20 uppercase text-center tracking-tighter">Integrity Confidence: 0.9997</p>
       </div>
     </div>
   );

@@ -1,4 +1,5 @@
 
+// MODIFICATION CHECK 789 - FINAL ATTEMPT
 import React, { useState, useEffect } from 'react';
 import { Hero } from './components/Hero';
 import { Architecture } from './components/Architecture';
@@ -17,6 +18,7 @@ import { LiveAssistant } from './components/LiveAssistant';
 import { ProvenanceLab } from './components/ProvenanceLab';
 import { SecurityIntegrityMonitor } from './components/SecurityIntegrityMonitor';
 import { ComplianceDashboard } from './components/ComplianceDashboard';
+import { ImageComparator } from './components/ImageComparator';
 import { VerifyView } from './components/VerifyView';
 import { EcosystemView } from './components/EcosystemView';
 import { SvgSigner } from './components/SvgSigner';
@@ -66,15 +68,14 @@ const Sidebar: React.FC<{ currentView: string; isOpen: boolean }> = ({ currentVi
         <a href="/" className={`sidebar-link ${currentView === 'home' ? 'active' : ''}`}>0. Introduction</a>
         <a href="/mission" className={`sidebar-link ${currentView === 'mission' ? 'active' : ''}`}>0.1 Mission & Team</a>
         <a href="/standards" className={`sidebar-link ${currentView === 'standards' ? 'active' : ''}`}>1. Standards & C2PA</a>
-        <a href="/compliance" className={`sidebar-link ${currentView === 'compliance' ? 'active' : ''}`}>1.5. 2026 Strategy</a>
-        <a href="#developers" className="sidebar-link">2. Neural Prism Pipeline</a>
+        <a href="/compliance" className={`sidebar-link ${currentView === 'compliance' ? 'active' : ''}`}>2. 2026 Strategy</a>
         <a href="/schema" className={`sidebar-link ${currentView === 'schema' ? 'active' : ''}`}>3. VPR JSON Manifest</a>
         <a href="/spec" className={`sidebar-link ${currentView === 'spec' ? 'active' : ''}`}>4. Technical Draft</a>
         <p className="px-4 py-2 text-[9px] text-[var(--text-body)] opacity-40 font-mono">v0.3.3 (C2PA 2.3)</p>
         
         <p className="px-4 pt-8 text-[10px] uppercase tracking-widest font-bold text-[var(--text-body)] opacity-40 mb-4">Identity & Trust</p>
         <a href="/identity" className={`sidebar-link ${currentView === 'identity' ? 'active' : ''}`}>5. TrustKey Registry (Register)</a>
-        <a href="/verify" className={`sidebar-link ${currentView === 'verify' ? 'active' : ''}`}>6. Public Verifier (/verify)</a>
+        <a href="/verify" className={`sidebar-link ${currentView === 'verify' ? 'active' : ''}`}>6. Difference Engine (/verify)</a>
         <a href="/batch" className={`sidebar-link ml-4 opacity-70 ${currentView === 'batch' ? 'active' : ''}`}>↳ Batch Mode (Local)</a>
         <a href="/cli" className={`sidebar-link ml-4 opacity-70 ${currentView === 'cli' ? 'active' : ''}`}>↳ CLI Tool (Download)</a>
         <a href="/auditor" className={`sidebar-link ${currentView === 'auditor' ? 'active' : ''}`}>7. Provenance Lab (Sim)</a>
@@ -86,7 +87,8 @@ const Sidebar: React.FC<{ currentView: string; isOpen: boolean }> = ({ currentVi
         <a href="/universal-lab" className={`sidebar-link ${currentView === 'universal-lab' ? 'active' : ''}`}>11. Universal Media Lab</a>
         <a href="/svg-lab" className={`sidebar-link ml-4 opacity-70 ${currentView === 'svg-lab' ? 'active' : ''}`}>↳ SVG Vector Lab</a>
         <a href="/pdf-lab" className={`sidebar-link ml-4 opacity-70 ${currentView === 'pdf-lab' ? 'active' : ''}`}>↳ PDF Doc Lab</a>
-        
+        <a href="/image-comparator-demo" className={`sidebar-link ${currentView === 'image-comparator-demo' ? 'active' : ''}`}>11.5. Image Comparison Demo</a>
+
         <p className="px-4 pt-8 text-[10px] uppercase tracking-widest font-bold text-[var(--text-body)] opacity-40 mb-4">Meta</p>
         <a href="/status" className={`sidebar-link ${currentView === 'status' ? 'active' : ''}`}>12. Project Status & Log</a>
         <a href="/donate" className={`sidebar-link text-[var(--trust-blue)] font-bold ${currentView === 'donate' ? 'active' : ''}`}>13. Donate & Grants</a>
@@ -171,7 +173,7 @@ const Header: React.FC<{
 );
 
 const App: React.FC = () => {
-  const [view, setView] = useState<'home' | 'mission' | 'spec' | 'standards' | 'schema' | 'branding' | 'manual' | 'auditor' | 'identity' | 'compliance' | 'verify' | 'ecosystem' | 'svg-lab' | 'pdf-lab' | 'universal-lab' | 'status' | 'batch' | 'cli' | 'privacy' | 'donate' | 'terms' | 'data-deletion'>('home');
+  const [view, setView] = useState<'home' | 'mission' | 'spec' | 'standards' | 'schema' | 'branding' | 'manual' | 'auditor' | 'identity' | 'compliance' | 'verify' | 'ecosystem' | 'svg-lab' | 'pdf-lab' | 'universal-lab' | 'status' | 'batch' | 'cli' | 'privacy' | 'donate' | 'terms' | 'data-deletion' | 'image-comparator-demo'>('home');
   const [theme, setTheme] = useState<Theme>('standard');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isPortalOpen, setIsPortalOpen] = useState(false);
@@ -232,6 +234,8 @@ const App: React.FC = () => {
         setView('terms');
       } else if (path === '/data-deletion') {
         setView('data-deletion');
+      } else if (path === '/image-comparator-demo') {
+        setView('image-comparator-demo');
       } else if (route === '#mission') {
         setView('mission');
       } else if (route === '#auditor') {
@@ -367,6 +371,7 @@ const App: React.FC = () => {
           {view === 'donate' && <DonationView />}
           {view === 'terms' && <TermsOfServiceView />}
           {view === 'data-deletion' && <UserDataDeletionView />}
+          {view === 'image-comparator-demo' && <ImageComparator />}
 
           <footer className="mt-24 pt-12 border-t border-[var(--border-light)] flex flex-wrap justify-between items-center gap-6 text-[10px] font-mono opacity-50 uppercase tracking-widest text-[var(--text-body)]">
             <div className="flex items-center gap-4">
