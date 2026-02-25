@@ -57,7 +57,7 @@ export const ContactHub: React.FC = () => {
       </div>
 
       <div className="mt-16 flex items-center justify-center">
-        <div className="flex items-center gap-6 py-4 px-8 theme-accent-bg text-white shadow-xl">
+        <div className="flex items-center gap-6 py-4 px-8 theme-accent-bg text-theme-accent-contrast shadow-xl">
           <div className="w-2 h-2 rounded-full bg-white animate-pulse"></div>
           <p className="font-mono text-[10px] uppercase tracking-[0.2em] font-bold">
             Protocol SLA: Guaranteed Response &lt; 4h

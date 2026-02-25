@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { TridentEngine, TridentScore, TridentConfig, ProgressCallback } from '../src/lib/trident-engine';
 import { ScoreCompositionTable } from './ScoreCompositionTable';
@@ -43,7 +42,7 @@ export const ImageComparator: React.FC = () => {
   const diffCanvasRef = useRef<HTMLCanvasElement>(null);
   const engineRef = useRef<TridentEngine | null>(null);
   const progressIntervalRef = useRef<number | null>(null);
-
+ 
   const addLog = (msg: string) => {
     const timestamp = new Date().toISOString().split('T')[1].slice(0, -1);
     console.log(`[ImageComparator] ${msg}`);
