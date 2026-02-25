@@ -516,7 +516,7 @@ export const PART_3 = [
                             width="100%" 
                             height="100%" 
                             src="https://www.youtube.com/embed/UatpGRr-wA0" 
-                            title="Signet Protocol v0.3.2 Deep Dive (English)" 
+                            title="Signet Protocol v0.3.3 Deep Dive (English)" 
                             frameBorder="0" 
                             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
                             allowFullScreen
@@ -533,7 +533,7 @@ export const PART_3 = [
                             width="100%" 
                             height="100%" 
                             src="https://www.youtube.com/embed/5F_6YDhA2A0" 
-                            title="Signet Protocol v0.3.2 Deep Dive (Chinese)" 
+                            title="Signet Protocol v0.3.3 Deep Dive (Chinese)" 
                             frameBorder="0" 
                             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
                             allowFullScreen
@@ -603,7 +603,7 @@ export const PART_3 = [
   {
     category: "STRATEGIC COMM",
     title: "Appendix B: ISO Submission",
-    text: "Draft submission letter for ISO/TC 290. Formally requests consideration of Signet Protocol v0.3.2 as a candidate contribution for digital trust and reputation systems.\n\nDear Members of ISO/TC 290,\n\nWe respectfully submit the Signet Protocol (v0.3.2) for consideration as a candidate contribution to ongoing work in online reputation, digital trust, and content authenticity.\n\nThe Signet Protocol addresses a growing gap in existing provenance standards: while current systems effectively attribute origin, they do not capture asserted reasoning, human intent, or accountable authorization behind AI-assisted content.\n\nKey characteristics of the proposal include:\n- A four-layer verification model separating intent, reasoning representation, drift analysis, and human accountability.\n- A local-first cryptographic architecture that preserves user sovereignty and privacy.\n- A scalable provenance compression mechanism enabling long-lived reputation without asset bloat.\n- Explicit differentiation between generation, review, and authority through sealed attestations.\n\nThe protocol is designed to complement, not replace, existing standards such as C2PA, and intentionally avoids claims about factual correctness or internal AI cognition.\n\nWe believe this work aligns with ISO/TC 290’s mission to support trustworthy digital reputation systems in an era of large-scale synthetic media, and we welcome technical review, critique, and collaborative refinement.\n\nThank you for your consideration.\n\nRespectfully submitted,\nSignet Protocol Project\nWorking Group: Signet Protocol Group",
+    text: "Draft submission letter for ISO/TC 290. Formally requests consideration of Signet Protocol v0.3.3 as a candidate contribution for digital trust and reputation systems.\n\nDear Members of ISO/TC 290,\n\nWe respectfully submit the Signet Protocol (v0.3.3) for consideration as a candidate contribution to ongoing work in online reputation, digital trust, and content authenticity.\n\nThe Signet Protocol addresses a growing gap in existing provenance standards: while current systems effectively attribute origin, they do not capture asserted reasoning, human intent, or accountable authorization behind AI-assisted content.\n\nKey characteristics of the proposal include:\n- A four-layer verification model separating intent, reasoning representation, drift analysis, and human accountability.\n- A local-first cryptographic architecture that preserves user sovereignty and privacy.\n- A scalable provenance compression mechanism enabling long-lived reputation without asset bloat.\n- Explicit differentiation between generation, review, and authority through sealed attestations.\n\nThe protocol is designed to complement, not replace, existing standards such as C2PA, and intentionally avoids claims about factual correctness or internal AI cognition.\n\nWe believe this work aligns with ISO/TC 290’s mission to support trustworthy digital reputation systems in an era of large-scale synthetic media, and we welcome technical review, critique, and collaborative refinement.\n\nThank you for your consideration.\n\nRespectfully submitted,\nSignet Protocol Project\nWorking Group: Signet Protocol Group",
     content: (
       <div className="space-y-8 animate-in fade-in duration-500">
         <h2 className="text-[var(--text-header)] font-serif text-2xl font-bold mb-6 italic">Appendix B: ISO/TC Submission Draft</h2>
@@ -611,7 +611,7 @@ export const PART_3 = [
         <div className="p-8 md:p-12 bg-white border border-[var(--border-light)] shadow-sm font-serif text-sm leading-relaxed text-black max-w-3xl mx-auto">
            <div className="mb-8 font-mono text-xs opacity-60">
              <p>To: Members of ISO/TC 290</p>
-             <p>Subject: Submission for Consideration — Signet Protocol v0.3.2</p>
+             <p>Subject: Submission for Consideration — Signet Protocol v0.3.3</p>
              <p>Date: {new Date().toLocaleDateString()}</p>
            </div>
 
@@ -619,7 +619,7 @@ export const PART_3 = [
              <p>Dear Members of ISO/TC 290,</p>
              
              <p>
-               We respectfully submit the <strong>Signet Protocol (v0.3.2)</strong> for consideration as a candidate contribution to ongoing work in online reputation, digital trust, and content authenticity.
+               We respectfully submit the <strong>Signet Protocol (v0.3.3)</strong> for consideration as a candidate contribution to ongoing work in online reputation, digital trust, and content authenticity.
              </p>
              
              <p>

@@ -1,4 +1,3 @@
-
 import React from 'react';
 
 export const PART_2 = [
@@ -220,11 +219,11 @@ export const PART_2 = [
   },
   {
     category: "TECHNICAL AUDIT",
-    title: "12.5 The Difference Engine (Audit Scoring)",
+    title: "12.5 The Difference Engine (Video Audit Scoring)",
     text: "12.5.1 The Difference Engine (Quick + Deep)\nSignet's /verify flow signs Source A with keyframe metadata at 1 frame/min and verifies Source B in two modes.\n\nCore Concept: Source A vs Source B (YouTube Playlist Videos)\nQuick Checker compares four YouTube thumbnail anchors for speed. Deep Checker samples 2 frames/min and matches each sample against all signed keyframes metadata.\n\nDifference Bands (Δ, 0-1000):\n0-30: MINIMAL DIFFERENCE (Match)\n30-120: LOW DIFFERENCE (Consistent)\n120-300: MODERATE DIFFERENCE (Modified)\n>300: HIGH DIFFERENCE (Distinct)",
     content: (
       <div className="space-y-8 animate-in fade-in duration-500">
-        <h2 className="text-[var(--text-header)] font-serif text-2xl font-bold mb-6 italic">12.5 The Difference Engine</h2>
+        <h2 className="text-[var(--text-header)] font-serif text-2xl font-bold mb-6 italic">12.5 The Difference Engine (Video)</h2>
         
         <p className="opacity-80 leading-loose mb-6">
           The current deployment uses a signed keyframe metadata strategy. Source A is sampled at <strong>1 frame/min</strong> to generate pHash keyframes and a local signature record, then Source B is evaluated in either <strong>Quick</strong> or <strong>Deep</strong> mode.
@@ -269,6 +268,39 @@ export const PART_2 = [
              </div>
            ))}
         </div>
+      </div>
+    )
+  },
+  {
+    category: "TECHNICAL AUDIT",
+    title: "12.6 The Trident Engine (Image Comparison)",
+    text: "The Trident Engine provides specialized modes for static image comparison, balancing speed and accuracy.\n\nQuickScan: pHash-focused comparison for rapid triage.\nDeepStructural: Balanced analysis of structural and pixel-level differences.\nSemanticAI: AI-powered semantic comparison for nuanced understanding.",
+    content: (
+      <div className="space-y-8 animate-in fade-in duration-500">
+        <h2 className="text-[var(--text-header)] font-serif text-2xl font-bold mb-6 italic">12.6 The Trident Engine (Image Comparison)</h2>
+        <p className="opacity-80 leading-loose mb-6">
+          For static images, the <strong>Trident Engine</strong> offers three distinct analysis modes. These modes are optimized for different use cases, from rapid duplicate detection to deep semantic understanding.
+        </p>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="p-4 border border-[var(--border-light)] rounded bg-[var(--bg-standard)] space-y-2">
+            <h4 className="font-bold text-[var(--trust-blue)]">QuickScan</h4>
+            <p className="text-xs opacity-70">A high-speed mode that primarily uses perceptual hashing (pHash) to detect near-identical images. Ideal for large-scale duplicate detection and rapid triage.</p>
+          </div>
+          <div className="p-4 border border-[var(--border-light)] rounded bg-[var(--bg-standard)] space-y-2">
+            <h4 className="font-bold text-[var(--trust-blue)]">DeepStructural</h4>
+            <p className="text-xs opacity-70">A balanced mode that combines pHash with structural similarity (SSIM) and pixel-level analysis. Provides a robust and detailed comparison of visual differences.</p>
+          </div>
+          <div className="p-4 border border-[var(--border-light)] rounded bg-[var(--bg-standard)] space-y-2">
+            <h4 className="font-bold text-[var(--trust-blue)]">SemanticAI</h4>
+            <p className="text-xs opacity-70">An advanced mode that uses a CLIP-based AI model to understand the semantic content of the images. Can identify conceptual similarities even with significant visual differences.</p>
+          </div>
+        </div>
+
+        <h4 className="font-bold text-[var(--text-header)] text-lg mb-4 mt-8">Mode Selection Rationale</h4>
+        <p className="text-sm opacity-80 leading-relaxed">
+          The choice of mode depends on the specific use case. For example, a social media platform might use <strong>QuickScan</strong> to flag reposts, while a forensic investigator might use <strong>DeepStructural</strong> to analyze image tampering. <strong>SemanticAI</strong> is best for creative applications, such as finding visually distinct but conceptually related images.
+        </p>
       </div>
     )
   },
@@ -318,4 +350,4 @@ export const PART_2 = [
       </div>
     )
   }
-];
+]
