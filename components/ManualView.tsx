@@ -26,7 +26,7 @@ export const ManualView: React.FC = () => {
   return (
     <div className="py-24 max-w-5xl mx-auto">
       <header className="mb-20 space-y-4">
-        <h1 className="text-6xl font-bold tracking-tighter italic text-[var(--text-header)]">Operator's Manual</h1>
+        <h1 className="text-6xl font-bold tracking-tighter italic text-[var(--text-header)]">Operator\'s Manual</h1>
         <p className="text-xl text-[var(--text-body)] opacity-60 font-serif leading-relaxed italic">
           v0.3.2 — Standardized Guidance for the Signet Accountability Layer.
         </p>
@@ -139,7 +139,7 @@ export const ManualView: React.FC = () => {
         </p>
         <div className="space-y-6">
            <div className="p-6 bg-neutral-900 text-white rounded border border-neutral-700 font-mono text-sm space-y-2">
-              <p className="text-neutral-500"># 1. Download from /#cli</p>
+              <p className="text-neutral-500"># 1. Download from /cli</p>
               <p className="text-neutral-500"># 2. Run Batch Injection</p>
               <p><span className="text-emerald-500">$</span> node signet-cli.js --dir ./my-assets --identity "operator.id"</p>
            </div>
@@ -323,7 +323,7 @@ export const ManualView: React.FC = () => {
 
       <ManualSection title="12. Universal Lab (MP4 + YouTube)">
         <p className="text-lg leading-loose text-[var(--text-body)] opacity-80 font-serif mb-8">
-          The <strong>Any Size. Zero RAM.</strong> tool in <code>/#universal-lab</code> now supports end-to-end MP4 provenance operations: local signing, automatic verification, and direct YouTube publish.
+          The <strong>Any Size. Zero RAM.</strong> tool in <code>/universal-lab</code> now supports end-to-end MP4 provenance operations: local signing, automatic verification, and direct YouTube publish.
         </p>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -350,7 +350,7 @@ export const ManualView: React.FC = () => {
           <ul className="list-disc pl-5 space-y-1 text-xs opacity-80 font-mono">
             <li>Batch table now includes dedicated MP4 fields: <code>MP4 Audit</code>, <code>Frames</code>, <code>pHash64 Preview</code>, <code>Final Hash</code>, and <code>Audit Detail</code>.</li>
             <li>Each MP4 row can open a full verification view via <strong>Open Report</strong>.</li>
-            <li><strong>Open Report</strong> routes to <code>/#universal-lab</code> and renders the same <strong>Universal Integrity Verified</strong> report with the <strong>Frame Samples (1 Frame/Minute)</strong> table.</li>
+            <li><strong>Open Report</strong> routes to <code>/universal-lab</code> and renders the same <strong>Universal Integrity Verified</strong> report with the <strong>Frame Samples (1 Frame/Minute)</strong> table.</li>
             <li>This handoff is local (session storage payload), so no backend call is required for report rendering.</li>
           </ul>
         </div>
@@ -367,7 +367,7 @@ export const ManualView: React.FC = () => {
       </ManualSection>
 
       <div className="mt-20 pt-10 border-t border-[var(--border-light)] flex justify-between items-center">
-        <a href="#" onClick={(e) => { e.preventDefault(); window.location.hash = ''; }} className="text-[var(--trust-blue)] hover:underline font-mono text-[10px] uppercase tracking-widest font-bold">
+        <a href="/" className="text-[var(--trust-blue)] hover:underline font-mono text-[10px] uppercase tracking-widest font-bold">
           &larr; Return to Dashboard
         </a>
         <p className="font-mono text-[9px] opacity-30 uppercase tracking-[0.2em]">Certified by signetai.io:ssl | v0.3.2</p>

@@ -21,7 +21,7 @@ export const UserDataDeletionView: React.FC = () => {
         <section className="space-y-3">
           <h2 className="text-xl font-bold text-[var(--text-header)]">2. Delete Local Browser Vault Data</h2>
           <ol className="list-decimal pl-5 space-y-2 text-[var(--text-body)] opacity-80 leading-relaxed">
-            <li>Open <code>https://www.signetai.io/#identity</code>.</li>
+            <li>Open <code>https://www.signetai.io/identity</code>.</li>
             <li>In vault list, remove local vault entries you no longer need.</li>
             <li>Optionally clear site storage in your browser settings for complete local deletion.</li>
           </ol>

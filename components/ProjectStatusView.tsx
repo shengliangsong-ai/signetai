@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 
@@ -11,7 +10,7 @@ const TODO_CONTENT = `# Signet AI Project Status & Roadmap
 *Focus: Identity, Cryptography, and Basic Asset Signing*
 
 - [x] **Identity Registry (TrustKeyService)**
-    - [x] Firestore-based Global Anchor (\`signetai.io:username\`)
+    - [x] Firestore-based Global Anchor (\\`signetai.io:username\\`)
     - [x] Local "Vault" persistence (IndexedDB)
     - [x] Sovereign Grade Entropy (24-word BIP-39 Mnemonic)
     - [x] Ed25519-256 Key Derivation
@@ -55,7 +54,7 @@ const TODO_CONTENT = `# Signet AI Project Status & Roadmap
 *Focus: Interoperability, audit quality, and deployment hardening*
 
 - [x] **Public Verifier Deep-Linking**
-    - [x] Handle URL params \`signetai.io/#verify?url=...\`
+    - [x] Handle URL params \`signetai.io/verify?url=...\`
     - [x] Drag-and-drop external URL support
     - [x] CORS Policy update for cross-origin fetching
 
@@ -232,7 +231,7 @@ Verification should not require a "Download -> Upload" cycle.
 - **Feature**: Implemented \`?verify_url=\` parameter handling in \`VerifyView\`.
 - **UX**: Added proper HTML5 Drag-and-Drop events (\`onDrop\`) to the audit zone.
 - **Network**: Added Client-side Fetch with CORS error handling.
-- **Outcome**: Users can now share verification results via \`signetai.io/#verify?url=...\`.
+- **Outcome**: Users can now share verification results via \`signetai.io/verify?url=...\`.
 
 ## Entry 22: Auto-Verification & Blob Streaming
 **Date:** February 20, 2026
