@@ -45,7 +45,8 @@ export const VerifyView: React.FC = () => {
   // Folder State
   const [folderId, setFolderId] = useState<string | null>(null);
   const [showL2, setShowL2] = useState(false);
-  const [showAnalysis, setShowAnalysis] = useState(false); // New View Toggle
+  const [showAnalysis, setShowAnalysis] = useState(false);
+  const [showAuditDetails, setShowAuditDetails] = useState(false);
   
   // Operation State
   const [isVerifying, setIsVerifying] = useState(false);
@@ -897,72 +898,74 @@ export const VerifyView: React.FC = () => {
                )}
 
                {/* Frame-by-Frame Scoring Table */}
-               {auditResult.frameDetails && auditResult.frameDetails.length > 0 && (
-                   <div className="mt-4 border-t border-[var(--border-light)] pt-4">
-                       <div className="flex items-center justify-between mb-4">
-                           <h5 className="font-mono text-[10px] uppercase font-bold text-[var(--text-header)]">Frame Analysis (Visual Chain)</h5>
-                           <button 
-                               onClick={() => setShowAnalysis(true)}
-                               className="text-[10px] font-mono uppercase font-bold text-[var(--trust-blue)] hover:underline"
-                           >
-                               View Full Analysis →
-                           </button>
-                       </div>
-                       
-                       <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2">
-                           {auditResult.frameDetails.map((fd, idx) => (
-                               <div key={idx} className="flex items-center gap-3 p-2 border border-[var(--border-light)] rounded bg-white/50 hover:bg-white transition-colors">
-                                   {/* Reference Frame */}
-                                   <div className="relative w-16 h-9 bg-black rounded overflow-hidden flex-shrink-0 border border-[var(--border-light)]">
-                                       {fd.refMeta?.url ? (
-                                           <img src={fd.refMeta.url} className="w-full h-full object-cover" alt="Ref" />
-                                       ) : (
-                                           <div className="w-full h-full flex items-center justify-center text-[6px] text-white/50">NO IMG</div>
-                                       )}
-                                       <div className="absolute bottom-0 left-0 right-0 bg-black/60 text-[6px] text-white px-1 truncate">
-                                           {fd.refLabel}
-                                       </div>
-                                   </div>
+                {auditResult.frameDetails && auditResult.frameDetails.length > 0 && (
+                    <div className="mt-4 border-t border-[var(--border-light)] pt-4">
+                        <div className="flex items-center justify-between mb-4">
+                            <h5 className="font-mono text-[10px] uppercase font-bold text-[var(--text-header)]">Neural Audit Detail</h5>
+                            <button 
+                                onClick={() => setShowAuditDetails(!showAuditDetails)}
+                                className="text-[10px] font-mono uppercase font-bold text-[var(--trust-blue)] hover:underline"
+                            >
+                                {showAuditDetails ? 'Hide Details' : 'Show Details'}
+                            </button>
+                        </div>
+                        
+                        {showAuditDetails && (
+                          <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2">
+                              {auditResult.frameDetails.map((fd, idx) => (
+                                  <div key={idx} className="flex items-center gap-3 p-2 border border-[var(--border-light)] rounded bg-white/50 hover:bg-white transition-colors">
+                                      {/* Reference Frame */}
+                                      <div className="relative w-16 h-9 bg-black rounded overflow-hidden flex-shrink-0 border border-[var(--border-light)]">
+                                          {fd.refMeta?.url ? (
+                                              <img src={fd.refMeta.url} className="w-full h-full object-cover" alt="Ref" />
+                                          ) : (
+                                              <div className="w-full h-full flex items-center justify-center text-[6px] text-white/50">NO IMG</div>
+                                          )}
+                                          <div className="absolute bottom-0 left-0 right-0 bg-black/60 text-[6px] text-white px-1 truncate">
+                                              {fd.refLabel}
+                                          </div>
+                                      </div>
 
-                                   {/* VS Indicator */}
-                                   <div className="flex flex-col items-center gap-0.5">
-                                       <span className="text-[8px] font-mono opacity-30">VS</span>
-                                       <div className={`h-px w-4 ${fd.isMatch ? 'bg-emerald-500' : 'bg-red-500/30'}`}></div>
-                                   </div>
+                                      {/* VS Indicator */}
+                                      <div className="flex flex-col items-center gap-0.5">
+                                          <span className="text-[8px] font-mono opacity-30">VS</span>
+                                          <div className={`h-px w-4 ${fd.isMatch ? 'bg-emerald-500' : 'bg-red-500/30'}`}></div>
+                                      </div>
 
-                                   {/* Candidate Frame (Source B) */}
-                                   <div className="relative w-16 h-9 bg-black rounded overflow-hidden flex-shrink-0 border border-[var(--border-light)]">
-                                       {(() => {
-                                            const cand = auditCandidates.find(c => c.id === fd.bestCandId);
-                                            const url = cand?.imageUrl || visualEvidence?.candUrl;
-                                            return url ? (
-                                                <img src={url} className="w-full h-full object-cover" alt="Cand" />
-                                            ) : (
-                                                <div className="w-full h-full flex items-center justify-center text-[6px] text-white/50">NO IMG</div>
-                                            );
-                                       })()}
-                                       <div className="absolute bottom-0 left-0 right-0 bg-black/60 text-[6px] text-white px-1 truncate">
-                                           {(() => {
-                                                const cand = auditCandidates.find(c => c.id === fd.bestCandId);
-                                                return cand?.imageUrl ? 'Extracted' : 'Target';
-                                           })()}
-                                       </div>
-                                   </div>
+                                      {/* Candidate Frame (Source B) */}
+                                      <div className="relative w-16 h-9 bg-black rounded overflow-hidden flex-shrink-0 border border-[var(--border-light)]">
+                                          {(() => {
+                                               const cand = auditCandidates.find(c => c.id === fd.bestCandId);
+                                               const url = cand?.imageUrl || visualEvidence?.candUrl;
+                                               return url ? (
+                                                   <img src={url} className="w-full h-full object-cover" alt="Cand" />
+                                               ) : (
+                                                   <div className="w-full h-full flex items-center justify-center text-[6px] text-white/50">NO IMG</div>
+                                               );
+                                          })()}
+                                          <div className="absolute bottom-0 left-0 right-0 bg-black/60 text-[6px] text-white px-1 truncate">
+                                              {(() => {
+                                                   const cand = auditCandidates.find(c => c.id === fd.bestCandId);
+                                                   return cand?.imageUrl ? 'Extracted' : 'Target';
+                                              })()}
+                                          </div>
+                                      </div>
 
-                                   {/* Metrics */}
-                                   <div className="flex-1 text-right min-w-0">
-                                       <div className={`font-bold font-mono text-[10px] ${fd.isMatch ? 'text-emerald-600' : 'text-red-500'}`}>
-                                           {fd.isMatch ? 'MATCH' : 'MISS'}
-                                       </div>
-                                       <div className="text-[8px] font-mono opacity-50">
-                                           Δ: {fd.visualDistance.toFixed(3)}
-                                       </div>
-                                   </div>
-                               </div>
-                           ))}
-                       </div>
-                   </div>
-               )}
+                                      {/* Metrics */}
+                                      <div className="flex-1 text-right min-w-0">
+                                          <div className={`font-bold font-mono text-[10px] ${fd.isMatch ? 'text-emerald-600' : 'text-red-500'}`}>
+                                              {fd.isMatch ? 'MATCH' : 'MISS'}
+                                          </div>
+                                          <div className="text-[8px] font-mono opacity-50">
+                                              Δ: {fd.visualDistance.toFixed(3)}
+                                          </div>
+                                      </div>
+                                  </div>
+                              ))}
+                          </div>
+                        )}
+                    </div>
+                )}
 
                {/* Feature Request Placeholder */}
                <div className="flex items-center gap-2 pt-2 opacity-40 hover:opacity-100 transition-opacity cursor-not-allowed">
@@ -1099,8 +1102,7 @@ export const VerifyView: React.FC = () => {
       <header className="space-y-4">
         <div className="flex items-center justify-between">
            <div>
-             <span className="font-mono text-[10px] text-[var(--trust-blue)] tracking-[0.4em] uppercase font-bold">Public Verification Tool (v0.3.3)</span>
-             <h2 className="text-5xl font-bold italic tracking-tighter text-[var(--text-header)]">The Difference Engine.</h2>
+             <h2 className="text-5xl font-bold italic tracking-tighter text-[var(--text-header)]">Neural Audit 0.3.1</h2>
            </div>
            <a 
              href="/batch"
@@ -1110,7 +1112,7 @@ export const VerifyView: React.FC = () => {
            </a>
         </div>
         <p className="text-xl opacity-60 max-w-2xl font-serif italic">
-          Compare two selected YouTube videos with signed keyframe metadata. Quick mode uses 4 thumbnails; Deep mode samples at 2 frames/min against saved keyframes.
+          This tool provides a detailed analysis of video content integrity. Use the controls below to compare sources and view the audit report.
         </p>
       </header>
 
@@ -1312,7 +1314,7 @@ export const VerifyView: React.FC = () => {
                <div className="font-mono text-[9px] space-y-1 opacity-70">
                   {debugLog.map((log, i) => (
                      <div key={i} className="break-all">{log}</div>
-                  ))}
+                  ))รา
                </div>
             </div>
           )}
