@@ -1314,7 +1314,7 @@ export const VerifyView: React.FC = () => {
                <div className="font-mono text-[9px] space-y-1 opacity-70">
                   {debugLog.map((log, i) => (
                      <div key={i} className="break-all">{log}</div>
-                  ))รา
+                  ))}
                </div>
             </div>
           )}
