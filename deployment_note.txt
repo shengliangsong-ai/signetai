@@ -1,0 +1,1 @@
+Note to self: To deploy the Signet AI application, always use the `firebase deploy --only hosting` command. This is crucial for ensuring the routing rules in `firebase.json` are correctly applied.
