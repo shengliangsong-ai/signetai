@@ -10,7 +10,7 @@ const TODO_CONTENT = `# Signet AI Project Status & Roadmap
 *Focus: Identity, Cryptography, and Basic Asset Signing*
 
 - [x] **Identity Registry (TrustKeyService)**
-    - [x] Firestore-based Global Anchor (\\`signetai.io:username\\`)
+    - [x] Firestore-based Global Anchor (\`signetai.io:username\`)
     - [x] Local "Vault" persistence (IndexedDB)
     - [x] Sovereign Grade Entropy (24-word BIP-39 Mnemonic)
     - [x] Ed25519-256 Key Derivation
@@ -330,15 +330,15 @@ export const ProjectStatusView: React.FC = () => {
         </div>
         <h2 className="text-5xl font-bold italic tracking-tighter text-[var(--text-header)]">Project Status.</h2>
         <p className="text-xl opacity-60 max-w-2xl font-serif italic">
-            Direct rendering of the <code>TODO.md</code> and <code>LOG.md</code> artifacts tracking the platform's autonomous evolution.
+            Direct rendering of the \`TODO.md\` and \`LOG.md\` artifacts tracking the platform's autonomous evolution.
         </p>
         <div className="p-4 border border-[var(--border-light)] rounded-lg bg-[var(--bg-standard)]">
           <div className="font-mono text-[9px] uppercase font-bold opacity-50 mb-2">Release Notes</div>
           <div className="flex flex-wrap gap-3 text-[11px] font-mono">
-            <a href="https://www.signetai.io/docs/release-notes/2026-02-22-v0.3.3_UTW.md" target="_blank" rel="noreferrer" className="text-[var(--trust-blue)] hover:underline">
+            <a href="/docs/release-notes/2026-02-22-v0.3.3_UTW.md" target="_blank" rel="noreferrer" className="text-[var(--trust-blue)] hover:underline">
               Latest: v0.3.3_UTW (2026-02-22)
             </a>
-            <a href="https://www.signetai.io/docs/release-notes/README.md" target="_blank" rel="noreferrer" className="opacity-70 hover:underline">
+            <a href="/docs/release-notes/README.md" target="_blank" rel="noreferrer" className="opacity-70 hover:underline">
               Release Notes Index
             </a>
           </div>
