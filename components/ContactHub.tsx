@@ -8,7 +8,7 @@ const ObfuscatedEmail: React.FC<{ user: string; domain: string; label: string }>
 
   return (
     <a 
-      href="#" 
+      href="" 
       onClick={handleClick}
       className="group flex items-center justify-between w-full"
     >

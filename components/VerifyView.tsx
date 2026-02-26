@@ -1103,7 +1103,7 @@ export const VerifyView: React.FC = () => {
              <h2 className="text-5xl font-bold italic tracking-tighter text-[var(--text-header)]">The Difference Engine.</h2>
            </div>
            <button 
-             onClick={() => window.location.hash = '#batch'}
+             onClick={() => window.location.hash = 'batch'}
              className="px-6 py-3 border border-[var(--trust-blue)] text-[var(--trust-blue)] font-mono text-[10px] uppercase font-bold rounded hover:bg-blue-500/10 transition-all"
            >
              Switch to Batch Mode →

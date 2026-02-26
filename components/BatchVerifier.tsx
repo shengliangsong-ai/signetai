@@ -162,7 +162,7 @@ export const BatchVerifier: React.FC = () => {
     if (!row.reportPayload) return;
     try {
       sessionStorage.setItem('signet_universal_report_payload', JSON.stringify(row.reportPayload));
-      window.location.hash = '#universal-lab';
+      window.location.hash = 'universal-lab';
     } catch (e) {
       addLog(`Report open failed for ${row.name}: ${(e as Error)?.message || 'storage error'}`);
     }

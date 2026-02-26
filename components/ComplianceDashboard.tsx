@@ -133,12 +133,11 @@ export const ComplianceDashboard: React.FC = () => {
                  </div>
               </div>
               <div className="pt-2">
-                 <button 
-                  onClick={() => window.location.hash = '#universal-lab'}
-                  className="w-full py-3 bg-[var(--trust-blue)] text-white font-mono text-[10px] uppercase font-bold tracking-widest rounded"
+                 <a href="/universal-lab" 
+                  className="w-full block text-center py-3 bg-[var(--trust-blue)] text-white font-mono text-[10px] uppercase font-bold tracking-widest rounded"
                  >
                   Launch Universal Lab
-                 </button>
+                 </a>
               </div>
            </div>
         </div>

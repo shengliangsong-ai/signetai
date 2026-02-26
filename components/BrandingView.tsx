@@ -128,7 +128,7 @@ export const BrandingView: React.FC = () => {
       </Admonition>
 
       <div className="mt-20 pt-10 border-t border-[var(--border-light)]">
-        <a href="#" className="text-[var(--trust-blue)] hover:underline font-mono text-[10px] uppercase tracking-widest font-bold">
+        <a href="/spec" className="text-[var(--trust-blue)] hover:underline font-mono text-[10px] uppercase tracking-widest font-bold">
           &larr; Return to Core Specification
         </a>
       </div>
