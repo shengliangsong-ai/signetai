@@ -23,10 +23,6 @@ export const SecurityIntegrityMonitor: React.FC = () => {
 
   return (
     <div className="p-6 bg-gray-100 dark:bg-black/40 border border-gray-200 dark:border-white/5 rounded-lg space-y-4">
-      <div className="flex items-center justify-between border-b border-gray-200 dark:border-white/10 pb-2">
-        <span className="font-mono text-[9px] text-blue-500 font-bold uppercase tracking-widest">Neural Audit 0.3.1</span>
-        <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse"></div>
-      </div>
       <div className="space-y-3">
         {securityChecks.map((check, i) => (
           <div key={i} className="flex justify-between items-start">
