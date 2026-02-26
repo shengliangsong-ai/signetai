@@ -57,6 +57,7 @@ export const PortalView: React.FC<{ isOpen: boolean; onClose: () => void }> = ({
   const [showGuide, setShowGuide] = useState(false);
   const [showNeuralAudit, setShowNeuralAudit] = useState(false);
   const traceCounter = useRef(Math.floor(Math.random() * 1000));
+  const portalContentRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -90,13 +91,25 @@ export const PortalView: React.FC<{ isOpen: boolean; onClose: () => void }> = ({
     };
   }, [isOpen, isFinalized, auditMode, showNeuralAudit]);
 
+  const handleFinalizeAndSeal = async () => {
+    setIsFinalized(true);
+    if (portalContentRef.current) {
+      const html2canvas = (await import('html2canvas')).default;
+      const canvas = await html2canvas(portalContentRef.current, { useCORS: true, allowTaint: true });
+      const link = document.createElement('a');
+      link.download = 'signet-sealed-manifest.png';
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    }
+  };
+
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 md:p-8 animate-in fade-in zoom-in-95 duration-300">
       <div className="absolute inset-0 bg-black/95 backdrop-blur-3xl" onClick={onClose}></div>
       
-      <div className="relative w-full max-w-7xl h-full max-h-[90vh] bg-[var(--bg-standard)] border border-[var(--border-light)] shadow-2xl overflow-hidden flex flex-col rounded-lg">
+      <div ref={portalContentRef} className="relative w-full max-w-7xl h-full max-h-[90vh] bg-[var(--bg-standard)] border border-[var(--border-light)] shadow-2xl overflow-hidden flex flex-col rounded-lg">
         {/* Header */}
         <div className="p-8 border-b border-[var(--border-light)] flex flex-wrap justify-between items-center bg-[var(--table-header)] gap-6">
           <div className="flex items-center gap-6">
@@ -127,12 +140,13 @@ export const PortalView: React.FC<{ isOpen: boolean; onClose: () => void }> = ({
 
         {/* Dashboard Area */}
         <div className="flex-1 overflow-hidden flex">
-          <div className="w-full lg:w-80 p-8 border-r border-[var(--border-light)] bg-[var(--bg-sidebar)] space-y-10 overflow-y-auto">
-            <SecurityIntegrityMonitor />
-          </div>
+          {showNeuralAudit ? (
+            <>
+              <div className="w-full lg:w-80 p-8 border-r border-[var(--border-light)] bg-[var(--bg-sidebar)] space-y-10 overflow-y-auto">
+                <SecurityIntegrityMonitor />
+              </div>
 
-          {showNeuralAudit &&
-              (<div className="flex-1 overflow-hidden flex flex-col lg:flex-row relative">
+              <div className="flex-1 overflow-hidden flex flex-col lg:flex-row relative">
                 {showGuide && (
                   <div className="absolute inset-0 z-50 flex">
                     <div className="w-full lg:w-96 bg-black text-white p-12 overflow-y-auto animate-in slide-in-from-left duration-300">
@@ -201,6 +215,11 @@ export const PortalView: React.FC<{ isOpen: boolean; onClose: () => void }> = ({
                   </div>
                 </div>
               </div>
+            </>
+          ) : (
+            <div className="flex-1 p-12 text-center flex items-center justify-center">
+              <p className="font-mono text-sm text-[var(--text-body)] opacity-50">Click "Show Details" to view the Neural Audit stream.</p>
+            </div>
           )}
         </div>
         
@@ -209,7 +228,7 @@ export const PortalView: React.FC<{ isOpen: boolean; onClose: () => void }> = ({
           <p className="font-mono text-[9px] opacity-40 uppercase tracking-widest italic">Attestation finalized by Lead Architect (Signet Labs)</p>
           <div className="flex gap-4">
             <button 
-              onClick={() => setIsFinalized(true)}
+              onClick={handleFinalizeAndSeal}
               disabled={!showNeuralAudit}
               className={`px-8 py-2 bg-[var(--trust-blue)] text-white font-mono text-[10px] uppercase font-bold shadow-lg hover:brightness-110 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed`}
             >
