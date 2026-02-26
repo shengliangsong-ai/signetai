@@ -1102,12 +1102,12 @@ export const VerifyView: React.FC = () => {
              <span className="font-mono text-[10px] text-[var(--trust-blue)] tracking-[0.4em] uppercase font-bold">Public Verification Tool (v0.3.3)</span>
              <h2 className="text-5xl font-bold italic tracking-tighter text-[var(--text-header)]">The Difference Engine.</h2>
            </div>
-           <button 
-             onClick={() => window.location.hash = 'batch'}
+           <a 
+             href="/batch"
              className="px-6 py-3 border border-[var(--trust-blue)] text-[var(--trust-blue)] font-mono text-[10px] uppercase font-bold rounded hover:bg-blue-500/10 transition-all"
            >
              Switch to Batch Mode →
-           </button>
+           </a>
         </div>
         <p className="text-xl opacity-60 max-w-2xl font-serif italic">
           Compare two selected YouTube videos with signed keyframe metadata. Quick mode uses 4 thumbnails; Deep mode samples at 2 frames/min against saved keyframes.

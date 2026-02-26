@@ -41,7 +41,7 @@ export const NutritionLabel: React.FC<NutritionLabelProps> = ({ manifest, onClos
 
         <div className="pt-4 border-t border-[var(--border-light)]">
            <a 
-             href="#auditor" 
+             href="auditor"
              onClick={onClose}
              className="flex items-center justify-between group"
            >

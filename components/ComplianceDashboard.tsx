@@ -79,10 +79,9 @@ export const ComplianceDashboard: React.FC = () => {
             <h3 className="font-mono text-[11px] uppercase opacity-40 font-bold tracking-[0.3em]">40-Day Sprint (V2.3)</h3>
             <span className="font-mono text-[9px] opacity-30">Status: Phase {ROADMAP[selectedPhase].phase}</span>
           </div>
-          
           <div className="space-y-4">
             {ROADMAP.map((item, i) => (
-              <div 
+              <div
                 key={i}
                 onClick={() => setSelectedPhase(i)}
                 className={`p-6 border rounded-lg transition-all cursor-pointer flex gap-6 items-center ${
@@ -133,7 +132,7 @@ export const ComplianceDashboard: React.FC = () => {
                  </div>
               </div>
               <div className="pt-2">
-                 <a href="/universal-lab" 
+                 <a href="/universal-lab"
                   className="w-full block text-center py-3 bg-[var(--trust-blue)] text-white font-mono text-[10px] uppercase font-bold tracking-widest rounded"
                  >
                   Launch Universal Lab
