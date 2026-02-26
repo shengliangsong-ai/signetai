@@ -53,6 +53,7 @@ export const PortalView: React.FC<{ isOpen: boolean; onClose: () => void }> = ({
   const [isFinalized, setIsFinalized] = useState(false);
   const [auditMode, setAuditMode] = useState<'EXHAUSTIVE' | 'PROBABILISTIC'>('PROBABILISTIC');
   const [showGuide, setShowGuide] = useState(false);
+  const [showNeuralAudit, setShowNeuralAudit] = useState(false);
   const traceCounter = useRef(Math.floor(Math.random() * 1000));
 
   useEffect(() => {
@@ -101,11 +102,17 @@ export const PortalView: React.FC<{ isOpen: boolean; onClose: () => void }> = ({
               <span className="text-[var(--trust-blue)] font-bold text-xl">∑</span>
             </div>
             <div>
-              <h2 className="font-serif text-3xl text-[var(--text-header)] italic font-bold tracking-tight">Signet Scalable Verifier</h2>
+              <h2 className="font-serif text-3xl text-[var(--text-header)] italic font-bold tracking-tight">Neural Audit 03.1</h2>
               <p className="font-mono text-[10px] text-[var(--text-body)] opacity-40 uppercase tracking-[0.4em]">Root: 7B8C...44A2 | Session: ACTIVE</p>
             </div>
           </div>
           <div className="flex gap-4">
+             <button
+                onClick={() => setShowNeuralAudit(!showNeuralAudit)}
+                className={`px-4 py-1.5 border ${showNeuralAudit ? 'bg-[var(--trust-blue)] text-white' : 'border-[var(--trust-blue)] text-[var(--trust-blue)]'} font-mono text-[9px] uppercase font-bold transition-all`}
+                >
+                {showNeuralAudit ? 'Hide Neural Audit' : 'Show Neural Audit'}
+                </button>
              <button 
                onClick={() => setShowGuide(!showGuide)}
                className={`px-4 py-1.5 border ${showGuide ? 'bg-[var(--trust-blue)] text-white' : 'border-[var(--trust-blue)] text-[var(--trust-blue)]'} font-mono text-[9px] uppercase font-bold transition-all`}
@@ -117,6 +124,7 @@ export const PortalView: React.FC<{ isOpen: boolean; onClose: () => void }> = ({
         </div>
 
         {/* Dashboard Area */}
+        {showNeuralAudit &&
         <div className="flex-1 overflow-hidden flex flex-col lg:flex-row relative">
           {showGuide && (
             <div className="absolute inset-0 z-50 flex">
@@ -215,7 +223,7 @@ export const PortalView: React.FC<{ isOpen: boolean; onClose: () => void }> = ({
             </div>
           </div>
         </div>
-
+}
         {/* Footer */}
         <div className="p-6 border-t border-[var(--border-light)] bg-[var(--bg-standard)] flex justify-between items-center">
           <p className="font-mono text-[9px] opacity-40 uppercase tracking-widest italic">Attestation finalized by Lead Architect (Signet Labs)</p>
