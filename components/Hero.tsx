@@ -4,7 +4,7 @@ export const Hero: React.FC<{ onOpenPortal: () => void }> = ({ onOpenPortal }) =
   const handleDemoClick = () => {
     const origin = window.location.origin;
     const demoUrl = `${origin}/public/signed_signetai-solar-system.svg`;
-    window.location.href = `verify?url=${encodeURIComponent(demoUrl)}`;
+    window.location.href = `/verify?url=${encodeURIComponent(demoUrl)}`;
   };
 
   return (
@@ -28,13 +28,13 @@ export const Hero: React.FC<{ onOpenPortal: () => void }> = ({ onOpenPortal }) =
         </p>
 
         <div className="flex flex-wrap gap-4 pt-10">
-          <button 
-            onClick={() => window.location.hash = 'verify'}
+          <a 
+            href="/verify"
             className="px-8 py-4 bg-[var(--trust-blue)] text-white text-[11px] font-bold uppercase tracking-widest rounded shadow-2xl hover:brightness-110 transition-all active:scale-95 flex flex-col items-center"
           >
             <span>Start Verification</span>
             <span className="opacity-50 text-[9px] lowercase font-normal">/verify endpoint</span>
-          </button>
+          </a>
           
           <button 
             onClick={handleDemoClick}
@@ -47,7 +47,7 @@ export const Hero: React.FC<{ onOpenPortal: () => void }> = ({ onOpenPortal }) =
           </button>
 
           <a 
-            href="mission" 
+            href="/mission" 
             className="px-8 py-4 border border-[var(--border-light)] text-[var(--text-header)] text-[11px] font-bold uppercase tracking-widest rounded hover:bg-white/5 transition-all flex flex-col items-center justify-center"
           >
             <span>Read The Manifesto</span>
