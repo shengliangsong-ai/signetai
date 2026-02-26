@@ -228,7 +228,7 @@ export const PortalView: React.FC<{ isOpen: boolean; onClose: () => void }> = ({
             </div>
         ) : (
           <div className="p-12 text-center">
-             <SecurityIntegrityMonitor />
+            <p className="font-mono text-sm text-[var(--text-body)] opacity-50">Activate Neural Audit to view the live attestation stream.</p>
           </div>
         )}
         
