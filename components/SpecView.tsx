@@ -324,68 +324,32 @@ ${JSON.stringify(manifest, null, 2)}
   };
 
   return (
-    <div className="py-24 max-w-7xl mx-auto border-v">
-      <div className="flex flex-col lg:flex-row gap-12">
-        <div className="w-full lg:w-80 space-y-8">
-           <div className="p-6 border border-[var(--border-light)] bg-[var(--bg-standard)] rounded-lg">
-              <h3 className="font-mono text-[10px] uppercase font-bold text-[var(--trust-blue)] mb-4 tracking-widest">Table of Contents</h3>
-              <div className="space-y-1">
-                 {SPEC_PAGES.map((page, i) => (
-                    <button
-                      key={i}
-                      onClick={() => setActivePage(i)}
-                      className={`w-full text-left px-3 py-2 text-[10px] font-mono uppercase tracking-tight rounded transition-all ${activePage === i ? 'bg-[var(--trust-blue)] text-white font-bold' : 'text-[var(--text-body)] opacity-60 hover:opacity-100 hover:bg-[var(--bg-sidebar)]'}`}
-                    >
-                      {/* Safety check for title splitting */}
-                      {page.title.includes('.') ? (
-                        <>
-                          <span className="font-bold opacity-50 mr-1">{page.title.split('.')[0]}.</span>
-                          {page.title.split('.').slice(1).join('.').trim()}
-                        </>
-                      ) : page.title}
-                    </button>
-                 ))}
-              </div>
-           </div>
-           
-           <button 
-             onClick={handleDownload}
-             className="w-full py-4 bg-[var(--text-header)] text-[var(--bg-standard)] font-mono text-[10px] uppercase font-bold tracking-widest rounded shadow-xl hover:brightness-110 transition-all flex items-center justify-center gap-2"
-           >
-             <span>⭳</span> Download PDF
-           </button>
+    <div className="py-24 max-w-4xl mx-auto">
+      <div className="flex justify-between items-center mb-12">
+        <div>
+          <h1 className="text-5xl font-bold italic tracking-tighter text-[var(--text-header)]">Signet Protocol</h1>
+          <p className="text-xl opacity-60 max-w-2xl font-serif italic">Technical Specification v0.3.3</p>
         </div>
+        <button 
+          onClick={handleDownload}
+          className="px-6 py-3 border border-[var(--trust-blue)] text-[var(--trust-blue)] font-mono text-[10px] uppercase font-bold rounded hover:bg-blue-500/10 transition-all flex items-center gap-2"
+        >
+          <span>⭳</span> Download PDF
+        </button>
+      </div>
 
-        <div className="flex-1">
-           <div className="mb-8 flex justify-between items-end border-b border-[var(--border-light)] pb-4">
-              <div>
-                <span className="font-mono text-[10px] text-[var(--trust-blue)] uppercase tracking-[0.3em] font-bold">{SPEC_PAGES[activePage].category}</span>
-                <h1 className="text-4xl font-serif italic font-bold text-[var(--text-header)] mt-2">{SPEC_PAGES[activePage].title}</h1>
-              </div>
-              <span className="font-mono text-[10px] opacity-30">Page {activePage + 1} of {SPEC_PAGES.length}</span>
-           </div>
-
-           <div className="prose prose-lg max-w-none prose-headings:font-serif prose-p:text-[var(--text-body)] prose-headings:text-[var(--text-header)]">
-              {SPEC_PAGES[activePage].content}
-           </div>
-
-           <div className="mt-16 flex justify-between pt-8 border-t border-[var(--border-light)]">
-              <button 
-                onClick={() => setActivePage(Math.max(0, activePage - 1))}
-                disabled={activePage === 0}
-                className="font-mono text-[10px] uppercase font-bold tracking-widest opacity-50 hover:opacity-100 disabled:opacity-20"
-              >
-                &larr; Previous
-              </button>
-              <button 
-                onClick={() => setActivePage(Math.min(SPEC_PAGES.length - 1, activePage + 1))}
-                disabled={activePage === SPEC_PAGES.length - 1}
-                className="font-mono text-[10px] uppercase font-bold tracking-widest opacity-50 hover:opacity-100 disabled:opacity-20"
-              >
-                Next &rarr;
-              </button>
-           </div>
-        </div>
+      <div className="flex flex-col gap-16">
+        {SPEC_PAGES.map((page, i) => (
+          <div key={i} className="border-t border-[var(--border-light)] pt-12">
+            <div className="mb-8">
+              <span className="font-mono text-[10px] text-[var(--trust-blue)] uppercase tracking-[0.3em] font-bold">{page.category}</span>
+              <h2 className="text-4xl font-serif italic font-bold text-[var(--text-header)]">{page.title}</h2>
+            </div>
+            <div className="prose prose-lg max-w-none prose-p:text-[var(--text-body)] prose-headings:text-[var(--text-header)]">
+              {page.content}
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );
