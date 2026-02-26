@@ -117,7 +117,7 @@ export const PortalView: React.FC<{ isOpen: boolean; onClose: () => void }> = ({
                 <span className="text-[var(--trust-blue)] font-bold text-xl">∑</span>
               </div>
               <div>
-                <h2 className="font-serif text-3xl text-[var(--text-header)] italic font-bold tracking-tight">Neural Audit 0.3.1</h2>
+                <h2 className="font-serif text-3xl text-[var(--text-header)] italic font-bold tracking-tight">Neural Audit 0.3.1 (TEST)</h2>
                 <p className="font-mono text-[10px] text-[var(--text-body)] opacity-40 uppercase tracking-[0.4em]">Root: 7B8C...44A2 | Session: ACTIVE</p>
               </div>
             </div>
@@ -217,8 +217,10 @@ export const PortalView: React.FC<{ isOpen: boolean; onClose: () => void }> = ({
               </div>
             </>
           ) : (
-            <div className="flex-1 p-12 text-center flex items-center justify-center">
-              <p className="font-mono text-sm text-[var(--text-body)] opacity-50">Click "Show Details" to view the Neural Audit stream.</p>
+            <div className="flex-1 p-12 text-center flex items-center justify-center flex-col">
+              <p className="font-mono text-lg text-[var(--trust-blue)]">TESTING THE FIX</p>
+              <p className="font-mono text-sm text-[var(--text-body)] opacity-50 mt-4">The content below should only appear when you click "Show Details".</p>
+              <p className="font-mono text-sm text-[var(--text-body)] opacity-50">If you see this, the file has been updated.</p>
             </div>
           )}
         </div>
