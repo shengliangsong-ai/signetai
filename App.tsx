@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { pathRoutes, hashRoutes, viewComponents } from './routeConfig.tsx';
+import { pathRoutes, viewComponents } from './routeConfig.tsx';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
 import { PortalView } from './components/PortalView';
@@ -27,19 +27,14 @@ const App: React.FC = () => {
   useEffect(() => {
     const handleNavigation = () => {
       const path = window.location.pathname.replace(/\/+$/, '') || '/';
-      const hash = window.location.hash;
-      const route = hash.split('?')[0]; // Ignore query params for routing match
-
-      const newView = pathRoutes[path] || hashRoutes[route] || 'home';
+      const newView = pathRoutes[path] || 'home';
       setView(newView);
       setIsSidebarOpen(false);
     };
 
     handleNavigation();
-    window.addEventListener('hashchange', handleNavigation);
     window.addEventListener('popstate', handleNavigation);
     return () => {
-      window.removeEventListener('hashchange', handleNavigation);
       window.removeEventListener('popstate', handleNavigation);
     };
   }, []);

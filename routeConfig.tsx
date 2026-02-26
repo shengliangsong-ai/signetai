@@ -90,27 +90,3 @@ export const pathRoutes: { [key: string]: string } = {
     '/data-deletion': 'data-deletion',
     '/image-comparator-demo': 'image-comparator-demo',
 };
-
-export const hashRoutes: { [key: string]: string } = {
-    '#mission': 'mission',
-    '#auditor': 'auditor',
-    '#identity': 'identity',
-    '#spec': 'spec',
-    '#standards': 'standards',
-    '#schema': 'schema',
-    '#branding': 'branding',
-    '#manual': 'manual',
-    '#compliance': 'compliance',
-    '#verify': 'verify',
-    '#ecosystem': 'ecosystem',
-    '#svg-lab': 'svg-lab',
-    '#pdf-lab': 'pdf-lab',
-    '#universal-lab': 'universal-lab',
-    '#status': 'status',
-    '#batch': 'batch',
-    '#cli': 'cli',
-    '#privacy': 'privacy',
-    '#terms': 'terms',
-    '#data-deletion': 'data-deletion',
-    '#donate': 'donate',
-};
