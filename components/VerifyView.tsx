@@ -901,7 +901,7 @@ export const VerifyView: React.FC = () => {
                 {auditResult.frameDetails && auditResult.frameDetails.length > 0 && (
                     <div className="mt-4 border-t border-[var(--border-light)] pt-4">
                         <div className="flex items-center justify-between mb-4">
-                            <h5 className="font-mono text-[10px] uppercase font-bold text-[var(--text-header)]">Neural Audit Detail</h5>
+                            <h5 className="font-mono text-[10px] uppercase font-bold text-[var(--text-header)]">Difference Engine Detail</h5>
                             <button 
                                 onClick={() => setShowAuditDetails(!showAuditDetails)}
                                 className="text-[10px] font-mono uppercase font-bold text-[var(--trust-blue)] hover:underline"
@@ -1102,7 +1102,7 @@ export const VerifyView: React.FC = () => {
       <header className="space-y-4">
         <div className="flex items-center justify-between">
            <div>
-             <h2 className="text-5xl font-bold italic tracking-tighter text-[var(--text-header)]">Neural Audit 0.3.1</h2>
+             <h2 className="text-5xl font-bold italic tracking-tighter text-[var(--text-header)]">Difference Engine</h2>
            </div>
            <a 
              href="/batch"
