@@ -99,8 +99,7 @@ export const PortalView: React.FC<{ isOpen: boolean; onClose: () => void }> = ({
       <div className="relative w-full max-w-7xl h-full max-h-[90vh] bg-[var(--bg-standard)] border border-[var(--border-light)] shadow-2xl overflow-hidden flex flex-col rounded-lg">
         {/* Header */}
         <div className="p-8 border-b border-[var(--border-light)] flex flex-wrap justify-between items-center bg-[var(--table-header)] gap-6">
-          {showNeuralAudit ? (
-            <div className="flex items-center gap-6">
+          <div className="flex items-center gap-6">
               <div className="w-12 h-12 border-2 border-[var(--trust-blue)] flex items-center justify-center rounded-sm">
                 <span className="text-[var(--trust-blue)] font-bold text-xl">∑</span>
               </div>
@@ -109,17 +108,12 @@ export const PortalView: React.FC<{ isOpen: boolean; onClose: () => void }> = ({
                 <p className="font-mono text-[10px] text-[var(--text-body)] opacity-40 uppercase tracking-[0.4em]">Root: 7B8C...44A2 | Session: ACTIVE</p>
               </div>
             </div>
-          ) : (
-            <div className="flex items-center gap-6">
-              <h2 className="font-serif text-3xl text-[var(--text-header)] italic">Signet Portal</h2>
-            </div>
-          )}
           <div className="flex gap-4 ml-auto">
              <button
                 onClick={() => setShowNeuralAudit(!showNeuralAudit)}
                 className={`px-4 py-1.5 border ${showNeuralAudit ? 'bg-[var(--trust-blue)] text-white' : 'border-[var(--trust-blue)] text-[var(--trust-blue)]'} font-mono text-[9px] uppercase font-bold transition-all`}
                 >
-                {showNeuralAudit ? 'Hide Neural Audit' : 'Show Neural Audit'}
+                {showNeuralAudit ? 'Hide Details' : 'Show Details'}
                 </button>
              <button 
                onClick={() => setShowGuide(!showGuide)}
@@ -234,7 +228,7 @@ export const PortalView: React.FC<{ isOpen: boolean; onClose: () => void }> = ({
             </div>
         ) : (
           <div className="p-12 text-center">
-            <p className="font-mono text-sm text-[var(--text-body)] opacity-50">Activate Neural Audit to view the live attestation stream.</p>
+             <SecurityIntegrityMonitor />
           </div>
         )}
         
