@@ -126,111 +126,83 @@ export const PortalView: React.FC<{ isOpen: boolean; onClose: () => void }> = ({
         </div>
 
         {/* Dashboard Area */}
-        {showNeuralAudit ? (
-            <div className="flex-1 overflow-hidden flex flex-col lg:flex-row relative">
-              {showGuide && (
-                <div className="absolute inset-0 z-50 flex">
-                  <div className="w-full lg:w-96 bg-black text-white p-12 overflow-y-auto animate-in slide-in-from-left duration-300">
-                    <h3 className="font-serif text-4xl italic mb-8 border-b border-white/20 pb-4">Audit Specs</h3>
-                    <div className="space-y-8">
-                      <div className="space-y-2">
-                        <h4 className="font-mono text-[10px] uppercase text-[var(--trust-blue)] font-bold">Continuous Attestation</h4>
-                        <p className="text-[12px] opacity-70 leading-relaxed italic">The loop is intentional. It confirms state integrity every second to prevent post-generation drift.</p>
-                      </div>
-                      <div className="space-y-2">
-                        <h4 className="font-mono text-[10px] uppercase text-[var(--trust-blue)] font-bold">Probabilistic Sampling</h4>
-                        <p className="text-[12px] opacity-70 leading-relaxed italic">Signet audits random logic branches to maintain O(log n) efficiency at planetary scale.</p>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex-1 bg-black/40 backdrop-blur-sm" onClick={() => setShowGuide(false)}></div>
-                </div>
-              )}
-
-              {/* Sidebar */}
-              <div className="w-full lg:w-80 p-8 border-r border-[var(--border-light)] bg-[var(--bg-sidebar)] space-y-10 overflow-y-auto">
-                <SecurityIntegrityMonitor />
-                <div className="space-y-4">
-                  <h3 className="font-mono text-[10px] uppercase tracking-widest text-[var(--text-header)] font-bold border-b border-[var(--border-light)] pb-2">Audit Strategy</h3>
-                  <div className="space-y-2">
-                    <button 
-                      onClick={() => setAuditMode('PROBABILISTIC')}
-                      className={`w-full px-4 py-3 text-left font-mono text-[10px] uppercase border transition-all ${auditMode === 'PROBABILISTIC' ? 'border-[var(--trust-blue)] bg-[var(--admonition-bg)] text-[var(--trust-blue)]' : 'border-transparent opacity-50'}`}
-                    >
-                      ● Probabilistic Sampling
-                    </button>
-                    <button 
-                      onClick={() => setAuditMode('EXHAUSTIVE')}
-                      className={`w-full px-4 py-3 text-left font-mono text-[10px] uppercase border transition-all ${auditMode === 'EXHAUSTIVE' ? 'border-[var(--trust-blue)] bg-[var(--admonition-bg)] text-[var(--trust-blue)]' : 'border-transparent opacity-50'}`}
-                    >
-                      ○ Exhaustive Audit
-                    </button>
-                  </div>
-                </div>
-                
-                <div className="space-y-6">
-                   <h3 className="font-mono text-[10px] uppercase tracking-widest text-[var(--text-header)] font-bold border-b border-[var(--border-light)] pb-2">Protocol Health</h3>
-                   <dl className="space-y-4">
-                      <DefinitionItem term="Integrity" def="100% Cryptographic Match" />
-                      <DefinitionItem term="Drift" def="< 0.002% Logic Variance" />
-                      <DefinitionItem term="Latency" def="12ms Attestation Buffer" />
-                   </dl>
-                </div>
-              </div>
-
-              {/* Main Feed */}
-              <div className="flex-1 flex flex-col">
-                <div className="p-4 bg-[var(--table-header)] border-b border-[var(--border-light)] flex justify-between items-center px-8">
-                  <div className="flex items-center gap-4">
-                    <span className="font-mono text-[10px] text-[var(--text-header)] uppercase tracking-widest font-bold">Telemetry Stream</span>
-                    <div className="flex items-center gap-2 px-2 py-0.5 rounded-full border border-[var(--trust-blue)]/30 bg-[var(--admonition-bg)]">
-                       <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse"></div>
-                       <span className="font-mono text-[8px] uppercase tracking-widest text-[var(--trust-blue)] font-bold">HEARTBEAT_SYNC</span>
-                    </div>
-                  </div>
-                  <span className="font-mono text-[9px] opacity-40 uppercase tracking-widest">v0.2.6_CORE</span>
-                </div>
-
-                <div className="flex-1 bg-[var(--code-bg)] p-8 overflow-y-auto font-mono text-[11px] space-y-2">
-                  <div className="grid grid-cols-4 gap-4 pb-4 mb-4 border-b border-[var(--border-light)] opacity-30 text-[9px] uppercase font-bold tracking-widest">
-                    <div>Trace Ref ID</div>
-                    <div>Layer</div>
-                    <div>Operation Substrate</div>
-                    <div className="text-right">Verdict</div>
-                  </div>
-
-                  {logs.map((log, i) => (
-                    <div key={i} className={`grid grid-cols-4 gap-4 animate-in slide-in-from-bottom-1 duration-300 ${i === 0 ? 'text-[var(--trust-blue)]' : 'opacity-60'}`}>
-                      <div className="font-bold">{log.id}</div>
-                      <div className="text-[9px] mt-0.5">[{log.layer}] AUDIT</div>
-                      <div className="italic">{log.msg}</div>
-                      <div className="text-right font-bold text-green-500">✓ {log.status}</div>
-                    </div>
-                  ))}
-                  {logs.length === 0 && <div className="text-center py-20 opacity-20 italic">Initializing Attestation Pipeline...</div>}
-                </div>
-
-                <div className="p-8 border-t border-[var(--border-light)] bg-[var(--table-header)] grid grid-cols-1 md:grid-cols-3 gap-8">
-                   <div className="space-y-1">
-                      <p className="font-mono text-[9px] opacity-40 uppercase font-bold">Merkle Coverage</p>
-                      <p className="font-serif text-2xl font-bold italic">{auditMode === 'PROBABILISTIC' ? '5.2%' : '100.0%'}</p>
-                   </div>
-                   <div className="space-y-1">
-                      <p className="font-mono text-[9px] opacity-40 uppercase font-bold">Compute Overhead</p>
-                      <p className="font-serif text-2xl font-bold italic">Near-Zero</p>
-                   </div>
-                   <div className="space-y-1">
-                      <p className="font-mono text-[9px] opacity-40 uppercase font-bold">Signet Status</p>
-                      <p className="font-serif text-2xl text-[var(--trust-blue)] font-bold italic">DETERMINISTIC</p>
-                   </div>
-                </div>
-              </div>
-            </div>
-        ) : (
-          <div className="p-12 text-center">
-            <p className="font-mono text-sm text-[var(--text-body)] opacity-50">Activate Neural Audit to view the live attestation stream.</p>
+        <div className="flex-1 overflow-hidden flex">
+          <div className="w-full lg:w-80 p-8 border-r border-[var(--border-light)] bg-[var(--bg-sidebar)] space-y-10 overflow-y-auto">
+            <SecurityIntegrityMonitor />
           </div>
-        )}
+
+          {showNeuralAudit &&
+              (<div className="flex-1 overflow-hidden flex flex-col lg:flex-row relative">
+                {showGuide && (
+                  <div className="absolute inset-0 z-50 flex">
+                    <div className="w-full lg:w-96 bg-black text-white p-12 overflow-y-auto animate-in slide-in-from-left duration-300">
+                      <h3 className="font-serif text-4xl italic mb-8 border-b border-white/20 pb-4">Audit Specs</h3>
+                      <div className="space-y-8">
+                        <div className="space-y-2">
+                          <h4 className="font-mono text-[10px] uppercase text-[var(--trust-blue)] font-bold">Continuous Attestation</h4>
+                          <p className="text-[12px] opacity-70 leading-relaxed italic">The loop is intentional. It confirms state integrity every second to prevent post-generation drift.</p>
+                        </div>
+                        <div className="space-y-2">
+                          <h4 className="font-mono text-[10px] uppercase text-[var(--trust-blue)] font-bold">Probabilistic Sampling</h4>
+                          <p className="text-[12px] opacity-70 leading-relaxed italic">Signet audits random logic branches to maintain O(log n) efficiency at planetary scale.</p>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex-1 bg-black/40 backdrop-blur-sm" onClick={() => setShowGuide(false)}></div>
+                  </div>
+                )}
+
+                {/* Main Feed */}
+                <div className="flex-1 flex flex-col">
+                  <div className="p-4 bg-[var(--table-header)] border-b border-[var(--border-light)] flex justify-between items-center px-8">
+                    <div className="flex items-center gap-4">
+                      <span className="font-mono text-[10px] text-[var(--text-header)] uppercase tracking-widest font-bold">Telemetry Stream</span>
+                      <span className="font-mono text-[9px] text-red-500 uppercase font-bold">[TODO]</span>
+                      <div className="flex items-center gap-2 px-2 py-0.5 rounded-full border border-[var(--trust-blue)]/30 bg-[var(--admonition-bg)]">
+                         <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse"></div>
+                         <span className="font-mono text-[8px] uppercase tracking-widest text-[var(--trust-blue)] font-bold">HEARTBEAT_SYNC</span>
+                      </div>
+                    </div>
+                    <span className="font-mono text-[9px] opacity-40 uppercase tracking-widest">v0.2.6_CORE</span>
+                  </div>
+
+                  <div className="flex-1 bg-[var(--code-bg)] p-8 overflow-y-auto font-mono text-[11px] space-y-2">
+                    <div className="grid grid-cols-4 gap-4 pb-4 mb-4 border-b border-[var(--border-light)] opacity-30 text-[9px] uppercase font-bold tracking-widest">
+                      <div>Trace Ref ID</div>
+                      <div>Layer</div>
+                      <div>Operation Substrate</div>
+                      <div className="text-right">Verdict</div>
+                    </div>
+
+                    {logs.map((log, i) => (
+                      <div key={i} className={`grid grid-cols-4 gap-4 animate-in slide-in-from-bottom-1 duration-300 ${i === 0 ? 'text-[var(--trust-blue)]' : 'opacity-60'}`}>
+                        <div className="font-bold">{log.id}</div>
+                        <div className="text-[9px] mt-0.5">[{log.layer}] AUDIT</div>
+                        <div className="italic">{log.msg}</div>
+                        <div className="text-right font-bold text-green-500">✓ {log.status}</div>
+                      </div>
+                    ))}
+                    {logs.length === 0 && <div className="text-center py-20 opacity-20 italic">Initializing Attestation Pipeline...</div>}
+                  </div>
+
+                  <div className="p-8 border-t border-[var(--border-light)] bg-[var(--table-header)] grid grid-cols-1 md:grid-cols-3 gap-8">
+                     <div className="space-y-1">
+                        <p className="font-mono text-[9px] opacity-40 uppercase font-bold">Merkle Coverage</p>
+                        <p className="font-serif text-2xl font-bold italic">{auditMode === 'PROBABILISTIC' ? '5.2%' : '100.0%'}</p>
+                     </div>
+                     <div className="space-y-1">
+                        <p className="font-mono text-[9px] opacity-40 uppercase font-bold">Compute Overhead</p>
+                        <p className="font-serif text-2xl font-bold italic">Near-Zero</p>
+                     </div>
+                     <div className="space-y-1">
+                        <p className="font-mono text-[9px] opacity-40 uppercase font-bold">Signet Status</p>
+                        <p className="font-serif text-2xl text-[var(--trust-blue)] font-bold italic">DETERMINISTIC</p>
+                     </div>
+                  </div>
+                </div>
+              </div>
+          )}
+        </div>
         
         {/* Footer */}
         <div className="p-6 border-t border-[var(--border-light)] bg-[var(--bg-standard)] flex justify-between items-center">
