@@ -63,6 +63,10 @@ const Header: React.FC<{
       >
         Verifier SDK (∑)
       </button>
+      <div className="flex items-center gap-4">
+        <span className="text-[11px] font-mono text-[var(--text-body)]">Neural Audit 0.3.1 (TEST)</span>
+        <span className="text-[11px] font-mono text-[var(--text-body)] opacity-60">Root: 7B8C...44A2 | Session: ACTI</span>
+      </div>
     </div>
   </header>
 );
