@@ -28,7 +28,7 @@ const Sidebar: React.FC<{ currentView: string; isOpen: boolean }> = ({ currentVi
       <div className="p-8 h-full flex flex-col">
         <div className="flex items-center gap-3 mb-12 cursor-pointer" onClick={() => window.location.href = '/'}>
           <SignetLogo className="w-8 h-8 rounded-lg shadow-sm" />
-          <span className="font-bold tracking-tight text-xl text-[var(--text-header)]">Neural Audit 0.3.1 (TEST)</span>
+          <span className="font-bold tracking-tight text-xl text-[var(--text-header)]">Signet v0.3.3</span>
         </div>
 
         <nav className="space-y-4 flex-1 overflow-y-auto">
@@ -68,9 +68,6 @@ const Sidebar: React.FC<{ currentView: string; isOpen: boolean }> = ({ currentVi
 
         <div className="pt-8 mt-8 border-t border-[var(--border-light)] space-y-6">
           <SecurityIntegrityMonitor />
-          <div className="flex items-center gap-2 text-[10px] font-mono opacity-50 text-[var(--text-body)]">
-            <span>Root: 7B8C...44A2 | Session: ACTI</span>
-          </div>
           <div className="flex items-center gap-2 text-[10px] font-mono opacity-50 text-[var(--text-body)]">
             <div className="w-2 h-2 rounded-full bg-green-500"></div>
             <span>MAINNET_NODE: ACTIVE</span>

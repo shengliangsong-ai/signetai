@@ -14,10 +14,10 @@ const Header: React.FC<{
   <header className="fixed top-0 right-0 left-0 lg:left-72 h-16 bg-[var(--bg-standard)] border-b border-[var(--border-light)] z-30 flex items-center justify-between px-8">
     <button onClick={onToggleSidebar} className="lg:hidden p-2 text-2xl text-[var(--text-header)]">☰</button>
     <div className="hidden lg:block text-[11px] font-mono text-[var(--text-body)] opacity-40 uppercase tracking-widest">
-      Neural Audit
+      ISO/TC 290 - Cognitive Provenance Standard
     </div>
     
-    <div className="flex items-center gap-4">
+    <div className="flex items-center gap-6">
       {installPrompt && (
         <button 
           onClick={onInstall}
@@ -57,10 +57,12 @@ const Header: React.FC<{
       >
         {theme === 'standard' ? 'Midnight' : 'Standard'}
       </button>
-      <div className="flex items-center gap-4">
-        <span className="text-[11px] font-mono text-[var(--text-body)]">Neural Audit 0.3.1 (TEST)</span>
-        <span className="text-[11px] font-mono text-[var(--text-body)] opacity-60">Root: 7B8C...44A2 | Session: ACTI</span>
-      </div>
+      <button 
+        onClick={onOpenPortal}
+        className="px-4 py-1.5 bg-[var(--trust-blue)] text-white text-[11px] font-bold rounded hover:brightness-110 transition-all shadow-sm"
+      >
+        Verifier SDK (∑)
+      </button>
     </div>
   </header>
 );
