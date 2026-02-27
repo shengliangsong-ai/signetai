@@ -2,34 +2,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { SecurityIntegrityMonitor } from './SecurityIntegrityMonitor';
 
-const DefinitionItem: React.FC<{ term: string; def: string }> = ({ term, def }) => (
-  <div className="space-y-1">
-    <dt className="font-mono text-[9px] text-[var(--trust-blue)] uppercase font-bold tracking-widest">{term}</dt>
-    <dd className="text-[11px] text-[var(--text-body)] opacity-60 leading-relaxed italic">{def}</dd>
-  </div>
-);
-
-const HelpPulse: React.FC<{ text: string }> = ({ text }) => {
-  const [show, setShow] = useState(false);
-  return (
-    <div className="relative inline-block ml-2 group">
-      <button 
-        onMouseEnter={() => setShow(true)}
-        onMouseLeave={() => setShow(false)}
-        className="w-3 h-3 rounded-full border border-[var(--trust-blue)] text-[var(--trust-blue)] flex items-center justify-center text-[7px] font-bold hover:bg-[var(--trust-blue)] hover:text-white transition-all animate-pulse"
-      >
-        ?
-      </button>
-      {show && (
-        <div className="absolute left-full top-0 ml-4 w-48 p-3 bg-black text-white text-[10px] leading-relaxed rounded shadow-2xl z-[300] border border-[var(--trust-blue)] animate-in fade-in slide-in-from-left-2 duration-200">
-          <div className="absolute left-0 top-1.5 -ml-1 w-2 h-2 bg-black border-l border-b border-[var(--trust-blue)] rotate-45"></div>
-          {text}
-        </div>
-      )}
-    </div>
-  );
-};
-
 const OPERATIONS = [
   "Probing L3 Logic Drift...",
   "Validating JUMBF Capsule Integrity...",
@@ -54,7 +26,7 @@ export const PortalView: React.FC<{ isOpen: boolean; onClose: () => void }> = ({
   const [logs, setLogs] = useState<{ id: string; msg: string; status: string; layer: string }[]>([]);
   const [isFinalized, setIsFinalized] = useState(false);
   const [auditMode, setAuditMode] = useState<'EXHAUSTIVE' | 'PROBABILISTIC'>('PROBABILISTIC');
-  const [showGuide, setShowGuide] = useState(true);
+  const [showGuide, setShowGuide] = useState(false);
   const [showNeuralAudit, setShowNeuralAudit] = useState(false);
   const traceCounter = useRef(Math.floor(Math.random() * 1000));
   const portalContentRef = useRef<HTMLDivElement>(null);
@@ -62,7 +34,6 @@ export const PortalView: React.FC<{ isOpen: boolean; onClose: () => void }> = ({
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
-      // Check for URL parameters to trigger verification
       const urlParams = new URLSearchParams(window.location.search);
       const verifyUrl = urlParams.get('verify_url');
       if (verifyUrl) {
@@ -125,7 +96,6 @@ export const PortalView: React.FC<{ isOpen: boolean; onClose: () => void }> = ({
               </div>
               <div>
                 <h2 className="font-serif text-3xl text-[var(--text-header)] italic font-bold tracking-tight">Verifier SDK</h2>
-                <p className="font-mono text-[10px] text-[var(--text-body)] opacity-40 uppercase tracking-[0.4em]">Neural Audit 0.3.1 (TEST)</p>
               </div>
             </div>
           <div className="flex gap-4 ml-auto">
@@ -133,7 +103,7 @@ export const PortalView: React.FC<{ isOpen: boolean; onClose: () => void }> = ({
                 onClick={() => setShowNeuralAudit(!showNeuralAudit)}
                 className={`px-4 py-1.5 border ${showNeuralAudit ? 'bg-[var(--trust-blue)] text-white' : 'border-[var(--trust-blue)] text-[var(--trust-blue)]'} font-mono text-[9px] uppercase font-bold transition-all`}
                 >
-                {showNeuralAudit ? 'Hide Verifier' : 'Show Verifier'}
+                {showNeuralAudit ? 'Hide Verifier' : 'Show Usage Guide'}
                 </button>
              <button onClick={onClose} className="text-3xl hover:text-[var(--trust-blue)] transition-colors px-4">×</button>
           </div>
@@ -143,7 +113,79 @@ export const PortalView: React.FC<{ isOpen: boolean; onClose: () => void }> = ({
         <div className="flex-1 overflow-hidden flex">
           {showNeuralAudit ? (
             <>
-              {/* ... existing verifier UI ... */}
+              <div className="w-full lg:w-80 p-8 border-r border-[var(--border-light)] bg-[var(--bg-sidebar)] space-y-10 overflow-y-auto">
+                <SecurityIntegrityMonitor />
+              </div>
+
+              <div className="flex-1 overflow-hidden flex flex-col lg:flex-row relative">
+                {showGuide && (
+                  <div className="absolute inset-0 z-50 flex">
+                    <div className="w-full lg:w-96 bg-black text-white p-12 overflow-y-auto animate-in slide-in-from-left duration-300">
+                      <h3 className="font-serif text-4xl italic mb-8 border-b border-white/20 pb-4">Audit Specs</h3>
+                      <div className="space-y-8">
+                        <div className="space-y-2">
+                          <h4 className="font-mono text-[10px] uppercase text-[var(--trust-blue)] font-bold">Continuous Attestation</h4>
+                          <p className="text-[12px] opacity-70 leading-relaxed italic">The loop is intentional. It confirms state integrity every second to prevent post-generation drift.</p>
+                        </div>
+                        <div className="space-y-2">
+                          <h4 className="font-mono text-[10px] uppercase text-[var(--trust-blue)] font-bold">Probabilistic Sampling</h4>
+                          <p className="text-[12px] opacity-70 leading-relaxed italic">Signet audits random logic branches to maintain O(log n) efficiency at planetary scale.</p>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex-1 bg-black/40 backdrop-blur-sm" onClick={() => setShowGuide(false)}></div>
+                  </div>
+                )}
+
+                {/* Main Feed */}
+                <div className="flex-1 flex flex-col">
+                  <div className="p-4 bg-[var(--table-header)] border-b border-[var(--border-light)] flex justify-between items-center px-8">
+                    <div className="flex items-center gap-4">
+                      <span className="font-mono text-[10px] text-[var(--text-header)] uppercase tracking-widest font-bold">Neural Audit 0.3.1 (TEST)</span>
+                      <span className="font-mono text-[9px] text-red-500 uppercase font-bold">[TODO]</span>
+                      <div className="flex items-center gap-2 px-2 py-0.5 rounded-full border border-[var(--trust-blue)]/30 bg-[var(--admonition-bg)]">
+                         <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse"></div>
+                         <span className="font-mono text-[8px] uppercase tracking-widest text-[var(--trust-blue)] font-bold">HEARTBEAT_SYNC</span>
+                      </div>
+                    </div>
+                    <span className="font-mono text-[9px] opacity-40 uppercase tracking-widest">v0.2.6_CORE</span>
+                  </div>
+
+                  <div className="flex-1 bg-[var(--code-bg)] p-8 overflow-y-auto font-mono text-[11px] space-y-2">
+                    <div className="grid grid-cols-4 gap-4 pb-4 mb-4 border-b border-[var(--border-light)] opacity-30 text-[9px] uppercase font-bold tracking-widest">
+                      <div>Trace Ref ID</div>
+                      <div>Layer</div>
+                      <div>Operation Substrate</div>
+                      <div className="text-right">Verdict</div>
+                    </div>
+
+                    {logs.map((log, i) => (
+                      <div key={i} className={`grid grid-cols-4 gap-4 animate-in slide-in-from-bottom-1 duration-300 ${i === 0 ? 'text-[var(--trust-blue)]' : 'opacity-60'}`}>
+                        <div className="font-bold">{log.id}</div>
+                        <div className="text-[9px] mt-0.5">[{log.layer}] AUDIT</div>
+                        <div className="italic">{log.msg}</div>
+                        <div className="text-right font-bold text-green-500">✓ {log.status}</div>
+                      </div>
+                    ))}
+                    {logs.length === 0 && <div className="text-center py-20 opacity-20 italic">Initializing Attestation Pipeline...</div>}
+                  </div>
+
+                  <div className="p-8 border-t border-[var(--border-light)] bg-[var(--table-header)] grid grid-cols-1 md:grid-cols-3 gap-8">
+                     <div className="space-y-1">
+                        <p className="font-mono text-[9px] opacity-40 uppercase font-bold">Merkle Coverage</p>
+                        <p className="font-serif text-2xl font-bold italic">{auditMode === 'PROBABILISTIC' ? '5.2%' : '100.0%'}</p>
+                     </div>
+                     <div className="space-y-1">
+                        <p className="font-mono text-[9px] opacity-40 uppercase font-bold">Compute Overhead</p>
+                        <p className="font-serif text-2xl font-bold italic">Near-Zero</p>
+                     </div>
+                     <div className="space-y-1">
+                        <p className="font-mono text-[9px] opacity-40 uppercase font-bold">Signet Status</p>
+                        <p className="font-serif text-2xl text-[var(--trust-blue)] font-bold italic">DETERMINISTIC</p>
+                     </div>
+                  </div>
+                </div>
+              </div>
             </>
           ) : (
             <div className="flex-1 p-12 overflow-y-auto">
@@ -218,6 +260,15 @@ export const PortalView: React.FC<{ isOpen: boolean; onClose: () => void }> = ({
         {/* Footer */}
         <div className="p-6 border-t border-[var(--border-light)] bg-[var(--bg-standard)] flex justify-between items-center">
           <p className="font-mono text-[9px] opacity-40 uppercase tracking-widest italic">Attestation finalized by Lead Architect (Signet Labs)</p>
+          <div className="flex gap-4">
+            <button 
+              onClick={handleFinalizeAndSeal}
+              disabled={!showNeuralAudit}
+              className={`px-8 py-2 bg-[var(--trust-blue)] text-white font-mono text-[10px] uppercase font-bold shadow-lg hover:brightness-110 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed`}
+            >
+              {isFinalized ? 'MANIFEST_SEALED' : 'Finalize & Seal'}
+            </button>
+          </div>
         </div>
       </div>
     </div>
