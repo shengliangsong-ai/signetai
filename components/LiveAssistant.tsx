@@ -188,7 +188,7 @@ export const LiveAssistant: React.FC = () => {
           onopen: () => {
             setStatus('CONNECTED');
             videoIntervalRef.current = setInterval(sendVideoFrames, 1000); // Send 1 frame per second
-            const source = inputAudioContextRef.current!.createMediaStreamSource(streamRef.current!);"
+            const source = inputAudioContextRef.current!.createMediaStreamSource(streamRef.current!);
             const scriptProcessor = inputAudioContextRef.current!.createScriptProcessor(4096, 1, 1);
             
             scriptProcessor.onaudioprocess = (e) => {
