@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { GoogleGenAI, LiveServerMessage, Modality, Type } from "@google/genai";
 import ReactMarkdown from 'react-markdown';
 import { GOOGLE_GEMINI_KEY } from '../private_keys';
+import { DemoMode } from './DemoMode';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -53,11 +54,12 @@ export const LiveAssistant: React.FC = () => {
   const [status, setStatus] = useState<ConnectionStatus>('OFFLINE');
   const [volume, setVolume] = useState(0);
   const [messages, setMessages] = useState<Message[]>([
-    { role: 'assistant', text: "Systems online. I am the **Live Digital Notary**. How can I assist you with signing or verifying your documents?" }
+    { role: 'assistant', text: "Systems online. I am the **Live Digital Notary**. How can I assist you with signing or verifying your documents? Or, say **Signet-Alpha** to begin the genesis demonstration." }
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isCameraOn, setIsCameraOn] = useState(false);
+  const [isDemoMode, setIsDemoMode] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
@@ -216,6 +218,15 @@ export const LiveAssistant: React.FC = () => {
             scriptProcessor.connect(inputAudioContextRef.current!.destination);
           },
           onmessage: async (message: LiveServerMessage) => {
+            if (message.serverContent?.inputTranscription && message.serverContent.inputTranscription.text) {
+              const text = message.serverContent.inputTranscription.text.toLowerCase();
+              if (text.includes('signet-alpha')) {
+                setIsDemoMode(true);
+                cleanupAudio('starting demo');
+                return;
+              }
+            }
+
             if (message.serverContent?.outputTranscription) {
               currentOutputTranscription.current += message.serverContent.outputTranscription.text;
             }
@@ -340,6 +351,7 @@ export const LiveAssistant: React.FC = () => {
 
   return (
     <div className="fixed bottom-8 left-8 z-[150] font-sans">
+      {isDemoMode && <DemoMode onComplete={() => setIsDemoMode(false)} />}
       <canvas ref={canvasRef} style={{ display: 'none' }} />
       {!isOpen ? (
         <button onClick={() => setIsOpen(true)} className="flex items-center justify-center w-14 h-14 bg-[var(--trust-blue)] text-white rounded-full shadow-2xl hover:scale-105 transition-all relative overflow-hidden group">
