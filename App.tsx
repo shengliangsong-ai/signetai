@@ -92,6 +92,7 @@ const App: React.FC = () => {
               <a href="/terms" className="hover:text-[var(--trust-blue)]">Terms</a>
               <a href="/data-deletion" className="hover:text-[var(--trust-blue)]">Data Deletion</a>
               <a href="/donate" className="hover:text-[var(--trust-blue)]">Grants</a>
+              <a href="https://github.com/shengliangsong-ai/signetai/blob/main/Hackathon.md" target="_blank" rel="noopener noreferrer" className="hover:text-[var(--trust-blue)]">Hackathon</a>
               <span>VERSION: 0.3.3_UTW</span>
               <span>UPDATED: {new Date().toISOString().replace('T', ' ').split('.')[0]} UTC</span>
             </div>

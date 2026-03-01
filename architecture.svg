@@ -1,0 +1,69 @@
+<svg width="800" height="600" xmlns="http://www.w3.org/2000/svg">
+  <style>
+    .rect {
+      fill: #f0f0f0;
+      stroke: #333;
+      stroke-width: 2;
+    }
+    .text {
+      font-family: sans-serif;
+      font-size: 14px;
+      text-anchor: middle;
+    }
+    .arrow {
+      stroke: #333;
+      stroke-width: 2;
+      marker-end: url(#arrowhead);
+    }
+  </style>
+  <defs>
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="0" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" />
+    </marker>
+  </defs>
+
+  <g>
+    <rect class="rect" x="50" y="250" width="150" height="100" />
+    <text class="text" x="125" y="305">User (Browser)</text>
+  </g>
+
+  <g>
+    <rect class="rect" x="325" y="50" width="150" height="100" />
+    <text class="text" x="400" y="105">Firebase Hosting</text>
+  </g>
+
+  <g>
+    <rect class="rect" x="325" y="250" width="150" height="100" />
+    <text class="text" x="400" y="305">Gemini Live API</text>
+    <text class="text" x="400" y="325">(Vertex AI)</text>
+  </g>
+
+  <g>
+    <rect class="rect" x="325" y="450" width="150" height="100" />
+    <text class="text" x="400" y="505">Firebase (Backend)</text>
+  </g>
+
+    <g>
+    <rect class="rect" x="550" y="400" width="150" height="50" />
+    <text class="text" x="625" y="430">Firestore</text>
+  </g>
+
+    <g>
+    <rect class="rect" x="550" y="500" width="150" height="50" />
+    <text class="text" x="625" y="530">Cloud Storage</text>
+  </g>
+
+  <path class="arrow" d="M125,250 C 125,150 325,150 325,150" />
+  <text class="text" x="225" y="140">HTTPS</text>
+
+  <path class="arrow" d="M200,300 H 325" />
+  <text class="text" x="262.5" y="290">WebSocket</text>
+  <text class="text" x="262.5" y="310">(Audio Stream)</text>
+
+  <path class="arrow" d="M475,300 C 525,300 525,400 550,425" />
+  <text class="text" x="512.5" y="350">API Call</text>
+
+  <path class="arrow" d="M475,500 H 550" />
+  <text class="text" x="512.5" y="490">API Call</text>
+
+</svg>
