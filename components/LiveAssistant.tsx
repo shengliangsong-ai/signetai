@@ -94,8 +94,8 @@ export const LiveAssistant: React.FC = () => {
     return '';
   };
 
-  const cleanupAudio = () => {
-    console.log("Cleaning up audio and live session.");
+  const cleanupAudio = (reason: string) => {
+    console.log(`[${new Date().toISOString()}] Cleaning up audio. Reason: ${reason}`);
     clearInterval(videoIntervalRef.current);
     if (sessionRef.current) {
       try { sessionRef.current.close?.(); } catch(e) {}
@@ -150,40 +150,39 @@ export const LiveAssistant: React.FC = () => {
   };
 
   const initVoiceChat = async () => {
+    console.log(`[${new Date().toISOString()}] initVoiceChat called. Current status: ${status}`);
     if (status !== 'OFFLINE') {
-      cleanupAudio();
+      cleanupAudio('user toggled mic off');
       return;
     }
 
     const apiKey = getApiKey();
     if (!apiKey) {
-      setMessages(prev => [...prev, { role: 'assistant', text: "⚠️ **Config Error:** No valid API Key found. Please check private_keys.ts or environment variables." }]);
+      setMessages(prev => [...prev, { role: 'assistant', text: "⚠️ **Config Error:** No valid API Key found." }]);
       return;
     }
-
+    console.log(`[${new Date().toISOString()}] Status set to CONNECTING.`);
     setStatus('CONNECTING');
 
-    inputAudioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 16000 });
-    outputAudioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
-    
-    const hasKey = await (window as any).aistudio?.hasSelectedApiKey();
-    if (!hasKey) {
-      (window as any).aistudio?.openSelectKey();
-    }
-
-    const ai = new GoogleGenAI({ apiKey });
-
     try {
+      console.log(`[${new Date().toISOString()}] Initializing AudioContexts.`);
+      inputAudioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 16000 });
+      outputAudioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
+      console.log(`[${new Date().toISOString()}] Requesting user media (mic/camera).`);
       streamRef.current = await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
+      console.log(`[${new Date().toISOString()}] Media stream acquired.`);
       if (videoRef.current) {
         videoRef.current.srcObject = streamRef.current;
         videoRef.current.play();
       }
       
+      const ai = new GoogleGenAI({ apiKey });
+      console.log(`[${new Date().toISOString()}] Attempting to connect to GoogleGenAI...`);
       const sessionPromise = ai.live.connect({
         model: 'gemini-1.5-flash-latest',
         callbacks: {
           onopen: () => {
+            console.log(`[${new Date().toISOString()}] Connection OPENED. Status set to CONNECTED.`);
             setStatus('CONNECTED');
             videoIntervalRef.current = setInterval(sendVideoFrames, 1000);
             const source = inputAudioContextRef.current!.createMediaStreamSource(streamRef.current!);
@@ -279,13 +278,13 @@ export const LiveAssistant: React.FC = () => {
             }
           },
           onerror: (e: any) => {
-            console.error('Signet Live Error:', e);
+            console.error(`[${new Date().toISOString()}] Connection ERROR:`, e);
             setMessages(prev => [...prev, { role: 'assistant', text: `⚠️ **Sync Error:** ${e.message || 'Logic drift detected'}` }]);
-            cleanupAudio();
+            cleanupAudio('connection error');
           },
           onclose: () => {
-            console.log("Signet Live: Connection closed.");
-            cleanupAudio();
+            console.log(`[${new Date().toISOString()}] Connection CLOSED.`);
+            cleanupAudio('connection closed');
           }
         },
         config: {
@@ -325,11 +324,13 @@ export const LiveAssistant: React.FC = () => {
           systemInstruction: `You are the Live Digital Notary for Signet Protocol. Your purpose is to guide users through cryptographically signing and verifying digital assets. You have two tools: 'triggerUniversalSigner' to sign files and 'runDiffEngine' to compare two files. When you see a document, you can ask the user if they would like to sign it. For example: "I see you are holding a contract titled 'NDA'. Would you like me to guide you through signing it?" Be helpful and concise.`,
         }
       });
+      console.log(`[${new Date().toISOString()}] Waiting for session promise to resolve.`);
       sessionRef.current = await sessionPromise;
+      console.log(`[${new Date().toISOString()}] Session promise resolved.`);
     } catch (err: any) {
-      console.error('Session failed:', err);
+      console.error(`[${new Date().toISOString()}] Session failed during initVoiceChat:`, err);
       setMessages(prev => [...prev, { role: 'assistant', text: "⚠️ **System Offline:** Handshake failed. Please ensure microphone and camera permissions are enabled." }]);
-      cleanupAudio();
+      cleanupAudio('initialization failure');
     }
   };
 
