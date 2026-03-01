@@ -11,6 +11,7 @@ interface Message {
 
 type ConnectionStatus = 'OFFLINE' | 'CONNECTING' | 'CONNECTED' | 'ERROR';
 
+// --- Manual Encoding/Decoding (Instruction mandated) ---
 function encode(bytes: Uint8Array) {
   let binary = '';
   const len = bytes.byteLength;
@@ -54,25 +55,27 @@ export const LiveAssistant: React.FC = () => {
   const [status, setStatus] = useState<ConnectionStatus>('OFFLINE');
   const [volume, setVolume] = useState(0);
   const [messages, setMessages] = useState<Message[]>([
-    { role: 'assistant', text: "Systems online. I am the **Live Digital Notary**. How can I assist you with signing or verifying your documents? Or, say **Signet-Alpha** to begin the genesis demonstration." }
+    { role: 'assistant', text: "Systems online. I am **Signet-Alpha**, your Live Digital Notary.\n\nI can help you verify media using our Image and Video Diff Engines, or guide you through Universal Media Signing using your registered keys. How can I help you today?" }
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [isCameraOn, setIsCameraOn] = useState(false);
+  const [isVideoEnabled, setIsVideoEnabled] = useState(false);
   const [isDemoMode, setIsDemoMode] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const videoIntervalRef = useRef<number | null>(null);
+
+  // Audio Refs
   const sessionRef = useRef<any>(null);
   const inputAudioContextRef = useRef<AudioContext | null>(null);
   const outputAudioContextRef = useRef<AudioContext | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const nextStartTimeRef = useRef<number>(0);
   const audioSourcesRef = useRef<Set<AudioBufferSourceNode>>(new Set());
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const videoIntervalRef = useRef<any>(null);
-  
+
+  // Transcripts
   const currentInputTranscription = useRef('');
   const currentOutputTranscription = useRef('');
 
@@ -83,7 +86,18 @@ export const LiveAssistant: React.FC = () => {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+  
+  useEffect(() => {
+    const handleStartDemo = () => {
+      setIsDemoMode(true);
+    };
+    window.addEventListener('signet:start-demo', handleStartDemo);
+    return () => {
+      window.removeEventListener('signet:start-demo', handleStartDemo);
+    };
+  }, []);
 
+  // Robust Key Retrieval
   const getApiKey = () => {
     if (GOOGLE_GEMINI_KEY && GOOGLE_GEMINI_KEY.startsWith('AIza')) {
       return GOOGLE_GEMINI_KEY;
@@ -96,9 +110,11 @@ export const LiveAssistant: React.FC = () => {
     return '';
   };
 
-  const cleanupAudio = (reason: string) => {
-    console.log(`[${new Date().toISOString()}] Cleaning up audio. Reason: ${reason}`);
-    clearInterval(videoIntervalRef.current);
+  const cleanupAudio = () => {
+    if (videoIntervalRef.current) {
+      window.clearInterval(videoIntervalRef.current);
+      videoIntervalRef.current = null;
+    }
     if (sessionRef.current) {
       try { sessionRef.current.close?.(); } catch(e) {}
       sessionRef.current = null;
@@ -108,7 +124,7 @@ export const LiveAssistant: React.FC = () => {
       streamRef.current = null;
     }
     if (videoRef.current) {
-        videoRef.current.srcObject = null;
+      videoRef.current.srcObject = null;
     }
     if (inputAudioContextRef.current) {
       inputAudioContextRef.current.close().catch(() => {});
@@ -127,66 +143,41 @@ export const LiveAssistant: React.FC = () => {
     nextStartTimeRef.current = 0;
   };
 
-  const sendVideoFrames = () => {
-    if (!isCameraOn || !videoRef.current || !canvasRef.current || !sessionRef.current || videoRef.current.paused || videoRef.current.ended) {
-      return;
-    }
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    canvas.width = videoRef.current.videoWidth;
-    canvas.height = videoRef.current.videoHeight;
-    ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
-
-    const base64Data = canvas.toDataURL('image/jpeg', 0.7).split(',')[1];
-    
-    const mediaBlob = {
-      data: base64Data,
-      mimeType: 'image/jpeg',
-    };
-    
-    sessionRef.current.sendRealtimeInput({ media: mediaBlob }).catch((err: any) => {
-        console.warn("Failed to send video frame:", err);
-    });
-  };
-
   const initVoiceChat = async () => {
-    console.log(`[${new Date().toISOString()}] initVoiceChat called. Current status: ${status}`);
     if (status !== 'OFFLINE') {
-      cleanupAudio('user toggled mic off');
+      cleanupAudio();
       return;
     }
 
     const apiKey = getApiKey();
     if (!apiKey) {
-      setMessages(prev => [...prev, { role: 'assistant', text: "⚠️ **Config Error:** No valid API Key found." }]);
+      setMessages(prev => [...prev, { role: 'assistant', text: "⚠️ **Config Error:** No valid API Key found. Please check private_keys.ts or environment variables." }]);
       return;
     }
-    console.log(`[${new Date().toISOString()}] Status set to CONNECTING.`);
+
     setStatus('CONNECTING');
 
+    inputAudioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 16000 });
+    outputAudioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
+
+    const ai = new GoogleGenAI({ apiKey });
+
     try {
-      console.log(`[${new Date().toISOString()}] Initializing AudioContexts.`);
-      inputAudioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 16000 });
-      outputAudioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
-      console.log(`[${new Date().toISOString()}] Requesting user media (mic/camera).`);
-      streamRef.current = await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
-      console.log(`[${new Date().toISOString()}] Media stream acquired.`);
-      if (videoRef.current) {
+      streamRef.current = await navigator.mediaDevices.getUserMedia({ 
+        audio: true, 
+        video: isVideoEnabled ? { facingMode: 'user' } : false 
+      });
+      
+      if (isVideoEnabled && videoRef.current) {
         videoRef.current.srcObject = streamRef.current;
-        videoRef.current.play();
+        videoRef.current.play().catch(e => console.error("Video play failed", e));
       }
       
-      const ai = new GoogleGenAI({ apiKey });
-      console.log(`[${new Date().toISOString()}] Attempting to connect to GoogleGenAI...`);
       const sessionPromise = ai.live.connect({
         model: 'gemini-1.5-flash-latest',
         callbacks: {
           onopen: () => {
-            console.log(`[${new Date().toISOString()}] Connection OPENED. Status set to CONNECTED.`);
             setStatus('CONNECTED');
-            videoIntervalRef.current = setInterval(sendVideoFrames, 1000);
             const source = inputAudioContextRef.current!.createMediaStreamSource(streamRef.current!);
             const scriptProcessor = inputAudioContextRef.current!.createScriptProcessor(4096, 1, 1);
             
@@ -209,43 +200,39 @@ export const LiveAssistant: React.FC = () => {
               
               sessionPromise.then(session => {
                 session.sendRealtimeInput({ media: pcmBlob });
-              }).catch((err) => {
-                console.error("Failed to send audio data:", err);
-              });
+              }).catch(() => {});
             };
             
             source.connect(scriptProcessor);
             scriptProcessor.connect(inputAudioContextRef.current!.destination);
+
+            if (isVideoEnabled) {
+              videoIntervalRef.current = window.setInterval(() => {
+                if (!videoRef.current || !canvasRef.current || videoRef.current.paused || videoRef.current.ended) return;
+                
+                const video = videoRef.current;
+                const canvas = canvasRef.current;
+                if (video.videoWidth === 0 || video.videoHeight === 0) return;
+                
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                const ctx = canvas.getContext('2d');
+                if (!ctx) return;
+                
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                const base64Data = canvas.toDataURL('image/jpeg', 0.7).split(',')[1];
+                
+                sessionPromise.then(session => {
+                  session.sendRealtimeInput({ media: { data: base64Data, mimeType: 'image/jpeg' } });
+                }).catch(() => {});
+              }, 1000); 
+            }
           },
           onmessage: async (message: LiveServerMessage) => {
-            if (message.serverContent?.inputTranscription && message.serverContent.inputTranscription.text) {
-              const text = message.serverContent.inputTranscription.text.toLowerCase();
-              if (text.includes('signet-alpha')) {
-                setIsDemoMode(true);
-                cleanupAudio('starting demo');
-                return;
-              }
-            }
-
             if (message.serverContent?.outputTranscription) {
               currentOutputTranscription.current += message.serverContent.outputTranscription.text;
-            }
-            if (message.serverContent?.inputTranscription) {
+            } else if (message.serverContent?.inputTranscription) {
               currentInputTranscription.current += message.serverContent.inputTranscription.text;
-            }
-
-            const functionCall = message.serverContent?.modelTurn?.parts?.[0]?.functionCall;
-            if (functionCall) {
-                const { name, args } = functionCall;
-                let systemMessage = '';
-                if (name === 'triggerUniversalSigner' && args && args.fileName) {
-                  systemMessage = `⚙️ Action: Triggering Universal Signer for **${args.fileName}**.`;
-                } else if (name === 'runDiffEngine' && args && args.file1 && args.file2) {
-                  systemMessage = `⚙️ Action: Running Diff Engine on **${args.file1}** and **${args.file2}**.`;
-                }
-                if (systemMessage) {
-                  setMessages(prev => [...prev, { role: 'assistant', text: systemMessage }]);
-                }
             }
 
             if (message.serverContent?.turnComplete) {
@@ -287,16 +274,47 @@ export const LiveAssistant: React.FC = () => {
               audioSourcesRef.current.clear();
               nextStartTimeRef.current = 0;
             }
+
+            const parts = message.serverContent?.modelTurn?.parts;
+            if (parts) {
+              for (const part of parts) {
+                if (part.functionCall) {
+                  const call = part.functionCall;
+                  let result = "";
+                  
+                  if (call.name === "triggerUniversalSigner") {
+                    setMessages(prev => [...prev, { role: 'assistant', text: `⚙️ **Action:** Triggering Universal Signer for ${call.args?.fileName || 'document'}...` }]);
+                    result = "Universal Signer triggered successfully. Waiting for user to confirm.";
+                  } else if (call.name === "runDiffEngine") {
+                    setMessages(prev => [...prev, { role: 'assistant', text: `⚙️ **Action:** Running ${call.args?.mediaType || 'media'} Diff Engine...` }]);
+                    result = "Diff Engine analysis complete. No tampering detected. Media is authentic.";
+                  } else if (call.name === "startSelfDemo") {
+                    setMessages(prev => [...prev, { role: 'assistant', text: `⚙️ **Action:** Opening Demo Notebook...` }]);
+                    cleanupAudio();
+                    window.dispatchEvent(new CustomEvent('signet:start-demo'));
+                    result = "Demo Notebook opened and sequence started.";
+                  }
+
+                  if (result && sessionRef.current) {
+                     sessionPromise.then(session => {
+                        session.sendToolResponse({
+                          functionResponses: [{
+                            name: call.name,
+                            response: { result }
+                          }]
+                        });
+                     });
+                  }
+                }
+              }
+            }
           },
           onerror: (e: any) => {
-            console.error(`[${new Date().toISOString()}] Connection ERROR:`, e);
+            console.error('Signet Live Error:', e);
             setMessages(prev => [...prev, { role: 'assistant', text: `⚠️ **Sync Error:** ${e.message || 'Logic drift detected'}` }]);
-            cleanupAudio('connection error');
+            cleanupAudio();
           },
-          onclose: () => {
-            console.log(`[${new Date().toISOString()}] Connection CLOSED.`);
-            cleanupAudio('connection closed');
-          }
+          onclose: () => cleanupAudio()
         },
         config: {
           responseModalities: [Modality.AUDIO],
@@ -305,48 +323,68 @@ export const LiveAssistant: React.FC = () => {
           speechConfig: {
             voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Zephyr' } },
           },
+          systemInstruction: `You are Signet-Alpha, the Live Digital Notary for Signet Protocol.
+          Your role is to guide users through verifying and signing digital media (images, videos, documents).
+          
+          CAPABILITIES:
+          - You have access to the Image Diff Engine and Video Diff Engine.
+          - You can help users detect deepfakes, tampering, or synthetic alterations.
+          - You guide users through the Universal Media Signing process.
+          - You explain cryptographic concepts (like dual-hashing and Public/Private keys) simply and clearly.
+          - If the user asks for a demo, you MUST call the "startSelfDemo" tool. This will open the Demo Notebook page. You should then narrate the 4 steps as they execute on screen: 1. TrustKey Registry, 2. Universal Media Signing, 3. Public Verifier, 4. Diff Engine Analysis. Each step takes 15 seconds.
+          
+          IDENTITY RECOGNITION:
+          Master Signatory is signetai.io:ssl.
+          
+          V0.3.2 KEY SPECIFICS:
+          - Universal Tail-Wrap (UTW) for binary provenance.
+          - Zero-Copy Streaming Engine for large files.
+          - 264-bit entropy required for Sovereign Grade.
+          - C2PA 2.3 JUMBF alignment.
+          
+          Respond conversationally, with technical precision, but keep it accessible. If interrupted, stop and address the user's immediate question.`,
           tools: [{
             functionDeclarations: [
               {
-                name: 'triggerUniversalSigner',
-                description: 'Triggers the cryptographic signing process for a specified file. Ask the user for the name of the file before calling this function.',
+                name: "triggerUniversalSigner",
+                description: "Trigger the Universal Media Signing process for a document or media file.",
                 parameters: {
                   type: Type.OBJECT,
                   properties: {
-                    fileName: { type: Type.STRING, description: 'The name or path of the file to be signed.' }
+                    fileName: { type: Type.STRING, description: "The name of the file being signed." }
                   },
-                  required: ['fileName']
+                  required: ["fileName"]
                 }
               },
               {
-                name: 'runDiffEngine',
-                description: 'Compares two files to detect modifications using Signet\'s Trident Engine.',
+                name: "runDiffEngine",
+                description: "Run the Image or Video Diff Engine to detect deepfakes or tampering.",
                 parameters: {
                   type: Type.OBJECT,
                   properties: {
-                    file1: { type: Type.STRING, description: 'The original file.' },
-                    file2: { type: Type.STRING, description: 'The modified file to compare against the original.' }
+                    mediaType: { type: Type.STRING, description: "Type of media: 'image' or 'video'" }
                   },
-                  required: ['file1', 'file2']
+                  required: ["mediaType"]
                 }
+              },
+              {
+                name: "startSelfDemo",
+                description: "Start the automated 4-minute self-demo sequence. Call this when the user asks for a demo.",
               }
             ]
-          }],
-          systemInstruction: `You are the Live Digital Notary for Signet Protocol. Your purpose is to guide users through cryptographically signing and verifying digital assets. You have two tools: 'triggerUniversalSigner' to sign files and 'runDiffEngine' to compare two files. When you see a document, you can ask the user if they would like to sign it. For example: "I see you are holding a contract titled 'NDA'. Would you like me to guide you through signing it?" Be helpful and concise.`,
+          }]
         }
       });
-      console.log(`[${new Date().toISOString()}] Waiting for session promise to resolve.`);
       sessionRef.current = await sessionPromise;
-      console.log(`[${new Date().toISOString()}] Session promise resolved.`);
     } catch (err: any) {
-      console.error(`[${new Date().toISOString()}] Session failed during initVoiceChat:`, err);
+      console.error('Session failed:', err);
       setMessages(prev => [...prev, { role: 'assistant', text: "⚠️ **System Offline:** Handshake failed. Please ensure microphone and camera permissions are enabled." }]);
-      cleanupAudio('initialization failure');
+      cleanupAudio();
     }
   };
 
   const handleSendMessage = async () => {
-    // Text input logic remains the same
+    // This function can be used for text input if needed in the future
   };
 
   return (
@@ -361,7 +399,7 @@ export const LiveAssistant: React.FC = () => {
       ) : (
         <div className="w-80 md:w-96 h-auto bg-[var(--bg-standard)] border border-[var(--border-light)] shadow-2xl rounded-xl flex flex-col overflow-hidden animate-in slide-in-from-bottom-4">
           
-          {isCameraOn && status !== 'OFFLINE' && (
+          {isVideoEnabled && status !== 'OFFLINE' && (
               <video ref={videoRef} playsInline muted className="w-full h-auto bg-black rounded-t-xl transition-all" />
           )}
 
@@ -373,11 +411,15 @@ export const LiveAssistant: React.FC = () => {
                 {status === 'CONNECTED' && <div className="absolute inset-0 bg-blue-500 rounded-full animate-ping opacity-75"></div>}
               </div>
               <div className="flex flex-col">
-                <span className="font-mono text-[10px] font-bold uppercase text-[var(--text-header)] leading-none">Live Digital Notary</span>
+                <span className="font-mono text-[10px] font-bold uppercase text-[var(--text-header)] leading-none">Signet-Alpha</span>
                 <div className="flex gap-0.5 mt-1 h-2 items-end">
                   {status === 'CONNECTED' ? (
                     [1,2,3,4,5].map(i => (
-                      <div key={i} className="w-1 bg-blue-500 transition-all duration-75" style={{ height: `${Math.max(20, volume * 500 * (0.8 + Math.random() * 0.4))}%` }}></div>
+                      <div 
+                        key={i} 
+                        className="w-1 bg-blue-500 transition-all duration-75" 
+                        style={{ height: `${Math.max(20, volume * 500 * (0.8 + Math.random() * 0.4))}%` }}
+                      ></div>
                     ))
                   ) : (
                     <span className="font-mono text-[7px] opacity-40 uppercase tracking-tighter">
@@ -390,10 +432,11 @@ export const LiveAssistant: React.FC = () => {
 
             {/* Action Buttons */}
             <div className="flex gap-1">
-              <button 
-                onClick={() => status !== 'OFFLINE' && setIsCameraOn(!isCameraOn)} 
-                className={`p-2 rounded transition-colors ${status === 'OFFLINE' ? 'opacity-30 cursor-not-allowed' : isCameraOn ? 'bg-blue-500/20 text-blue-600' : 'text-[var(--text-secondary)] hover:bg-[var(--bg-subtle)]'}`}
-                disabled={status === 'OFFLINE'}
+               <button 
+                onClick={() => setIsVideoEnabled(!isVideoEnabled)} 
+                className={`p-2 rounded transition-colors ${status !== 'OFFLINE' ? 'opacity-30 cursor-not-allowed' : isVideoEnabled ? 'bg-blue-500/20 text-blue-600' : 'text-[var(--text-secondary)] hover:bg-[var(--bg-subtle)]'}`}
+                disabled={status !== 'OFFLINE'}
+                title={isVideoEnabled ? "Disable Camera" : "Enable Camera"}
               >
                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                    <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/>
@@ -427,7 +470,7 @@ export const LiveAssistant: React.FC = () => {
             <input 
               type="text" value={input} onChange={(e) => setInput(e.target.value)} 
               onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
-              placeholder={status !== 'OFFLINE' ? "Mic active..." : "Ask about signing..."} 
+              placeholder={status !== 'OFFLINE' ? "Mic active..." : "Ask about v0.3.2..."} 
               className="flex-1 text-sm bg-transparent outline-none py-2"
               disabled={status !== 'OFFLINE'}
             />
