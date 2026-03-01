@@ -1,6 +1,5 @@
-
 import React, { useState, useRef, useEffect } from 'react';
-import { GoogleGenAI, LiveServerMessage, Modality } from "@google/genai";
+import { GoogleGenAI, LiveServerMessage, Modality, Type } from "@google/genai";
 import ReactMarkdown from 'react-markdown';
 import { GOOGLE_GEMINI_KEY } from '../private_keys';
 
@@ -183,7 +182,7 @@ export const LiveAssistant: React.FC = () => {
       }
       
       const sessionPromise = ai.live.connect({
-        model: 'gemini-2.5-flash-native-audio-preview-12-2025',
+        model: 'gemini-1.5-flash-latest',
         callbacks: {
           onopen: () => {
             setStatus('CONNECTED');
@@ -226,7 +225,7 @@ export const LiveAssistant: React.FC = () => {
             const functionCall = message.serverContent?.modelTurn?.parts?.[0]?.functionCall;
             if (functionCall) {
                 const { name, args } = functionCall;
-                if (name === 'triggerUniversalSigner' && args.fileName) {
+                if (name === 'triggerUniversalSigner' && args && args.fileName) {
                     const fullOutput = `Understood. Initiating the cryptographic signing process for **${args.fileName}**.`;
                     currentOutputTranscription.current = fullOutput; 
                 }
@@ -291,10 +290,10 @@ export const LiveAssistant: React.FC = () => {
               name: 'triggerUniversalSigner',
               description: 'Triggers the cryptographic signing process for a specified file. Ask the user for the name of the file before calling this function.',
               parameters: {
-                type: 'object',
+                type: Type.OBJECT,
                 properties: {
                   fileName: {
-                    type: 'string',
+                    type: Type.STRING,
                     description: 'The name or path of the file to be signed.'
                   }
                 },
@@ -339,7 +338,7 @@ export const LiveAssistant: React.FC = () => {
     try {
       const ai = new GoogleGenAI({ apiKey });
       const response = await ai.models.generateContent({
-        model: 'gemini-3-flash-preview',
+        model: 'gemini-1.5-flash-latest',
         contents: userText,
         config: {
           systemInstruction: `You are the Live Digital Notary for Signet Protocol.`,
