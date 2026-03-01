@@ -55,20 +55,23 @@ export const LiveAssistant: React.FC = () => {
   const [status, setStatus] = useState<ConnectionStatus>('OFFLINE');
   const [volume, setVolume] = useState(0);
   const [messages, setMessages] = useState<Message[]>([
-    { role: 'assistant', text: "Systems online. I am **Signet-Alpha**. \n\nI have the full **v0.3.2 Specification** indexed. I can explain how this spec was recursively generated and signed by the protocol itself." }
+    { role: 'assistant', text: "Systems online. I am the **Live Digital Notary**. How can I assist you with signing or verifying your documents?" }
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
-  // Audio Refs
+  // Media Refs
   const sessionRef = useRef<any>(null);
   const inputAudioContextRef = useRef<AudioContext | null>(null);
   const outputAudioContextRef = useRef<AudioContext | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const nextStartTimeRef = useRef<number>(0);
   const audioSourcesRef = useRef<Set<AudioBufferSourceNode>>(new Set());
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const videoIntervalRef = useRef<any>(null);
   
   // Transcripts
   const currentInputTranscription = useRef('');
@@ -82,7 +85,6 @@ export const LiveAssistant: React.FC = () => {
     scrollToBottom();
   }, [messages]);
 
-  // Robust Key Retrieval
   const getApiKey = () => {
     if (GOOGLE_GEMINI_KEY && GOOGLE_GEMINI_KEY.startsWith('AIza')) {
       return GOOGLE_GEMINI_KEY;
@@ -96,6 +98,7 @@ export const LiveAssistant: React.FC = () => {
   };
 
   const cleanupAudio = () => {
+    clearInterval(videoIntervalRef.current);
     if (sessionRef.current) {
       try { sessionRef.current.close?.(); } catch(e) {}
       sessionRef.current = null;
@@ -103,6 +106,9 @@ export const LiveAssistant: React.FC = () => {
     if (streamRef.current) {
       streamRef.current.getTracks().forEach(track => track.stop());
       streamRef.current = null;
+    }
+    if (videoRef.current) {
+        videoRef.current.srcObject = null;
     }
     if (inputAudioContextRef.current) {
       inputAudioContextRef.current.close().catch(() => {});
@@ -121,6 +127,30 @@ export const LiveAssistant: React.FC = () => {
     nextStartTimeRef.current = 0;
   };
 
+  const sendVideoFrames = () => {
+    if (!videoRef.current || !canvasRef.current || !sessionRef.current || videoRef.current.paused || videoRef.current.ended) {
+      return;
+    }
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    canvas.width = videoRef.current.videoWidth;
+    canvas.height = videoRef.current.videoHeight;
+    ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
+
+    const base64Data = canvas.toDataURL('image/jpeg', 0.7).split(',')[1];
+    
+    const mediaBlob = {
+      data: base64Data,
+      mimeType: 'image/jpeg',
+    };
+    
+    sessionRef.current.sendRealtimeInput({ media: mediaBlob }).catch((err: any) => {
+        console.warn("Failed to send video frame:", err);
+    });
+  };
+
   const initVoiceChat = async () => {
     if (status !== 'OFFLINE') {
       cleanupAudio();
@@ -135,40 +165,39 @@ export const LiveAssistant: React.FC = () => {
 
     setStatus('CONNECTING');
 
-    // 1. Setup Audio Contexts
     inputAudioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 16000 });
     outputAudioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
     
-    // 2. Resolve API Key selection (Race condition handling)
     const hasKey = await (window as any).aistudio?.hasSelectedApiKey();
     if (!hasKey) {
-      // Per instructions: assume selection successful after trigger and proceed
       (window as any).aistudio?.openSelectKey();
     }
 
-    // Always create new instance for the most up-to-date key
     const ai = new GoogleGenAI({ apiKey });
 
     try {
-      streamRef.current = await navigator.mediaDevices.getUserMedia({ audio: true });
+      streamRef.current = await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
+      if (videoRef.current) {
+        videoRef.current.srcObject = streamRef.current;
+        videoRef.current.play();
+      }
       
       const sessionPromise = ai.live.connect({
         model: 'gemini-2.5-flash-native-audio-preview-12-2025',
         callbacks: {
           onopen: () => {
             setStatus('CONNECTED');
-            const source = inputAudioContextRef.current!.createMediaStreamSource(streamRef.current!);
+            videoIntervalRef.current = setInterval(sendVideoFrames, 1000); // Send 1 frame per second
+            const source = inputAudioContextRef.current!.createMediaStreamSource(streamRef.current!);"
             const scriptProcessor = inputAudioContextRef.current!.createScriptProcessor(4096, 1, 1);
             
             scriptProcessor.onaudioprocess = (e) => {
               const inputData = e.inputBuffer.getChannelData(0);
               
-              // Volume visualization
               let sum = 0;
               for(let i=0; i<inputData.length; i++) sum += inputData[i] * inputData[i];
               setVolume(Math.sqrt(sum / inputData.length));
 
-              // PCM Blob preparation
               const l = inputData.length;
               const int16 = new Int16Array(l);
               for (let i = 0; i < l; i++) {
@@ -179,7 +208,6 @@ export const LiveAssistant: React.FC = () => {
                 mimeType: 'audio/pcm;rate=16000',
               };
               
-              // Rely solely on sessionPromise to prevent stale closure issues
               sessionPromise.then(session => {
                 session.sendRealtimeInput({ media: pcmBlob });
               }).catch(() => {});
@@ -189,14 +217,21 @@ export const LiveAssistant: React.FC = () => {
             scriptProcessor.connect(inputAudioContextRef.current!.destination);
           },
           onmessage: async (message: LiveServerMessage) => {
-            // 1. Process Transcriptions
             if (message.serverContent?.outputTranscription) {
               currentOutputTranscription.current += message.serverContent.outputTranscription.text;
             } else if (message.serverContent?.inputTranscription) {
               currentInputTranscription.current += message.serverContent.inputTranscription.text;
             }
 
-            // 2. Handle Turn Completion (Capture local variables to avoid async loss)
+            const functionCall = message.serverContent?.modelTurn?.parts?.[0]?.functionCall;
+            if (functionCall) {
+                const { name, args } = functionCall;
+                if (name === 'triggerUniversalSigner' && args.fileName) {
+                    const fullOutput = `Understood. Initiating the cryptographic signing process for **${args.fileName}**.`;
+                    currentOutputTranscription.current = fullOutput; 
+                }
+            }
+
             if (message.serverContent?.turnComplete) {
               const fullInput = currentInputTranscription.current;
               const fullOutput = currentOutputTranscription.current;
@@ -213,7 +248,6 @@ export const LiveAssistant: React.FC = () => {
               currentOutputTranscription.current = '';
             }
 
-            // 3. Process Model Audio Output
             const base64Audio = message.serverContent?.modelTurn?.parts?.[0]?.inlineData?.data;
             if (base64Audio && outputAudioContextRef.current) {
               const ctx = outputAudioContextRef.current;
@@ -230,7 +264,6 @@ export const LiveAssistant: React.FC = () => {
               audioSourcesRef.current.add(source);
             }
 
-            // 4. Handle Interruptions
             if (message.serverContent?.interrupted) {
               for (const s of audioSourcesRef.current) {
                 try { s.stop(); } catch(e) {}
@@ -241,12 +274,7 @@ export const LiveAssistant: React.FC = () => {
           },
           onerror: (e: any) => {
             console.error('Signet Live Error:', e);
-            if (e.message?.includes('Requested entity was not found')) {
-              setMessages(prev => [...prev, { role: 'assistant', text: "⚠️ **Auth Fault:** API Key requires re-verification. Please re-select via the mic button." }]);
-              (window as any).aistudio?.openSelectKey();
-            } else {
-              setMessages(prev => [...prev, { role: 'assistant', text: `⚠️ **Sync Error:** ${e.message || 'Logic drift detected'}` }]);
-            }
+            setMessages(prev => [...prev, { role: 'assistant', text: `⚠️ **Sync Error:** ${e.message || 'Logic drift detected'}` }]);
             cleanupAudio();
           },
           onclose: () => cleanupAudio()
@@ -258,34 +286,38 @@ export const LiveAssistant: React.FC = () => {
           speechConfig: {
             voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Zephyr' } },
           },
-          systemInstruction: `You are Signet-Alpha, the technical attestation assistant for Signet Protocol.
-          Your role is to guide users through the v0.3.2 specification.
+          tools: [{
+            functionDeclarations: [{
+              name: 'triggerUniversalSigner',
+              description: 'Triggers the cryptographic signing process for a specified file. Ask the user for the name of the file before calling this function.',
+              parameters: {
+                type: 'object',
+                properties: {
+                  fileName: {
+                    type: 'string',
+                    description: 'The name or path of the file to be signed.'
+                  }
+                },
+                required: ['fileName']
+              }
+            }]
+          }],
+          systemInstruction: `You are the Live Digital Notary for Signet Protocol.
+          Your purpose is to guide users through the process of cryptographically signing and verifying digital assets.
+          You have the following capabilities:
+          1. **Universal Signing:** You can initiate the signing process for any file. When a user asks you to sign something, use the 'triggerUniversalSigner' tool.
+          2. **Image/Video Diff Engines:** You can explain how Signet's Trident Engine can detect modifications in images and videos by comparing their cryptographic hashes.
+          3. **Public/Private Key Registration:** You can guide users on how to register their public keys with the Signet system to create their own digital identity.
           
-          RECURSIVE PROTOCOL DEMONSTRATION:
-          Explain that the Signet Spec itself was generated and signed by the protocol pipeline:
-          1. Spec generated by AI based on human hint (prompt)
-          2. Signed by AI Audit
-          3. Reviewed by AI
-          4. Explained by YOU (Signet-Alpha)
-          5. Video Podcast generated by LLM Studio
-          6. PDF and MP4 are signed by signetai.io:ssl (Master Signatory)
+          When you see a document, you can ask the user if they would like to sign it. For example: "I see you are holding a contract titled 'NDA'. Would you like me to guide you through signing it?"
           
-          IDENTITY RECOGNITION:
-          Master Signatory is signetai.io:ssl.
-          
-          V0.3.2 KEY SPECIFICS:
-          - Universal Tail-Wrap (UTW) for binary provenance.
-          - Zero-Copy Streaming Engine for large files.
-          - 264-bit entropy required for Sovereign Grade.
-          - C2PA 2.3 JUMBF alignment.
-          
-          Respond conversationally and with technical precision.`,
+          Be helpful, concise, and guide the user step-by-step.`,
         }
       });
       sessionRef.current = await sessionPromise;
     } catch (err: any) {
       console.error('Session failed:', err);
-      setMessages(prev => [...prev, { role: 'assistant', text: "⚠️ **System Offline:** Handshake failed." }]);
+      setMessages(prev => [...prev, { role: 'assistant', text: "⚠️ **System Offline:** Handshake failed. Please ensure microphone and camera permissions are enabled." }]);
       cleanupAudio();
     }
   };
@@ -310,7 +342,7 @@ export const LiveAssistant: React.FC = () => {
         model: 'gemini-3-flash-preview',
         contents: userText,
         config: {
-          systemInstruction: `Signet-Alpha AI Support. Spec v0.3.2. Authority: signetai.io:ssl.`,
+          systemInstruction: `You are the Live Digital Notary for Signet Protocol.`,
         }
       });
       setMessages(prev => [...prev, { role: 'assistant', text: response.text || "Neural link timeout." }]);
@@ -323,6 +355,8 @@ export const LiveAssistant: React.FC = () => {
 
   return (
     <div className="fixed bottom-8 left-8 z-[150] font-sans">
+      <video ref={videoRef} style={{ display: 'none' }} playsInline muted />
+      <canvas ref={canvasRef} style={{ display: 'none' }} />
       {!isOpen ? (
         <button onClick={() => setIsOpen(true)} className="flex items-center justify-center w-14 h-14 bg-[var(--trust-blue)] text-white rounded-full shadow-2xl hover:scale-105 transition-all relative overflow-hidden group">
           <div className="absolute inset-0 bg-white/20 scale-x-0 group-hover:scale-x-100 transition-transform origin-left"></div>
@@ -337,7 +371,7 @@ export const LiveAssistant: React.FC = () => {
                 {status === 'CONNECTED' && <div className="absolute inset-0 bg-blue-500 rounded-full animate-ping opacity-75"></div>}
               </div>
               <div className="flex flex-col">
-                <span className="font-mono text-[10px] font-bold uppercase text-[var(--text-header)] leading-none">Signet-Alpha</span>
+                <span className="font-mono text-[10px] font-bold uppercase text-[var(--text-header)] leading-none">Live Digital Notary</span>
                 <div className="flex gap-0.5 mt-1 h-2 items-end">
                   {status === 'CONNECTED' ? (
                     [1,2,3,4,5].map(i => (
@@ -386,7 +420,7 @@ export const LiveAssistant: React.FC = () => {
             <input 
               type="text" value={input} onChange={(e) => setInput(e.target.value)} 
               onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
-              placeholder={status !== 'OFFLINE' ? "Mic active..." : "Ask about v0.3.2..."} 
+              placeholder={status !== 'OFFLINE' ? "Mic active..." : "Ask about signing..."} 
               className="flex-1 text-sm bg-transparent outline-none py-2"
               disabled={status !== 'OFFLINE'}
             />
