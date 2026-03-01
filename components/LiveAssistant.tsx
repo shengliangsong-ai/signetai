@@ -95,6 +95,7 @@ export const LiveAssistant: React.FC = () => {
   };
 
   const cleanupAudio = () => {
+    console.log("Cleaning up audio and live session.");
     clearInterval(videoIntervalRef.current);
     if (sessionRef.current) {
       try { sessionRef.current.close?.(); } catch(e) {}
@@ -184,7 +185,7 @@ export const LiveAssistant: React.FC = () => {
         callbacks: {
           onopen: () => {
             setStatus('CONNECTED');
-            videoIntervalRef.current = setInterval(sendVideoFrames, 1000); // Send 1 frame per second
+            videoIntervalRef.current = setInterval(sendVideoFrames, 1000);
             const source = inputAudioContextRef.current!.createMediaStreamSource(streamRef.current!);
             const scriptProcessor = inputAudioContextRef.current!.createScriptProcessor(4096, 1, 1);
             
@@ -207,7 +208,9 @@ export const LiveAssistant: React.FC = () => {
               
               sessionPromise.then(session => {
                 session.sendRealtimeInput({ media: pcmBlob });
-              }).catch(() => {});
+              }).catch((err) => {
+                console.error("Failed to send audio data:", err);
+              });
             };
             
             source.connect(scriptProcessor);
@@ -233,9 +236,6 @@ export const LiveAssistant: React.FC = () => {
                 if (systemMessage) {
                   setMessages(prev => [...prev, { role: 'assistant', text: systemMessage }]);
                 }
-                // In a real scenario, we would send a functionResponse here.
-                // The current API contract for `live` doesn't expose this directly,
-                // so we let the turn complete and the AI will proceed.
             }
 
             if (message.serverContent?.turnComplete) {
@@ -283,7 +283,10 @@ export const LiveAssistant: React.FC = () => {
             setMessages(prev => [...prev, { role: 'assistant', text: `⚠️ **Sync Error:** ${e.message || 'Logic drift detected'}` }]);
             cleanupAudio();
           },
-          onclose: () => cleanupAudio()
+          onclose: () => {
+            console.log("Signet Live: Connection closed.");
+            cleanupAudio();
+          }
         },
         config: {
           responseModalities: [Modality.AUDIO],
