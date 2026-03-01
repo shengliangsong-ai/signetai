@@ -198,9 +198,9 @@ export const LiveAssistant: React.FC = () => {
                 mimeType: 'audio/pcm;rate=16000',
               };
               
-              sessionPromise.then(session => {
-                session.sendRealtimeInput({ media: pcmBlob });
-              }).catch(() => {});
+              if (sessionRef.current) {
+                sessionRef.current.sendRealtimeInput({ media: pcmBlob });
+              }
             };
             
             source.connect(scriptProcessor);
@@ -222,9 +222,9 @@ export const LiveAssistant: React.FC = () => {
                 ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
                 const base64Data = canvas.toDataURL('image/jpeg', 0.7).split(',')[1];
                 
-                sessionPromise.then(session => {
-                  session.sendRealtimeInput({ media: { data: base64Data, mimeType: 'image/jpeg' } });
-                }).catch(() => {});
+                if (sessionRef.current) {
+                  sessionRef.current.sendRealtimeInput({ media: { data: base64Data, mimeType: 'image/jpeg' } });
+                }
               }, 1000); 
             }
           },
@@ -296,13 +296,11 @@ export const LiveAssistant: React.FC = () => {
                   }
 
                   if (result && sessionRef.current) {
-                     sessionPromise.then(session => {
-                        session.sendToolResponse({
-                          functionResponses: [{
-                            name: call.name,
-                            response: { result }
-                          }]
-                        });
+                     sessionRef.current.sendToolResponse({
+                        functionResponses: [{
+                          name: call.name,
+                          response: { result }
+                        }]
                      });
                   }
                 }
