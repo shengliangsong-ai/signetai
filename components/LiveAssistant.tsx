@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { GoogleGenAI, LiveServerMessage, Modality, Type } from "@google/genai";
+import { GoogleGenerativeAI, GoogleGenAI, LiveServerMessage, Modality, Type } from "@google/genai";
 import ReactMarkdown from 'react-markdown';
 import { GOOGLE_GEMINI_KEY } from '../private_keys';
 import { DemoMode } from './DemoMode';
@@ -157,7 +157,7 @@ export const LiveAssistant: React.FC = () => {
       streamRef.current = await navigator.mediaDevices.getUserMedia({ audio: true });
       
       sessionPromiseRef.current = ai.live.connect({
-        model: 'gemini-1.5-flash-latest',
+        model: 'gemini-pro',
         callbacks: {
           onopen: () => {
             setStatus('CONNECTED');
@@ -354,35 +354,35 @@ export const LiveAssistant: React.FC = () => {
 
   const handleSendMessage = async () => {
     const textToSend = input.trim();
-    if (!textToSend) return;
+    if (!textToSend || isLoading) return;
 
-    if (status === 'OFFLINE') {
-        const apiKey = getApiKey();
-        if (!apiKey) {
-            setMessages(prev => [...prev, { role: 'assistant', text: "⚠️ **Config Error:** No valid API Key found." }]);
-            return;
-        }
+    if (status !== 'OFFLINE') return;
 
-        const userMessage: Message = { role: 'user', text: textToSend };
-        setMessages(prev => [...prev, userMessage]);
-        setInput('');
-        setIsLoading(true);
-
-        const ai = new GoogleGenAI({ apiKey });
-
-        try {
-            const chat = ai.getGenerativeModel({ model: 'gemini-1.5-flash-latest' });
-            const result = await chat.sendMessage(textToSend);
-            const response = result.response;
-            const text = response.text();
-            setMessages(prev => [...prev, { role: 'assistant', text }]);
-        } catch (err: any) {
-            console.error("Text chat failed:", err);
-            setMessages(prev => [...prev, { role: 'assistant', text: `⚠️ **API Error:** ${err.message}` }]);
-        }
-        setIsLoading(false);
+    const apiKey = getApiKey();
+    if (!apiKey) {
+      setMessages(prev => [...prev, { role: 'assistant', text: "⚠️ **Config Error:** No valid API Key found." }]);
+      return;
     }
+
+    const userMessage: Message = { role: 'user', text: textToSend };
+    setMessages(prev => [...prev, userMessage]);
+    setInput('');
+    setIsLoading(true);
+
+    try {
+      const genAI = new GoogleGenerativeAI(apiKey);
+      const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+      const result = await model.generateContent(textToSend);
+      const response = await result.response;
+      const text = response.text();
+      setMessages(prev => [...prev, { role: 'assistant', text }]);
+    } catch (err: any) {
+      console.error("Text chat failed:", err);
+      setMessages(prev => [...prev, { role: 'assistant', text: `⚠️ **API Error:** ${err.message}` }]);
+    }
+    setIsLoading(false);
   };
+
 
   return (
     <div className="fixed bottom-8 left-8 z-[150] font-sans">
