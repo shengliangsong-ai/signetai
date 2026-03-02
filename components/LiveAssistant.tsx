@@ -96,7 +96,7 @@ export const LiveAssistant: React.FC = () => {
       model: 'gemini-1.5-flash-latest',
       callbacks: {
         onopen: () => {
-            session.sendUserInput({ text });
+            session.sendMessage(text);
         },
         onmessage: async (message: LiveServerMessage) => {
           const base64Audio = message.serverContent?.modelTurn?.parts?.[0]?.inlineData?.data;
