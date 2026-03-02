@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { GoogleGenAI, LiveServerMessage, Modality, Type } from "@google/genai";
 import ReactMarkdown from 'react-markdown';
-import { GOOGLE_GEMINI_KEY } from '../private_keys';
+import { GOOGLE_GEMINI_KEY } from '../private_keys.ts';
 import { DemoMode } from './DemoMode';
 
 interface Message {
@@ -55,7 +55,7 @@ export const LiveAssistant: React.FC = () => {
   const [status, setStatus] = useState<ConnectionStatus>('OFFLINE');
   const [volume, setVolume] = useState(0);
   const [messages, setMessages] = useState<Message[]>([
-    { role: 'assistant', text: "Systems online. I am **Signet-Alpha**, your Live Digital Notary.\\n\\nI can help you verify media using our Image and Video Diff Engines, or guide you through Universal Media Signing using your registered keys. How can I help you today?" }
+    { role: 'assistant', text: "Systems online. I am **Signet-Alpha**, your Live Digital Notary.\\\\n\\\\nI can help you verify media using our Image and Video Diff Engines, or guide you through Universal Media Signing using your registered keys. How can I help you today?" }
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -274,7 +274,7 @@ export const LiveAssistant: React.FC = () => {
             console.error('Signet Live Error:', e);
             const errorMessage = e.message || 'Logic drift detected';
             const errorDetails = JSON.stringify(e, null, 2);
-            setMessages(prev => [...prev, { role: 'assistant', text: `⚠️ **Sync Error:** ${errorMessage}\\n\\n**Debug Trace:**\\n\`\`\`\\n${errorDetails}\\n\`\`\`` }]);
+            setMessages(prev => [...prev, { role: 'assistant', text: `⚠️ **Sync Error:** ${errorMessage}\\\\n\\\\n**Debug Trace:**\\\\n\\\`\\\`\\\`\\\\n${errorDetails}\\\\n\\\`\\\`\\\`` }]);
             cleanupAudio();
           },
           onclose: () => cleanupAudio()
@@ -347,7 +347,7 @@ export const LiveAssistant: React.FC = () => {
       console.error('Session failed:', err);
       const errorMessage = err.message || "Handshake failed. Please ensure microphone permissions are enabled.";
       const errorDetails = JSON.stringify(err, null, 2);
-      setMessages(prev => [...prev, { role: 'assistant', text: `⚠️ **System Offline:** ${errorMessage}\\n\\n**Debug Trace:**\\n\`\`\`\\n${errorDetails}\\n\`\`\`` }]);
+      setMessages(prev => [...prev, { role: 'assistant', text: `⚠️ **System Offline:** ${errorMessage}\\\\n\\\\n**Debug Trace:**\\\\n\\\`\\\`\\\`\\\\n${errorDetails}\\\\n\\\`\\\`\\\`` }]);
       cleanupAudio();
     }
   };
