@@ -1,8 +1,8 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { GoogleGenAI, LiveServerMessage, Modality, Type } from "@google/genai";
 import ReactMarkdown from 'react-markdown';
 import { GOOGLE_GEMINI_KEY } from '../private_keys.ts';
-import { DemoMode } from './DemoMode';
+import { Notebook } from './Notebook';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -59,7 +59,7 @@ export const LiveAssistant: React.FC = () => {
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [isDemoMode, setIsDemoMode] = useState(false);
+  const [isNotebookOpen, setIsNotebookOpen] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -83,14 +83,56 @@ export const LiveAssistant: React.FC = () => {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
-  
+
+  const speak = async (text: string) => {
+    const apiKey = getApiKey();
+    if (!apiKey) return;
+
+    const ai = new GoogleGenAI({ apiKey });
+    const outputCtx = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
+    let nextStartTime = 0;
+
+    const session = await ai.live.connect({
+      model: 'gemini-1.5-flash-latest',
+      callbacks: {
+        onopen: () => {
+            session.sendUserInput({ text });
+        },
+        onmessage: async (message: LiveServerMessage) => {
+          const base64Audio = message.serverContent?.modelTurn?.parts?.[0]?.inlineData?.data;
+          if (base64Audio) {
+            const audioBuffer = await decodeAudioData(decode(base64Audio), outputCtx, 24000, 1);
+            const source = outputCtx.createBufferSource();
+            source.buffer = audioBuffer;
+            source.connect(outputCtx.destination);
+            source.start(nextStartTime);
+            nextStartTime += audioBuffer.duration;
+          }
+          if (message.serverContent?.turnComplete) {
+            setTimeout(() => { outputCtx.close(); session.close(); }, (nextStartTime * 1000) + 500);
+          }
+        },
+        onerror: (e: any) => {
+          console.error('Speech synthesis error:', e);
+          outputCtx.close();
+        },
+        onclose: () => {
+            if (outputCtx.state !== 'closed') outputCtx.close();
+        }
+      },
+      config: {
+        responseModalities: [Modality.AUDIO],
+      }
+    });
+  };
+
   useEffect(() => {
-    const handleStartDemo = () => {
-      setIsDemoMode(true);
+    const handleSpeak = (e: CustomEvent) => {
+      speak(e.detail.text);
     };
-    window.addEventListener('signet:start-demo', handleStartDemo);
+    window.addEventListener('signet:speak', handleSpeak as EventListener);
     return () => {
-      window.removeEventListener('signet:start-demo', handleStartDemo);
+      window.removeEventListener('signet:speak', handleSpeak as EventListener);
     };
   }, []);
 
@@ -251,9 +293,8 @@ export const LiveAssistant: React.FC = () => {
                     result = "Diff Engine analysis complete. No tampering detected. Media is authentic.";
                   } else if (call.name === "startSelfDemo") {
                     setMessages(prev => [...prev, { role: 'assistant', text: `⚙️ **Action:** Opening Demo Notebook...` }]);
-                    cleanupAudio();
-                    window.dispatchEvent(new CustomEvent('signet:start-demo'));
-                    result = "Demo Notebook opened and sequence started.";
+                    setIsNotebookOpen(true);
+                    result = "Demo Notebook opened. The user can now run the demo sequence.";
                   }
 
                   if (result && sessionPromiseRef.current) {
@@ -395,7 +436,7 @@ export const LiveAssistant: React.FC = () => {
 
   return (
     <div className="fixed bottom-8 left-8 z-[150] font-sans">
-      {isDemoMode && <DemoMode onComplete={() => setIsDemoMode(false)} />}
+      {isNotebookOpen && <Notebook onClose={() => setIsNotebookOpen(false)} />}
       {!isOpen ? (
         <button onClick={() => setIsOpen(true)} className="flex items-center justify-center w-14 h-14 bg-[var(--trust-blue)] text-white rounded-full shadow-2xl hover:scale-105 transition-all relative overflow-hidden group">
           <div className="absolute inset-0 bg-white/20 scale-x-0 group-hover:scale-x-100 transition-transform origin-left"></div>
@@ -468,7 +509,7 @@ export const LiveAssistant: React.FC = () => {
             <button 
               onClick={handleSendMessage} 
               disabled={status !== 'OFFLINE' || isLoading || !input.trim()}
-              className={`p-2 transition-all ${status !== 'OFFLINE' || isLoading || !input.trim() ? 'opacity-20 cursor-not-allowed' : 'text-[var(--trust-blue)] hover:scale-110'}`}
+              className={`p-2 transition-all ${status !== 'OFFLINE' || isLoading || !input.trim() ? 'opacity-20 cursor-not--allowed' : 'text-[var(--trust-blue)] hover:scale-110'}`}
             >
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
             </button>
