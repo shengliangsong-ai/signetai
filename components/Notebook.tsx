@@ -5,9 +5,9 @@ import {
     UniversalMediaSigningVisual, 
     PublicVerifierVisual, 
     DiffEngineAnalysisVisual,
-    DiffReport,
     DemoVisualStatus
 } from './DemoVisuals';
+import { DiffReport } from './DiffReport';
 
 interface NotebookProps {
   onClose: () => void;

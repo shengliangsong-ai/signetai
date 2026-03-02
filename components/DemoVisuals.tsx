@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
+import { DiffReport } from './DiffReport'; // Import the shared report component
 
 // A finished state is implicitly handled by the component's internal state after the animation runs.
 export type DemoVisualStatus = 'pending' | 'active' | 'complete';
@@ -146,31 +147,6 @@ const DiffEngineAnalyzing: React.FC<{ progress: number }> = ({ progress }) => (
     </div>
 );
 
-export const DiffReport: React.FC = () => (
-    <div className="text-xs space-y-3">
-         <div className="flex justify-between items-baseline p-2 bg-green-900/50 border border-green-500/30 rounded-md">
-            <span className="font-bold text-gray-300">Delta Score:</span>
-            <span className="font-mono text-lg font-bold text-green-400">0.0011%</span>
-         </div>
-         <div className="flex justify-between items-baseline p-2 bg-green-900/50 border border-green-500/30 rounded-md">
-            <span className="font-bold text-gray-300">Interpretation:</span>
-            <span className="font-mono text-lg font-bold text-green-400">VISUALLY_CONSISTENT</span>
-         </div>
-        <div className="font-mono text-gray-400">
-            <div className="font-bold text-gray-300 mb-1">Analysis Report:</div>
-            <div className="text-gray-500 grid grid-cols-4 gap-x-2 gap-y-1 text-[10px]">
-                <span className="font-bold">Anchor</span>
-                <span className="font-bold">pHash A</span>
-                <span className="font-bold">pHash B</span>
-                <span className="font-bold">Delta</span>
-                <span>1 (start)</span><span>a3f4...</span><span>a3f4...</span><span className="text-green-500">0.00</span>
-                <span>2 (33%)</span><span>b9c1...</span><span>b9c1...</span><span className="text-green-500">0.00</span>
-                <span>3 (66%)</span><span>f0a9...</span><span>d8b3...</span><span className="text-amber-500">0.03</span>
-                <span>4 (end)</span><span>cce3...</span><span>cce3...</span><span className="text-green-500">0.00</span>
-            </div>
-        </div>
-    </div>
-);
 
 export const DiffEngineAnalysisVisual: React.FC<{ status: DemoVisualStatus }> = ({ status }) => {
     const [phase, setPhase] = useState<'input' | 'analyzing' | 'report'>('input');
