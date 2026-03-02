@@ -383,7 +383,11 @@ export const LiveAssistant: React.FC = () => {
       }
     } catch (err: any) {
       console.error("Text chat failed:", err);
-      setMessages(prev => [...prev, { role: 'assistant', text: `⚠️ **API Error:** ${err.message}` }]);
+      if (err.message.includes("Unexpected token '<'") || err.message.includes("not valid JSON")) {
+        setMessages(prev => [...prev, { role: 'assistant', text: "⚠️ **API Authentication Error:** It looks like there's an issue with the API key or project configuration. Please check that your API key is valid, billing is enabled for your project, and the Gemini API is enabled in the Google Cloud console." }]);
+      } else {
+        setMessages(prev => [...prev, { role: 'assistant', text: `⚠️ **API Error:** ${err.message}` }]);
+      }
     }
     setIsLoading(false);
   };
