@@ -67,8 +67,9 @@ export const LiveAssistant: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const videoIntervalRef = useRef<number | null>(null);
 
-  // Audio Refs
+  // Audio & Session Refs
   const sessionRef = useRef<any>(null);
+  const sessionPromiseRef = useRef<Promise<any> | null>(null);
   const inputAudioContextRef = useRef<AudioContext | null>(null);
   const outputAudioContextRef = useRef<AudioContext | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -119,6 +120,7 @@ export const LiveAssistant: React.FC = () => {
       try { sessionRef.current.close?.(); } catch(e) {}
       sessionRef.current = null;
     }
+    sessionPromiseRef.current = null;
     if (streamRef.current) {
       streamRef.current.getTracks().forEach(track => track.stop());
       streamRef.current = null;
@@ -173,7 +175,7 @@ export const LiveAssistant: React.FC = () => {
         videoRef.current.play().catch(e => console.error("Video play failed", e));
       }
       
-      const sessionPromise = ai.live.connect({
+      sessionPromiseRef.current = ai.live.connect({
         model: 'gemini-1.5-flash-latest',
         callbacks: {
           onopen: () => {
@@ -198,7 +200,7 @@ export const LiveAssistant: React.FC = () => {
                 mimeType: 'audio/pcm;rate=16000',
               };
               
-              sessionPromise.then(session => {
+              sessionPromiseRef.current?.then(session => {
                 session.sendRealtimeInput({ media: pcmBlob });
               }).catch(() => {});
             };
@@ -222,7 +224,7 @@ export const LiveAssistant: React.FC = () => {
                 ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
                 const base64Data = canvas.toDataURL('image/jpeg', 0.7).split(',')[1];
                 
-                sessionPromise.then(session => {
+                sessionPromiseRef.current?.then(session => {
                   session.sendRealtimeInput({ media: { data: base64Data, mimeType: 'image/jpeg' } });
                 }).catch(() => {});
               }, 1000); 
@@ -295,8 +297,8 @@ export const LiveAssistant: React.FC = () => {
                     result = "Demo Notebook opened and sequence started.";
                   }
 
-                  if (result) {
-                     sessionPromise.then(session => {
+                  if (result && sessionPromiseRef.current) {
+                     sessionPromiseRef.current.then(session => {
                         session.sendToolResponse({
                           functionResponses: [{
                             name: call.name,
@@ -375,7 +377,11 @@ export const LiveAssistant: React.FC = () => {
           }]
         }
       });
-      sessionRef.current = await sessionPromise;
+
+      if (sessionPromiseRef.current) {
+        sessionRef.current = await sessionPromiseRef.current;
+      }
+
     } catch (err: any) {
       console.error('Session failed:', err);
       setMessages(prev => [...prev, { role: 'assistant', text: "⚠️ **System Offline:** Handshake failed. Please ensure microphone and camera permissions are enabled." }]);
