@@ -84,55 +84,38 @@ export const LiveAssistant: React.FC = () => {
     scrollToBottom();
   }, [messages]);
 
-  const speak = async (text: string) => {
-    const apiKey = getApiKey();
-    if (!apiKey) return;
-
-    const ai = new GoogleGenAI({ apiKey });
-    const outputCtx = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
-    let nextStartTime = 0;
-
-    const session = await ai.live.connect({
-      model: 'gemini-1.5-flash-latest',
-      callbacks: {
-        onopen: () => {
-            session.sendMessage(text);
-        },
-        onmessage: async (message: LiveServerMessage) => {
-          const base64Audio = message.serverContent?.modelTurn?.parts?.[0]?.inlineData?.data;
-          if (base64Audio) {
-            const audioBuffer = await decodeAudioData(decode(base64Audio), outputCtx, 24000, 1);
-            const source = outputCtx.createBufferSource();
-            source.buffer = audioBuffer;
-            source.connect(outputCtx.destination);
-            source.start(nextStartTime);
-            nextStartTime += audioBuffer.duration;
-          }
-          if (message.serverContent?.turnComplete) {
-            setTimeout(() => { outputCtx.close(); session.close(); }, (nextStartTime * 1000) + 500);
-          }
-        },
-        onerror: (e: any) => {
-          console.error('Speech synthesis error:', e);
-          outputCtx.close();
-        },
-        onclose: () => {
-            if (outputCtx.state !== 'closed') outputCtx.close();
-        }
-      },
-      config: {
-        responseModalities: [Modality.AUDIO],
+  const speak = (text: string) => {
+    if (typeof window !== 'undefined' && window.speechSynthesis) {
+      const utterance = new SpeechSynthesisUtterance(text);
+      // Optionally select a voice
+      const voices = window.speechSynthesis.getVoices();
+      const desiredVoice = voices.find(v => v.name.includes('Google') && v.lang.startsWith('en'));
+      if (desiredVoice) {
+        utterance.voice = desiredVoice;
       }
-    });
+      window.speechSynthesis.speak(utterance);
+    } else {
+      console.warn("Web Speech API not supported.");
+    }
   };
 
   useEffect(() => {
     const handleSpeak = (e: CustomEvent) => {
       speak(e.detail.text);
     };
+    // Ensure voices are loaded
+    if (typeof window !== 'undefined' && window.speechSynthesis) {
+      window.speechSynthesis.onvoiceschanged = () => {
+        // Voices loaded, now safe to speak
+      };
+    }
+
     window.addEventListener('signet:speak', handleSpeak as EventListener);
     return () => {
       window.removeEventListener('signet:speak', handleSpeak as EventListener);
+      if (window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+      }
     };
   }, []);
 
