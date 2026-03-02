@@ -26,7 +26,7 @@ const demoSteps = [
 
 export const Notebook: React.FC<NotebookProps> = ({ onClose }) => {
   const [currentStep, setCurrentStep] = useState(0);
-  const [isRunning, setIsRunning] = useState(false);
+  const [isRunning, setIsRunning] = useState(true); // Auto-start the demo
 
   useEffect(() => {
     if (isRunning && currentStep < demoSteps.length) {
@@ -44,10 +44,8 @@ export const Notebook: React.FC<NotebookProps> = ({ onClose }) => {
     }
   }, [currentStep, isRunning]);
 
-  const handleRunDemo = () => {
-    setCurrentStep(0);
-    setIsRunning(true);
-  };
+  const progress = isRunning ? ((currentStep + 1) / demoSteps.length) * 100 : 100;
+  const statusText = isRunning ? `Running Step ${currentStep + 1} of ${demoSteps.length}...` : 'Demo Complete';
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[200]">
@@ -59,7 +57,7 @@ export const Notebook: React.FC<NotebookProps> = ({ onClose }) => {
         <div className="p-6 flex-1 overflow-y-auto">
           <div className="space-y-4">
             {demoSteps.map((step, index) => (
-              <div key={index} className={`p-4 rounded-lg transition-all ${currentStep === index && isRunning ? 'bg-[var(--bg-subtle)] border border-[var(--trust-blue)]' : 'bg-[var(--code-bg)] border border-transparent'}`}>
+              <div key={index} className={`p-4 rounded-lg transition-all duration-500 ${currentStep === index && isRunning ? 'bg-[var(--bg-subtle)] border border-[var(--trust-blue)] shadow-lg' : 'bg-[var(--code-bg)] border border-transparent opacity-70'}`}>
                 <h3 className="font-bold text-md">{step.title}</h3>
                 <p className="text-sm mt-2">{step.transcript}</p>
               </div>
@@ -67,13 +65,14 @@ export const Notebook: React.FC<NotebookProps> = ({ onClose }) => {
           </div>
         </div>
         <div className="p-4 border-t border-[var(--border-light)]">
-          <button 
-            onClick={handleRunDemo} 
-            disabled={isRunning}
-            className="w-full bg-[var(--trust-blue)] text-white font-bold py-2 px-4 rounded hover:scale-105 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {isRunning ? `Running Step ${currentStep + 1}...` : "Run Demo"}
-          </button>
+            <div className="flex items-center gap-4">
+                <div className="flex-1 bg-[var(--code-bg)] rounded-full h-2.5">
+                    <div className="bg-[var(--trust-blue)] h-2.5 rounded-full transition-all duration-200 ease-linear" style={{ width: `${progress}%` }}></div>
+                </div>
+                <span className="text-sm font-semibold w-48 text-right">
+                    {statusText}
+                </span>
+            </div>
         </div>
       </div>
     </div>
