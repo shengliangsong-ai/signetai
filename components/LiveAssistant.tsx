@@ -456,7 +456,14 @@ export const LiveAssistant: React.FC = () => {
             </div>
 
             {/* Action Buttons */}
-            <div className="flex gap-1">
+            <div className="flex items-center gap-1">
+               <button 
+                onClick={() => setIsNotebookOpen(true)}
+                className="text-xs font-semibold uppercase tracking-wider text-[var(--text-header)] opacity-60 hover:opacity-100 px-3 py-1 rounded-md hover:bg-[var(--bg-subtle)] transition-colors"
+                title="Start Demo Notebook"
+              >
+                Demo
+              </button>
               <button 
                 onClick={initVoiceChat} 
                 className={`p-2 rounded transition-colors ${status !== 'OFFLINE' ? 'bg-red-500 text-white shadow-inner' : 'text-[var(--trust-blue)] hover:bg-[var(--bg-subtle)]'}`}
@@ -466,7 +473,7 @@ export const LiveAssistant: React.FC = () => {
                   <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
                 </svg>
               </button>
-              <button onClick={() => setIsOpen(false)} className="opacity-40 hover:opacity-100 p-2 ml-2">✕</button>
+              <button onClick={() => setIsOpen(false)} className="opacity-40 hover:opacity-100 p-2 ml-1">✕</button>
             </div>
           </div>
           
