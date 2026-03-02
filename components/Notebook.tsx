@@ -31,7 +31,7 @@ const demoSteps = [
   },
   {
     title: "Step 4: Diff Engine Analysis",
-    transcript: "Finally, we are running the Diff Engine Analysis. This advanced tool performs a deep comparison of the media against its original, unaltered version. It can detect even the most subtle changes, including deepfakes, synthetic alterations, or tampering. The analysis is complete, and no discrepancies were found. The media is authentic.",
+    transcript: "Finally, we are running the Diff Engine Analysis. The engine takes two YouTube video URLs as input and performs a 'Quick Check' by comparing four anchor thumbnails from each video, generating perceptual hashes to measure the difference. This efficient method can quickly spot major changes. The analysis is complete, and a minimal difference was detected, confirming the videos are visually consistent.",
     visual: DiffEngineAnalysisVisual
   }
 ];

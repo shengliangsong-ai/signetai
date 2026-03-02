@@ -53,8 +53,8 @@ export const TrustKeyRegistryVisual: React.FC<{ status: DemoVisualStatus }> = ({
 export const UniversalMediaSigningVisual: React.FC<{ status: DemoVisualStatus }> = ({ status }) => (
     <div className="p-4 rounded-md bg-[var(--code-bg)] border border-[var(--border-light)] font-sans flex items-center justify-around space-x-2 h-[120px]">
       <div className={`text-center ${status !== 'pending' ? 'animate-fade-in-fast' : 'opacity-0'}`}>
-        <div className="text-4xl">📄</div>
-        <div className="text-xs font-bold mt-1">MediaFile.pdf</div>
+        <div className="text-4xl">📹</div>
+        <div className="text-xs font-bold mt-1">OriginalVideo.mp4</div>
       </div>
       <div className={`text-3xl text-gray-500 ${status === 'active' ? 'animate-fade-in-delay-1' : status === 'complete' ? 'opacity-100' : 'opacity-0'}`}>+</div>
       <div className={`text-center ${status === 'active' ? 'animate-fade-in-delay-2' : status === 'complete' ? 'opacity-100' : 'opacity-0'}`}>
@@ -103,14 +103,14 @@ const DiffEngineInput: React.FC = () => (
     <div className="space-y-3">
         <div>
             <label className="text-xs font-bold text-gray-400">Source A (Reference)</label>
-            <div className="p-2 mt-1 bg-gray-900/50 rounded-md text-xs font-mono border border-gray-700">
-                youtube.com/playlist?list=PL2...A0F
+            <div className="p-2 mt-1 bg-gray-900/50 rounded-md text-xs font-mono border border-gray-700 truncate">
+                youtube.com/watch?v=dQw4w9WgXcQ
             </div>
         </div>
         <div>
             <label className="text-xs font-bold text-gray-400">Source B (Candidate)</label>
-            <div className="p-2 mt-1 bg-gray-900/50 rounded-md text-xs font-mono border border-gray-700">
-                youtube.com/playlist?list=PL2...B1C
+            <div className="p-2 mt-1 bg-gray-900/50 rounded-md text-xs font-mono border border-gray-700 truncate">
+                youtube.com/watch?v=R_gE-0vpsWE
             </div>
         </div>
     </div>
@@ -119,14 +119,29 @@ const DiffEngineInput: React.FC = () => (
 const DiffEngineAnalyzing: React.FC<{ progress: number }> = ({ progress }) => (
     <div className="space-y-3">
         <div className="flex justify-between items-center text-xs">
-            <span className="font-bold text-amber-500">Comparing Hashes...</span>
+            <span className="font-bold text-amber-500">Comparing Thumbnails...</span>
             <span className="font-mono text-gray-400">{progress}%</span>
         </div>
         <div className="w-full bg-gray-700/50 rounded-full h-2.5">
             <div className="bg-blue-500 h-2.5 rounded-full" style={{ width: `${progress}%`, transition: 'width 0.1s linear' }}></div>
         </div>
-        <div className="text-center text-gray-400 text-xs">
-            Frame-by-frame delta analysis in progress...
+        <div className="text-center text-gray-400 text-xs flex justify-around items-center mt-3">
+            <div className="text-center">
+              <div className="w-16 h-10 bg-gray-600 rounded-sm mx-auto animate-pulse"></div>
+              <span className="text-gray-500 text-[10px]">Anchor 1</span>
+            </div>
+            <div className="text-center">
+              <div className="w-16 h-10 bg-gray-600 rounded-sm mx-auto animate-pulse animation-delay-200"></div>
+              <span className="text-gray-500 text-[10px]">Anchor 2</span>
+            </div>
+            <div className="text-center">
+              <div className="w-16 h-10 bg-gray-600 rounded-sm mx-auto animate-pulse animation-delay-400"></div>
+              <span className="text-gray-500 text-[10px]">Anchor 3</span>
+            </div>
+            <div className="text-center">
+              <div className="w-16 h-10 bg-gray-600 rounded-sm mx-auto animate-pulse animation-delay-600"></div>
+              <span className="text-gray-500 text-[10px]">Anchor 4</span>
+            </div>
         </div>
     </div>
 );
@@ -135,24 +150,23 @@ export const DiffReport: React.FC = () => (
     <div className="text-xs space-y-3">
          <div className="flex justify-between items-baseline p-2 bg-green-900/50 border border-green-500/30 rounded-md">
             <span className="font-bold text-gray-300">Delta Score:</span>
-            <span className="font-mono text-lg font-bold text-green-400">0.0017%</span>
+            <span className="font-mono text-lg font-bold text-green-400">0.0011%</span>
          </div>
          <div className="flex justify-between items-baseline p-2 bg-green-900/50 border border-green-500/30 rounded-md">
             <span className="font-bold text-gray-300">Interpretation:</span>
-            <span className="font-mono text-lg font-bold text-green-400">MINIMAL_DIFFERENCE</span>
+            <span className="font-mono text-lg font-bold text-green-400">VISUALLY_CONSISTENT</span>
          </div>
         <div className="font-mono text-gray-400">
             <div className="font-bold text-gray-300 mb-1">Analysis Report:</div>
             <div className="text-gray-500 grid grid-cols-4 gap-x-2 gap-y-1 text-[10px]">
-                <span className="font-bold">Frame</span>
-                <span className="font-bold">Hash A</span>
-                <span className="font-bold">Hash B</span>
+                <span className="font-bold">Anchor</span>
+                <span className="font-bold">pHash A</span>
+                <span className="font-bold">pHash B</span>
                 <span className="font-bold">Delta</span>
-                <span>0001</span><span>a3f4...</span><span>a3f4...</span><span className="text-green-500">0.00</span>
-                <span>0002</span><span>b9c1...</span><span>b9c1...</span><span className="text-green-500">0.00</span>
-                <span className="opacity-50">...</span><span className="opacity-50">...</span><span className="opacity-50">...</span><span className="opacity-50">...</span>
-                <span>1798</span><span>f0a9...</span><span>d8b3...</span><span className="text-red-500">0.89</span>
-                <span className="opacity-50">...</span><span className="opacity-50">...</span><span className="opacity-50">...</span><span className="opacity-50">...</span>
+                <span>1 (start)</span><span>a3f4...</span><span>a3f4...</span><span className="text-green-500">0.00</span>
+                <span>2 (33%)</span><span>b9c1...</span><span>b9c1...</span><span className="text-green-500">0.00</span>
+                <span>3 (66%)</span><span>f0a9...</span><span>d8b3...</span><span className="text-amber-500">0.03</span>
+                <span>4 (end)</span><span>cce3...</span><span>cce3...</span><span className="text-green-500">0.00</span>
             </div>
         </div>
     </div>
