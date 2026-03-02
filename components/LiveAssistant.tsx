@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { GoogleGenerativeAI, GoogleGenAI, LiveServerMessage, Modality, Type } from "@google/genai";
+import { GoogleGenAI, LiveServerMessage, Modality, Type } from "@google/genai";
 import ReactMarkdown from 'react-markdown';
 import { GOOGLE_GEMINI_KEY } from '../private_keys';
 import { DemoMode } from './DemoMode';
@@ -157,7 +157,7 @@ export const LiveAssistant: React.FC = () => {
       streamRef.current = await navigator.mediaDevices.getUserMedia({ audio: true });
       
       sessionPromiseRef.current = ai.live.connect({
-        model: 'gemini-pro',
+        model: 'gemini-1.5-flash-latest',
         callbacks: {
           onopen: () => {
             setStatus('CONNECTED');
@@ -370,12 +370,17 @@ export const LiveAssistant: React.FC = () => {
     setIsLoading(true);
 
     try {
-      const genAI = new GoogleGenerativeAI(apiKey);
-      const model = genAI.getGenerativeModel({ model: "gemini-pro" });
-      const result = await model.generateContent(textToSend);
-      const response = await result.response;
-      const text = response.text();
-      setMessages(prev => [...prev, { role: 'assistant', text }]);
+      const ai = new GoogleGenAI({ apiKey });
+      const result = await ai.models.generateContent({
+        model: "gemini-1.5-flash-latest",
+        contents: [{ role: 'user', parts: [{ text: textToSend }] }]
+      });
+      const text = result.text;
+      if (text) {
+        setMessages(prev => [...prev, { role: 'assistant', text }]);
+      } else {
+        setMessages(prev => [...prev, { role: 'assistant', text: "I'm sorry, I couldn't generate a response." }]);
+      }
     } catch (err: any) {
       console.error("Text chat failed:", err);
       setMessages(prev => [...prev, { role: 'assistant', text: `⚠️ **API Error:** ${err.message}` }]);
