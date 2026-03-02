@@ -66,7 +66,7 @@ export const Notebook: React.FC<NotebookProps> = ({ onClose }) => {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[200]">
-      <div className="bg-[var(--bg-standard)] w-full max-w-3xl h-auto max-h-[90vh] rounded-xl shadow-2xl flex flex-col">
+      <div className="bg-[var(--bg-standard)] w-full max-w-4xl h-auto max-h-[90vh] rounded-xl shadow-2xl flex flex-col">
         <div className="p-4 border-b border-[var(--border-light)] flex justify-between items-center">
           <h2 className="text-lg font-bold">Live Action Demo</h2>
           <button onClick={onClose} className="opacity-50 hover:opacity-100">✕</button>

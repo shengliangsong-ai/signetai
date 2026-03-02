@@ -1,8 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
-import { DiffReport } from './DiffReport'; // Import the shared report component
+import { DiffReport } from './DiffReport'; // Import the new, shared report component
 
-// A finished state is implicitly handled by the component's internal state after the animation runs.
 export type DemoVisualStatus = 'pending' | 'active' | 'complete';
 
 const CheckmarkCircle: React.FC = () => (
@@ -146,7 +145,6 @@ const DiffEngineAnalyzing: React.FC<{ progress: number }> = ({ progress }) => (
         </div>
     </div>
 );
-
 
 export const DiffEngineAnalysisVisual: React.FC<{ status: DemoVisualStatus }> = ({ status }) => {
     const [phase, setPhase] = useState<'input' | 'analyzing' | 'report'>('input');
