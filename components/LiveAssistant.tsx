@@ -59,13 +59,9 @@ export const LiveAssistant: React.FC = () => {
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [isVideoEnabled, setIsVideoEnabled] = useState(false);
   const [isDemoMode, setIsDemoMode] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const videoIntervalRef = useRef<number | null>(null);
 
   // Audio & Session Refs
   const sessionRef = useRef<any>(null);
@@ -112,10 +108,6 @@ export const LiveAssistant: React.FC = () => {
   };
 
   const cleanupAudio = () => {
-    if (videoIntervalRef.current) {
-      window.clearInterval(videoIntervalRef.current);
-      videoIntervalRef.current = null;
-    }
     if (sessionRef.current) {
       try { sessionRef.current.close?.(); } catch(e) {}
       sessionRef.current = null;
@@ -124,9 +116,6 @@ export const LiveAssistant: React.FC = () => {
     if (streamRef.current) {
       streamRef.current.getTracks().forEach(track => track.stop());
       streamRef.current = null;
-    }
-    if (videoRef.current) {
-      videoRef.current.srcObject = null;
     }
     if (inputAudioContextRef.current) {
       inputAudioContextRef.current.close().catch(() => {});
@@ -165,15 +154,7 @@ export const LiveAssistant: React.FC = () => {
     const ai = new GoogleGenAI({ apiKey });
 
     try {
-      streamRef.current = await navigator.mediaDevices.getUserMedia({ 
-        audio: true, 
-        video: isVideoEnabled ? { facingMode: 'user' } : false 
-      });
-      
-      if (isVideoEnabled && videoRef.current) {
-        videoRef.current.srcObject = streamRef.current;
-        videoRef.current.play().catch(e => console.error("Video play failed", e));
-      }
+      streamRef.current = await navigator.mediaDevices.getUserMedia({ audio: true });
       
       sessionPromiseRef.current = ai.live.connect({
         model: 'gemini-1.5-flash-latest',
@@ -207,28 +188,6 @@ export const LiveAssistant: React.FC = () => {
             
             source.connect(scriptProcessor);
             scriptProcessor.connect(inputAudioContextRef.current!.destination);
-
-            if (isVideoEnabled) {
-              videoIntervalRef.current = window.setInterval(() => {
-                if (!videoRef.current || !canvasRef.current || videoRef.current.paused || videoRef.current.ended) return;
-                
-                const video = videoRef.current;
-                const canvas = canvasRef.current;
-                if (video.videoWidth === 0 || video.videoHeight === 0) return;
-                
-                canvas.width = video.videoWidth;
-                canvas.height = video.videoHeight;
-                const ctx = canvas.getContext('2d');
-                if (!ctx) return;
-                
-                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-                const base64Data = canvas.toDataURL('image/jpeg', 0.7).split(',')[1];
-                
-                sessionPromiseRef.current?.then(session => {
-                  session.sendRealtimeInput({ media: { data: base64Data, mimeType: 'image/jpeg' } });
-                }).catch(() => {});
-              }, 1000); 
-            }
           },
           onmessage: async (message: LiveServerMessage) => {
             if (message.serverContent?.outputTranscription) {
@@ -386,7 +345,7 @@ export const LiveAssistant: React.FC = () => {
 
     } catch (err: any) {
       console.error('Session failed:', err);
-      const errorMessage = err.message || "Handshake failed. Please ensure microphone and camera permissions are enabled.";
+      const errorMessage = err.message || "Handshake failed. Please ensure microphone permissions are enabled.";
       const errorDetails = JSON.stringify(err, null, 2);
       setMessages(prev => [...prev, { role: 'assistant', text: `⚠️ **System Offline:** ${errorMessage}\\n\\n**Debug Trace:**\\n\`\`\`\\n${errorDetails}\\n\`\`\`` }]);
       cleanupAudio();
@@ -400,7 +359,6 @@ export const LiveAssistant: React.FC = () => {
   return (
     <div className="fixed bottom-8 left-8 z-[150] font-sans">
       {isDemoMode && <DemoMode onComplete={() => setIsDemoMode(false)} />}
-      <canvas ref={canvasRef} style={{ display: 'none' }} />
       {!isOpen ? (
         <button onClick={() => setIsOpen(true)} className="flex items-center justify-center w-14 h-14 bg-[var(--trust-blue)] text-white rounded-full shadow-2xl hover:scale-105 transition-all relative overflow-hidden group">
           <div className="absolute inset-0 bg-white/20 scale-x-0 group-hover:scale-x-100 transition-transform origin-left"></div>
@@ -409,10 +367,6 @@ export const LiveAssistant: React.FC = () => {
       ) : (
         <div className="w-80 md:w-96 h-auto bg-[var(--bg-standard)] border border-[var(--border-light)] shadow-2xl rounded-xl flex flex-col overflow-hidden animate-in slide-in-from-bottom-4">
           
-          {isVideoEnabled && status !== 'OFFLINE' && (
-              <video ref={videoRef} playsInline muted className="w-full h-auto bg-black rounded-t-xl transition-all" />
-          )}
-
           <div className="p-4 bg-[var(--table-header)] border-b border-[var(--border-light)] flex justify-between items-center">
             {/* Status and Title */}
             <div className="flex items-center gap-3">
@@ -442,16 +396,6 @@ export const LiveAssistant: React.FC = () => {
 
             {/* Action Buttons */}
             <div className="flex gap-1">
-               <button 
-                onClick={() => setIsVideoEnabled(!isVideoEnabled)} 
-                className={`p-2 rounded transition-colors ${status !== 'OFFLINE' ? 'opacity-30 cursor-not-allowed' : isVideoEnabled ? 'bg-blue-500/20 text-blue-600' : 'text-[var(--text-secondary)] hover:bg-[var(--bg-subtle)]'}`}
-                disabled={status !== 'OFFLINE'}
-                title={isVideoEnabled ? "Disable Camera" : "Enable Camera"}
-              >
-                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                   <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/>
-                 </svg>
-              </button>
               <button 
                 onClick={initVoiceChat} 
                 className={`p-2 rounded transition-colors ${status !== 'OFFLINE' ? 'bg-red-500 text-white shadow-inner' : 'text-[var(--trust-blue)] hover:bg-[var(--bg-subtle)]'}`}
