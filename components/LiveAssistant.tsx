@@ -182,7 +182,7 @@ export const LiveAssistant: React.FC = () => {
       streamRef.current = await navigator.mediaDevices.getUserMedia({ audio: true });
       
       sessionPromiseRef.current = ai.live.connect({
-        model: 'gemini-1.5-flash-latest',
+        model: 'gemini-pro',
         callbacks: {
           onopen: () => {
             setStatus('CONNECTED');
@@ -396,7 +396,7 @@ export const LiveAssistant: React.FC = () => {
     try {
       const ai = new GoogleGenAI({ apiKey });
       const result = await ai.models.generateContent({
-        model: "gemini-1.5-flash-latest",
+        model: "gemini-pro",
         contents: [{ role: 'user', parts: [{ text: textToSend }] }]
       });
       const text = result.text;
