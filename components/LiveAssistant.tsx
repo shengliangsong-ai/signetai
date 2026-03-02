@@ -55,7 +55,7 @@ export const LiveAssistant: React.FC = () => {
   const [status, setStatus] = useState<ConnectionStatus>('OFFLINE');
   const [volume, setVolume] = useState(0);
   const [messages, setMessages] = useState<Message[]>([
-    { role: 'assistant', text: "Systems online. I am **Signet-Alpha**, your Live Digital Notary.\n\nI can help you verify media using our Image and Video Diff Engines, or guide you through Universal Media Signing using your registered keys. How can I help you today?" }
+    { role: 'assistant', text: "Systems online. I am **Signet-Alpha**, your Live Digital Notary.\\n\\nI can help you verify media using our Image and Video Diff Engines, or guide you through Universal Media Signing using your registered keys. How can I help you today?" }
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -313,7 +313,9 @@ export const LiveAssistant: React.FC = () => {
           },
           onerror: (e: any) => {
             console.error('Signet Live Error:', e);
-            setMessages(prev => [...prev, { role: 'assistant', text: `⚠️ **Sync Error:** ${e.message || 'Logic drift detected'}` }]);
+            const errorMessage = e.message || 'Logic drift detected';
+            const errorDetails = JSON.stringify(e, null, 2);
+            setMessages(prev => [...prev, { role: 'assistant', text: `⚠️ **Sync Error:** ${errorMessage}\\n\\n**Debug Trace:**\\n\`\`\`\\n${errorDetails}\\n\`\`\`` }]);
             cleanupAudio();
           },
           onclose: () => cleanupAudio()
@@ -344,7 +346,7 @@ export const LiveAssistant: React.FC = () => {
           - 264-bit entropy required for Sovereign Grade.
           - C2PA 2.3 JUMBF alignment.
           
-          Respond conversationally, with technical precision, but keep it accessible. If interrupted, stop and address the user's immediate question.`,
+          Respond conversationally, with technical precision, but. If interrupted, stop and address the user's immediate question.`,
           tools: [{
             functionDeclarations: [
               {
@@ -384,7 +386,9 @@ export const LiveAssistant: React.FC = () => {
 
     } catch (err: any) {
       console.error('Session failed:', err);
-      setMessages(prev => [...prev, { role: 'assistant', text: "⚠️ **System Offline:** Handshake failed. Please ensure microphone and camera permissions are enabled." }]);
+      const errorMessage = err.message || "Handshake failed. Please ensure microphone and camera permissions are enabled.";
+      const errorDetails = JSON.stringify(err, null, 2);
+      setMessages(prev => [...prev, { role: 'assistant', text: `⚠️ **System Offline:** ${errorMessage}\\n\\n**Debug Trace:**\\n\`\`\`\\n${errorDetails}\\n\`\`\`` }]);
       cleanupAudio();
     }
   };
