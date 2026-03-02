@@ -290,7 +290,7 @@ export const LiveAssistant: React.FC = () => {
           Your role is to guide users through verifying and signing digital media (images, videos, documents).
           
           CAPABILITIES:
-          - You have access to the Image Diff Engine and Video Diff Engine.
+          - You have access to the Image Diff Engine and a Video Diff Engine.
           - You can help users detect deepfakes, tampering, or synthetic alterations.
           - You guide users through the Universal Media Signing process.
           - You explain cryptographic concepts (like dual-hashing and Public/Private keys) simply and clearly.
@@ -353,7 +353,35 @@ export const LiveAssistant: React.FC = () => {
   };
 
   const handleSendMessage = async () => {
-    // This function can be used for text input if needed in the future
+    const textToSend = input.trim();
+    if (!textToSend) return;
+
+    if (status === 'OFFLINE') {
+        const apiKey = getApiKey();
+        if (!apiKey) {
+            setMessages(prev => [...prev, { role: 'assistant', text: "⚠️ **Config Error:** No valid API Key found." }]);
+            return;
+        }
+
+        const userMessage: Message = { role: 'user', text: textToSend };
+        setMessages(prev => [...prev, userMessage]);
+        setInput('');
+        setIsLoading(true);
+
+        const ai = new GoogleGenAI({ apiKey });
+
+        try {
+            const chat = ai.getGenerativeModel({ model: 'gemini-1.5-flash-latest' });
+            const result = await chat.sendMessage(textToSend);
+            const response = result.response;
+            const text = response.text();
+            setMessages(prev => [...prev, { role: 'assistant', text }]);
+        } catch (err: any) {
+            console.error("Text chat failed:", err);
+            setMessages(prev => [...prev, { role: 'assistant', text: `⚠️ **API Error:** ${err.message}` }]);
+        }
+        setIsLoading(false);
+    }
   };
 
   return (
@@ -424,14 +452,14 @@ export const LiveAssistant: React.FC = () => {
             <input 
               type="text" value={input} onChange={(e) => setInput(e.target.value)} 
               onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
-              placeholder={status !== 'OFFLINE' ? "Mic active..." : "Ask about v0.3.2..."} 
+              placeholder={status === 'OFFLINE' ? "Ask a question or start voice..." : "Voice chat is active..."} 
               className="flex-1 text-sm bg-transparent outline-none py-2"
-              disabled={status !== 'OFFLINE'}
+              disabled={status !== 'OFFLINE' || isLoading}
             />
             <button 
               onClick={handleSendMessage} 
-              disabled={status !== 'OFFLINE' || isLoading}
-              className={`p-2 transition-all ${status !== 'OFFLINE' || isLoading ? 'opacity-20' : 'text-[var(--trust-blue)] hover:scale-110'}`}
+              disabled={status !== 'OFFLINE' || isLoading || !input.trim()}
+              className={`p-2 transition-all ${status !== 'OFFLINE' || isLoading || !input.trim() ? 'opacity-20 cursor-not-allowed' : 'text-[var(--trust-blue)] hover:scale-110'}`}
             >
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
             </button>
