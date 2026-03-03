@@ -160,220 +160,12 @@ export const LiveAssistant: React.FC = () => {
   };
 
   const initVoiceChat = async () => {
-    if (status !== 'OFFLINE') {
-      cleanupAudio();
-      return;
-    }
-
-    const apiKey = getApiKey();
-    if (!apiKey) {
-      setMessages(prev => [...prev, { role: 'assistant', text: "⚠️ **Config Error:** No valid API Key found. Please check private_keys.ts or environment variables." }]);
-      return;
-    }
-
-    setStatus('CONNECTING');
-
-    inputAudioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 16000 });
-    outputAudioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
-
-    const ai = new GoogleGenAI({ apiKey });
-
-    try {
-      streamRef.current = await navigator.mediaDevices.getUserMedia({ audio: true });
-      
-      sessionPromiseRef.current = ai.live.connect({
-        model: 'gemini-pro',
-        callbacks: {
-          onopen: () => {
-            setStatus('CONNECTED');
-            const source = inputAudioContextRef.current!.createMediaStreamSource(streamRef.current!);
-            const scriptProcessor = inputAudioContextRef.current!.createScriptProcessor(4096, 1, 1);
-            
-            scriptProcessor.onaudioprocess = (e) => {
-              const inputData = e.inputBuffer.getChannelData(0);
-              
-              let sum = 0;
-              for(let i=0; i<inputData.length; i++) sum += inputData[i] * inputData[i];
-              setVolume(Math.sqrt(sum / inputData.length));
-
-              const l = inputData.length;
-              const int16 = new Int16Array(l);
-              for (let i = 0; i < l; i++) {
-                int16[i] = inputData[i] * 32768;
-              }
-              const pcmBlob = {
-                data: encode(new Uint8Array(int16.buffer)),
-                mimeType: 'audio/pcm;rate=16000',
-              };
-              
-              sessionPromiseRef.current?.then(session => {
-                session.sendRealtimeInput({ media: pcmBlob });
-              }).catch(() => {});
-            };
-            
-            source.connect(scriptProcessor);
-            scriptProcessor.connect(inputAudioContextRef.current!.destination);
-          },
-          onmessage: async (message: LiveServerMessage) => {
-            if (message.serverContent?.outputTranscription) {
-              currentOutputTranscription.current += message.serverContent.outputTranscription.text;
-            } else if (message.serverContent?.inputTranscription) {
-              currentInputTranscription.current += message.serverContent.inputTranscription.text;
-            }
-
-            if (message.serverContent?.turnComplete) {
-              const fullInput = currentInputTranscription.current;
-              const fullOutput = currentOutputTranscription.current;
-              
-              if (fullInput || fullOutput) {
-                setMessages(prev => {
-                  const next = [...prev];
-                  if (fullInput) next.push({ role: 'user', text: fullInput });
-                  if (fullOutput) next.push({ role: 'assistant', text: fullOutput });
-                  return next;
-                });
-              }
-              currentInputTranscription.current = '';
-              currentOutputTranscription.current = '';
-            }
-
-            const base64Audio = message.serverContent?.modelTurn?.parts?.[0]?.inlineData?.data;
-            if (base64Audio && outputAudioContextRef.current) {
-              const ctx = outputAudioContextRef.current;
-              nextStartTimeRef.current = Math.max(nextStartTimeRef.current, ctx.currentTime);
-              
-              const audioBuffer = await decodeAudioData(decode(base64Audio), ctx, 24000, 1);
-              const source = ctx.createBufferSource();
-              source.buffer = audioBuffer;
-              source.connect(ctx.destination);
-              source.addEventListener('ended', () => audioSourcesRef.current.delete(source));
-              
-              source.start(nextStartTimeRef.current);
-              nextStartTimeRef.current += audioBuffer.duration;
-              audioSourcesRef.current.add(source);
-            }
-
-            if (message.serverContent?.interrupted) {
-              for (const s of audioSourcesRef.current) {
-                try { s.stop(); } catch(e) {}
-              }
-              audioSourcesRef.current.clear();
-              nextStartTimeRef.current = 0;
-            }
-
-            const parts = message.serverContent?.modelTurn?.parts;
-            if (parts) {
-              for (const part of parts) {
-                if (part.functionCall) {
-                  const call = part.functionCall;
-                  let result = "";
-                  
-                  if (call.name === "triggerUniversalSigner") {
-                    setMessages(prev => [...prev, { role: 'assistant', text: `⚙️ **Action:** Triggering Universal Signer for ${call.args?.fileName || 'document'}...` }]);
-                    result = "Universal Signer triggered successfully. Waiting for user to confirm.";
-                  } else if (call.name === "runDiffEngine") {
-                    setMessages(prev => [...prev, { role: 'assistant', text: `⚙️ **Action:** Running ${call.args?.mediaType || 'media'} Diff Engine...` }]);
-                    result = "Diff Engine analysis complete. No tampering detected. Media is authentic.";
-                  } else if (call.name === "startSelfDemo") {
-                    setMessages(prev => [...prev, { role: 'assistant', text: `⚙️ **Action:** Opening Demo Notebook...` }]);
-                    setIsNotebookOpen(true);
-                    result = "Demo Notebook opened. The user can now run the demo sequence.";
-                  }
-
-                  if (result && sessionPromiseRef.current) {
-                     sessionPromiseRef.current.then(session => {
-                        session.sendToolResponse({
-                          functionResponses: [{
-                            name: call.name,
-                            response: { result }
-                          }]
-                        });
-                     });
-                  }
-                }
-              }
-            }
-          },
-          onerror: (e: any) => {
-            console.error('Signet Live Error:', e);
-            const errorMessage = e.message || 'Logic drift detected';
-            const errorDetails = JSON.stringify(e, null, 2);
-            setMessages(prev => [...prev, { role: 'assistant', text: `⚠️ **Sync Error:** ${errorMessage}\n\n**Debug Trace:**\n\`\`\`\n${errorDetails}\n\`\`\`` }]);
-            cleanupAudio();
-          },
-          onclose: () => cleanupAudio()
-        },
-        config: {
-          responseModalities: [Modality.AUDIO],
-          inputAudioTranscription: {},
-          outputAudioTranscription: {},
-          speechConfig: {
-            voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Zephyr' } },
-          },
-          systemInstruction: `You are Signet-Alpha, the Live Digital Notary for Signet Protocol.
-          Your role is to guide users through verifying and signing digital media (images, videos, documents).
-          
-          CAPABILITIES:
-          - You have access to the Image Diff Engine and a Video Diff Engine.
-          - You can help users detect deepfakes, tampering, or synthetic alterations.
-          - You guide users through the Universal Media Signing process.
-          - You explain cryptographic concepts (like dual-hashing and Public/Private keys) simply and clearly.
-          - If the user asks for a demo, you MUST call the "startSelfDemo" tool. This will open the Demo Notebook page. You should then narrate the 4 steps as they execute on screen: 1. TrustKey Registry, 2. Universal Media Signing, 3. Public Verifier, 4. Diff Engine Analysis. Each step takes 15 seconds.
-          
-          IDENTITY RECOGNITION:
-          Master Signatory is signetai.io:ssl.
-          
-          V0.3.2 KEY SPECIFICS:
-          - Universal Tail-Wrap (UTW) for binary provenance.
-          - Zero-Copy Streaming Engine for large files.
-          - 264-bit entropy required for Sovereign Grade.
-          - C2PA 2.3 JUMBF alignment.
-          
-          Respond conversationally, with technical precision, but. If interrupted, stop and address the user's immediate question.`,
-          tools: [{
-            functionDeclarations: [
-              {
-                name: "triggerUniversalSigner",
-                description: "Trigger the Universal Media Signing process for a document or media file.",
-                parameters: {
-                  type: Type.OBJECT,
-                  properties: {
-                    fileName: { type: Type.STRING, description: "The name of the file being signed." }
-                  },
-                  required: ["fileName"]
-                }
-              },
-              {
-                name: "runDiffEngine",
-                description: "Run the Image or Video Diff Engine to detect deepfakes or tampering.",
-                parameters: {
-                  type: Type.OBJECT,
-                  properties: {
-                    mediaType: { type: Type.STRING, description: "Type of media: 'image' or 'video'" }
-                  },
-                  required: ["mediaType"]
-                }
-              },
-              {
-                name: "startSelfDemo",
-                description: "Start the automated 4-minute self-demo sequence. Call this when the user asks for a demo.",
-              }
-            ]
-          }]
-        }
-      });
-
-      if (sessionPromiseRef.current) {
-        sessionRef.current = await sessionPromiseRef.current;
-      }
-
-    } catch (err: any) {
-      console.error('Session failed:', err);
-      const errorMessage = err.message || "Handshake failed. Please ensure microphone permissions are enabled.";
-      const errorDetails = JSON.stringify(err, null, 2);
-      setMessages(prev => [...prev, { role: 'assistant', text: `⚠️ **System Offline:** ${errorMessage}\n\n**Debug Trace:**\n\`\`\`\n${errorDetails}\n\`\`\`` }]);
-      cleanupAudio();
-    }
+    // TEMPORARILY DISABLED PENDING API FIX
+    setMessages(prev => [...prev, {
+      role: 'assistant',
+      text: "🎙️ Voice chat is temporarily unavailable while we resolve the API configuration. Please use text chat for now."
+    }]);
+    return;
   };
 
   const handleSendMessage = async () => {
@@ -393,25 +185,68 @@ export const LiveAssistant: React.FC = () => {
     setInput('');
     setIsLoading(true);
 
+    // --- NEW: Using Vertex AI via fetch ---
+    const YOUR_PROJECT_ID = "signetai"; 
+    const API_ENDPOINT = "us-central1-aiplatform.googleapis.com";
+    const MODEL_ID = "gemini-1.0-pro";
+    const url = `https://${API_ENDPOINT}/v1/projects/${YOUR_PROJECT_ID}/locations/us-central1/publishers/google/models/${MODEL_ID}:streamGenerateContent`;
+
+    const requestBody = {
+      contents: [{
+        role: 'user',
+        parts: [{ text: textToSend }]
+      }]
+    };
+
     try {
-      const ai = new GoogleGenAI({ apiKey });
-      const result = await ai.models.generateContent({
-        model: "gemini-pro",
-        contents: [{ role: 'user', parts: [{ text: textToSend }] }]
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Goog-Api-Key': apiKey, // Correct header for API Key authentication
+        },
+        body: JSON.stringify(requestBody),
       });
-      const text = result.text;
-      if (text) {
-        setMessages(prev => [...prev, { role: 'assistant', text }]);
-      } else {
-        setMessages(prev => [...prev, { role: 'assistant', text: "I'm sorry, I couldn't generate a response." }]);
+
+      if (!response.ok) {
+        const errorBody = await response.json();
+        console.error("Vertex AI API Error Body:", errorBody);
+        const errorMessage = errorBody.error?.message || `API request failed with status ${response.status}`;
+        throw new Error(errorMessage);
       }
+      
+      const responseText = await response.text();
+      // The response from a streaming endpoint is a JSON array, often returned as a single string.
+      const data = JSON.parse(responseText);
+      
+      let fullText = '';
+      if (Array.isArray(data)) {
+        for (const chunk of data) {
+          const part = chunk?.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (part) {
+            fullText += part;
+          }
+        }
+      }
+
+      if (fullText) {
+        setMessages(prev => [...prev, { role: 'assistant', text: fullText }]);
+      } else {
+        console.error("No text found in Vertex AI response", data);
+        setMessages(prev => [...prev, { role: 'assistant', text: "I'm sorry, I received an empty response from the server." }]);
+      }
+
     } catch (err: any) {
-      console.error("Text chat failed:", err);
-      if (err.message.includes("Unexpected token '<'") || err.message.includes("not valid JSON")) {
-        setMessages(prev => [...prev, { role: 'assistant', text: "⚠️ **API Authentication Error:** It looks like there's an issue with the API key or project configuration. Please check that your API key is valid, billing is enabled for your project, and the Gemini API is enabled in the Google Cloud console." }]);
-      } else {
-        setMessages(prev => [...prev, { role: 'assistant', text: `⚠️ **API Error:** ${err.message}` }]);
-      }
+      console.error("Text chat failed (Vertex AI):", err);
+       if (err.message.includes("does not have permission")) {
+         setMessages(prev => [...prev, { role: 'assistant', text: "⚠️ **Permission Denied:** Your API key may not have permission for Vertex AI. In the Google Cloud console, check your API key's 'API restrictions' and ensure 'Vertex AI API' is enabled."}]);
+       } else if (err.message.includes("project") && err.message.includes("not found")) {
+         setMessages(prev => [...prev, { role: 'assistant', text: "⚠️ **Project Not Found:** The Project ID seems incorrect. Please edit `LiveAssistant.tsx` and replace `YOUR_PROJECT_ID` with your actual Google Cloud Project ID."}]);
+       } else if (err.message.includes("API key not valid")) {
+        setMessages(prev => [...prev, { role: 'assistant', text: "⚠️ **Invalid API Key:** The API key is not valid for the selected project. Please verify the key in `private_keys.ts`." }]);
+       } else {
+         setMessages(prev => [...prev, { role: 'assistant', text: `⚠️ **API Error:** ${err.message}` }]);
+       }
     }
     setIsLoading(false);
   };
