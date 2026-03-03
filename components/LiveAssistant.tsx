@@ -203,7 +203,7 @@ export const LiveAssistant: React.FC = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-Goog-Api-Key': apiKey, // Correct header for API Key authentication
+          'Authorization': `Bearer ${apiKey}`,
         },
         body: JSON.stringify(requestBody),
       });
