@@ -38,24 +38,19 @@ export const LiveAssistant: React.FC = () => {
   }, [messages]);
 
   const getApiKey = () => {
-    // For Vite apps, env vars are on import.meta.env and must be prefixed with VITE_
-    const envKey = import.meta.env.VITE_GOOGLE_GEMINI_KEY;
-    if (envKey && envKey.startsWith('AIza')) {
-      return envKey;
-    }
-
-    // Fallback for local development via git-ignored private_keys.ts
-    if (typeof GOOGLE_GEMINI_KEY !== 'undefined' && GOOGLE_GEMINI_KEY.startsWith('AIza')) {
+    // This project uses a CI step to generate private_keys.ts
+    // This is the correct way to access the key for this project.
+    if (GOOGLE_GEMINI_KEY && GOOGLE_GEMINI_KEY.startsWith('AIza')) {
       return GOOGLE_GEMINI_KEY;
     }
-    
-    console.warn("LiveAssistant: No valid API Key found. Ensure VITE_GOOGLE_GEMINI_KEY is set.");
+    console.warn("LiveAssistant: No valid API Key found in private_keys.ts");
     return '';
   };
 
   useEffect(() => {
     const apiKey = getApiKey();
     if (apiKey) {
+      setStatus('CONNECTING');
       const genAI = new GoogleGenerativeAI(apiKey);
       const model = genAI.getGenerativeModel({ model: "gemini-pro"});
       chat.current = model.startChat({
@@ -64,7 +59,9 @@ export const LiveAssistant: React.FC = () => {
           maxOutputTokens: 500,
         },
       });
+      setStatus('CONNECTED');
     } else {
+        setStatus('ERROR');
         setMessages(prev => [...prev, { role: 'assistant', text: "⚠️ **Config Error:** No valid API Key found." }]);
     }
   }, []);
@@ -131,11 +128,11 @@ export const LiveAssistant: React.FC = () => {
           <div className="p-4 bg-[var(--table-header)] border-b border-[var(--border-light)] flex justify-between items-center">
             <div className="flex items-center gap-3">
               <div className="relative">
-                <div className={`w-3 h-3 rounded-full ${status === 'CONNECTED' ? 'bg-blue-500' : status === 'CONNECTING' ? 'bg-amber-500 animate-pulse' : 'bg-green-500'}`}></div>
+                <div className={`w-3 h-3 rounded-full ${status === 'CONNECTED' ? 'bg-green-500' : status === 'CONNECTING' ? 'bg-amber-500 animate-pulse' : 'bg-red-500'}`}></div>
               </div>
               <div className="flex flex-col">
                 <span className="font-mono text-[10px] font-bold uppercase text-[var(--text-header)] leading-none">Signet-Alpha</span>
-                 <span className="font-mono text-[7px] opacity-40 uppercase tracking-tighter">Ready</span>
+                 <span className="font-mono text-[7px] opacity-40 uppercase tracking-tighter">{status}</span>
               </div>
             </div>
 
