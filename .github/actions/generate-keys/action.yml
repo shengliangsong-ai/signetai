@@ -1,0 +1,17 @@
+name: 'Generate Private Keys'
+description: 'Generates the private_keys.ts file from secrets'
+inputs:
+  gemini-key:
+    description: 'Google Gemini API Key'
+    required: true
+  firebase-config:
+    description: 'Firebase Config object'
+    required: true
+runs:
+  using: "composite"
+  steps:
+    - name: Generate Private Keys File
+      shell: bash
+      run: |
+        echo "export const GOOGLE_GEMINI_KEY = \"${{ inputs.gemini-key }}\"" > src/private_keys.ts
+        echo "export const firebaseConfig = ${{ inputs.firebase-config }}" >> src/private_keys.ts
