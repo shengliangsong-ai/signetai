@@ -13,15 +13,11 @@ runs:
     - name: Generate Private Keys File
       env:
         GEMINI_KEY: ${{ inputs.gemini-key }}
-        FIREBASE_CONFIG: ${{ inputs.firebase-config }}
       shell: bash
       run: |
+        # Write the Gemini key using an environment variable.
         printf 'export const GOOGLE_GEMINI_KEY = "%s";\n' "$GEMINI_KEY" > src/private_keys.ts
-        printf 'export const firebaseConfig = %s;\n' "$FIREBASE_CONFIG" >> src/private_keys.ts
-
-    - name: DEBUG - Display Generated File Content
-      shell: bash
-      run: |
-        echo "--- Start of generated private_keys.ts ---"
-        cat src/private_keys.ts
-        echo "--- End of generated private_keys.ts ---"
+        
+        # Append the Firebase config, injecting the input directly.
+        # Single quotes ensure the shell treats the JSON as a literal string.
+        printf 'export const firebaseConfig = %s;\n' '${{ inputs.firebase-config }}' >> src/private_keys.ts
