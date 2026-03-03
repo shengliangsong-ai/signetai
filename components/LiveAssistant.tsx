@@ -40,7 +40,7 @@ export const LiveAssistant: React.FC = () => {
   const getApiKey = () => {
     // This project uses a CI step to generate private_keys.ts
     // This is the correct way to access the key for this project.
-    if (GOOGLE_GEMINI_KEY && GOOGLE_GEMINI_KEY.startsWith('AIza')) {
+    if (typeof GOOGLE_GEMINI_KEY === 'string' && GOOGLE_GEMINI_KEY.startsWith('AIza')) {
       return GOOGLE_GEMINI_KEY;
     }
     console.warn("LiveAssistant: No valid API Key found in private_keys.ts");

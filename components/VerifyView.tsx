@@ -224,7 +224,7 @@ export const VerifyView: React.FC = () => {
   };
 
   const getApiKey = () => {
-      if (GOOGLE_GEMINI_KEY && GOOGLE_GEMINI_KEY.startsWith("AIza")) {
+      if (typeof GOOGLE_GEMINI_KEY === 'string' && GOOGLE_GEMINI_KEY.startsWith("AIza")) {
           return GOOGLE_GEMINI_KEY;
       }
       const envKey = process.env.API_KEY;
