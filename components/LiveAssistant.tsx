@@ -1,60 +1,25 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { GoogleGenAI, LiveServerMessage, Modality, Type } from "@google/genai";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import ReactMarkdown from 'react-markdown';
 import { GOOGLE_GEMINI_KEY } from '../private_keys.ts';
 import { Notebook } from './Notebook';
 
 interface Message {
+  role: 'user' | 'model';
+  parts: { text: string }[];
+}
+
+interface DisplayMessage {
   role: 'user' | 'assistant';
   text: string;
 }
 
 type ConnectionStatus = 'OFFLINE' | 'CONNECTING' | 'CONNECTED' | 'ERROR';
 
-// --- Manual Encoding/Decoding (Instruction mandated) ---
-function encode(bytes: Uint8Array) {
-  let binary = '';
-  const len = bytes.byteLength;
-  for (let i = 0; i < len; i++) {
-    binary += String.fromCharCode(bytes[i]);
-  }
-  return btoa(binary);
-}
-
-function decode(base64: string) {
-  const binaryString = atob(base64);
-  const len = binaryString.length;
-  const bytes = new Uint8Array(len);
-  for (let i = 0; i < len; i++) {
-    bytes[i] = binaryString.charCodeAt(i);
-  }
-  return bytes;
-}
-
-async function decodeAudioData(
-  data: Uint8Array,
-  ctx: AudioContext,
-  sampleRate: number,
-  numChannels: number,
-): Promise<AudioBuffer> {
-  const dataInt16 = new Int16Array(data.buffer);
-  const frameCount = dataInt16.length / numChannels;
-  const buffer = ctx.createBuffer(numChannels, frameCount, sampleRate);
-
-  for (let channel = 0; channel < numChannels; channel++) {
-    const channelData = buffer.getChannelData(channel);
-    for (let i = 0; i < frameCount; i++) {
-      channelData[i] = dataInt16[i * numChannels + channel] / 32768.0;
-    }
-  }
-  return buffer;
-}
-
 export const LiveAssistant: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [status, setStatus] = useState<ConnectionStatus>('OFFLINE');
-  const [volume, setVolume] = useState(0);
-  const [messages, setMessages] = useState<Message[]>([
+  const [messages, setMessages] = useState<DisplayMessage[]>([
     { role: 'assistant', text: "Systems online. I am **Signet-Alpha**, your Live Digital Notary.\n\nI can help you verify media using our Image and Video Diff Engines, or guide you through Universal Media Signing using your registered keys. How can I help you today?" }
   ]);
   const [input, setInput] = useState('');
@@ -62,19 +27,7 @@ export const LiveAssistant: React.FC = () => {
   const [isNotebookOpen, setIsNotebookOpen] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
-
-  // Audio & Session Refs
-  const sessionRef = useRef<any>(null);
-  const sessionPromiseRef = useRef<Promise<any> | null>(null);
-  const inputAudioContextRef = useRef<AudioContext | null>(null);
-  const outputAudioContextRef = useRef<AudioContext | null>(null);
-  const streamRef = useRef<MediaStream | null>(null);
-  const nextStartTimeRef = useRef<number>(0);
-  const audioSourcesRef = useRef<Set<AudioBufferSourceNode>>(new Set());
-
-  // Transcripts
-  const currentInputTranscription = useRef('');
-  const currentOutputTranscription = useRef('');
+  const chat = useRef<any>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -84,42 +37,6 @@ export const LiveAssistant: React.FC = () => {
     scrollToBottom();
   }, [messages]);
 
-  const speak = (text: string) => {
-    if (typeof window !== 'undefined' && window.speechSynthesis) {
-      const utterance = new SpeechSynthesisUtterance(text);
-      // Optionally select a voice
-      const voices = window.speechSynthesis.getVoices();
-      const desiredVoice = voices.find(v => v.name.includes('Google') && v.lang.startsWith('en'));
-      if (desiredVoice) {
-        utterance.voice = desiredVoice;
-      }
-      window.speechSynthesis.speak(utterance);
-    } else {
-      console.warn("Web Speech API not supported.");
-    }
-  };
-
-  useEffect(() => {
-    const handleSpeak = (e: CustomEvent) => {
-      speak(e.detail.text);
-    };
-    // Ensure voices are loaded
-    if (typeof window !== 'undefined' && window.speechSynthesis) {
-      window.speechSynthesis.onvoiceschanged = () => {
-        // Voices loaded, now safe to speak
-      };
-    }
-
-    window.addEventListener('signet:speak', handleSpeak as EventListener);
-    return () => {
-      window.removeEventListener('signet:speak', handleSpeak as EventListener);
-      if (window.speechSynthesis) {
-        window.speechSynthesis.cancel();
-      }
-    };
-  }, []);
-
-  // Robust Key Retrieval
   const getApiKey = () => {
     if (GOOGLE_GEMINI_KEY && GOOGLE_GEMINI_KEY.startsWith('AIza')) {
       return GOOGLE_GEMINI_KEY;
@@ -132,35 +49,23 @@ export const LiveAssistant: React.FC = () => {
     return '';
   };
 
-  const cleanupAudio = () => {
-    if (sessionRef.current) {
-      try { sessionRef.current.close?.(); } catch(e) {}
-      sessionRef.current = null;
+  useEffect(() => {
+    const apiKey = getApiKey();
+    if (apiKey) {
+      const genAI = new GoogleGenerativeAI(apiKey);
+      const model = genAI.getGenerativeModel({ model: "gemini-pro"});
+      chat.current = model.startChat({
+        history: [],
+        generationConfig: {
+          maxOutputTokens: 500,
+        },
+      });
+    } else {
+        setMessages(prev => [...prev, { role: 'assistant', text: "⚠️ **Config Error:** No valid API Key found." }]);
     }
-    sessionPromiseRef.current = null;
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach(track => track.stop());
-      streamRef.current = null;
-    }
-    if (inputAudioContextRef.current) {
-      inputAudioContextRef.current.close().catch(() => {});
-      inputAudioContextRef.current = null;
-    }
-    if (outputAudioContextRef.current) {
-      for (const source of audioSourcesRef.current) {
-        try { source.stop(); } catch(e) {}
-      }
-      audioSourcesRef.current.clear();
-      outputAudioContextRef.current.close().catch(() => {});
-      outputAudioContextRef.current = null;
-    }
-    setStatus('OFFLINE');
-    setVolume(0);
-    nextStartTimeRef.current = 0;
-  };
+  }, []);
 
   const initVoiceChat = async () => {
-    // TEMPORARILY DISABLED PENDING API FIX
     setMessages(prev => [...prev, {
       role: 'assistant',
       text: "🎙️ Voice chat is temporarily unavailable while we resolve the API configuration. Please use text chat for now."
@@ -172,82 +77,38 @@ export const LiveAssistant: React.FC = () => {
     const textToSend = input.trim();
     if (!textToSend || isLoading) return;
 
-    if (status !== 'OFFLINE') return;
-
-    const apiKey = getApiKey();
-    if (!apiKey) {
-      setMessages(prev => [...prev, { role: 'assistant', text: "⚠️ **Config Error:** No valid API Key found." }]);
-      return;
+    if (!chat.current) {
+        setMessages(prev => [...prev, { role: 'assistant', text: "⚠️ **Initialization Error:** Chat service not available. Please check API key." }]);
+        return;
     }
 
-    const userMessage: Message = { role: 'user', text: textToSend };
+    const userMessage: DisplayMessage = { role: 'user', text: textToSend };
     setMessages(prev => [...prev, userMessage]);
     setInput('');
     setIsLoading(true);
 
-    // --- NEW: Using Vertex AI via fetch ---
-    const YOUR_PROJECT_ID = "signetai"; 
-    const API_ENDPOINT = "us-central1-aiplatform.googleapis.com";
-    const MODEL_ID = "gemini-1.0-pro";
-    const url = `https://${API_ENDPOINT}/v1/projects/${YOUR_PROJECT_ID}/locations/us-central1/publishers/google/models/${MODEL_ID}:streamGenerateContent`;
-
-    const requestBody = {
-      contents: [{
-        role: 'user',
-        parts: [{ text: textToSend }]
-      }]
-    };
-
     try {
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`,
-        },
-        body: JSON.stringify(requestBody),
-      });
-
-      if (!response.ok) {
-        const errorBody = await response.json();
-        console.error("Vertex AI API Error Body:", errorBody);
-        const errorMessage = errorBody.error?.message || `API request failed with status ${response.status}`;
-        throw new Error(errorMessage);
-      }
-      
-      const responseText = await response.text();
-      // The response from a streaming endpoint is a JSON array, often returned as a single string.
-      const data = JSON.parse(responseText);
-      
-      let fullText = '';
-      if (Array.isArray(data)) {
-        for (const chunk of data) {
-          const part = chunk?.candidates?.[0]?.content?.parts?.[0]?.text;
-          if (part) {
-            fullText += part;
-          }
-        }
-      }
-
-      if (fullText) {
-        setMessages(prev => [...prev, { role: 'assistant', text: fullText }]);
-      } else {
-        console.error("No text found in Vertex AI response", data);
-        setMessages(prev => [...prev, { role: 'assistant', text: "I'm sorry, I received an empty response from the server." }]);
-      }
-
+      const result = await chat.current.sendMessage(textToSend);
+      const response = await result.response;
+      const text = response.text();
+      setMessages(prev => [...prev, { role: 'assistant', text }]);
     } catch (err: any) {
-      console.error("Text chat failed (Vertex AI):", err);
-       if (err.message.includes("does not have permission")) {
-         setMessages(prev => [...prev, { role: 'assistant', text: "⚠️ **Permission Denied:** Your API key may not have permission for Vertex AI. In the Google Cloud console, check your API key's 'API restrictions' and ensure 'Vertex AI API' is enabled."}]);
-       } else if (err.message.includes("project") && err.message.includes("not found")) {
-         setMessages(prev => [...prev, { role: 'assistant', text: "⚠️ **Project Not Found:** The Project ID seems incorrect. Please edit `LiveAssistant.tsx` and replace `YOUR_PROJECT_ID` with your actual Google Cloud Project ID."}]);
-       } else if (err.message.includes("API key not valid")) {
-        setMessages(prev => [...prev, { role: 'assistant', text: "⚠️ **Invalid API Key:** The API key is not valid for the selected project. Please verify the key in `private_keys.ts`." }]);
-       } else {
-         setMessages(prev => [...prev, { role: 'assistant', text: `⚠️ **API Error:** ${err.message}` }]);
-       }
+      console.error("Chat send message failed:", err);
+      let errorMessage = "An unexpected error occurred.";
+      if (err.message) {
+          if (err.message.includes("API key not valid")) {
+              errorMessage = "⚠️ **Authentication Error:** The API key is not valid. Please check the `GOOGLE_GEMINI_KEY` in your environment or `private_keys.ts` file.";
+          } else if (err.message.includes("location is not supported")) {
+              errorMessage = "⚠️ **Location Error:** Your current location is not supported for this API.";
+          } else if (err.message.includes("permission denied")) {
+              errorMessage = "⚠️ **Permission Denied:** The API key does not have permission to use the Generative Language API. Please enable it in the Google Cloud Console.";
+          } else {
+              errorMessage = `⚠️ **API Error:** ${err.message}`;
+          }
+      }
+      setMessages(prev => [...prev, { role: 'assistant', text: errorMessage }]);
     }
+
     setIsLoading(false);
   };
 
@@ -264,33 +125,16 @@ export const LiveAssistant: React.FC = () => {
         <div className="w-80 md:w-96 h-auto bg-[var(--bg-standard)] border border-[var(--border-light)] shadow-2xl rounded-xl flex flex-col overflow-hidden animate-in slide-in-from-bottom-4">
           
           <div className="p-4 bg-[var(--table-header)] border-b border-[var(--border-light)] flex justify-between items-center">
-            {/* Status and Title */}
             <div className="flex items-center gap-3">
               <div className="relative">
                 <div className={`w-3 h-3 rounded-full ${status === 'CONNECTED' ? 'bg-blue-500' : status === 'CONNECTING' ? 'bg-amber-500 animate-pulse' : 'bg-green-500'}`}></div>
-                {status === 'CONNECTED' && <div className="absolute inset-0 bg-blue-500 rounded-full animate-ping opacity-75"></div>}
               </div>
               <div className="flex flex-col">
                 <span className="font-mono text-[10px] font-bold uppercase text-[var(--text-header)] leading-none">Signet-Alpha</span>
-                <div className="flex gap-0.5 mt-1 h-2 items-end">
-                  {status === 'CONNECTED' ? (
-                    [1,2,3,4,5].map(i => (
-                      <div 
-                        key={i} 
-                        className="w-1 bg-blue-500 transition-all duration-75" 
-                        style={{ height: `${Math.max(20, volume * 500 * (0.8 + Math.random() * 0.4))}%` }}
-                      ></div>
-                    ))
-                  ) : (
-                    <span className="font-mono text-[7px] opacity-40 uppercase tracking-tighter">
-                      {status === 'CONNECTING' ? 'Syncing...' : 'Ready'}
-                    </span>
-                  )}
-                </div>
+                 <span className="font-mono text-[7px] opacity-40 uppercase tracking-tighter">Ready</span>
               </div>
             </div>
 
-            {/* Action Buttons */}
             <div className="flex items-center gap-1">
                <button 
                 onClick={() => setIsNotebookOpen(true)}
@@ -301,7 +145,7 @@ export const LiveAssistant: React.FC = () => {
               </button>
               <button 
                 onClick={initVoiceChat} 
-                className={`p-2 rounded transition-colors ${status !== 'OFFLINE' ? 'bg-red-500 text-white shadow-inner' : 'text-[var(--trust-blue)] hover:bg-[var(--bg-subtle)]'}`}
+                className={`p-2 rounded transition-colors text-[var(--trust-blue)] hover:bg-[var(--bg-subtle)]'}`}
               >
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/>
@@ -327,14 +171,14 @@ export const LiveAssistant: React.FC = () => {
             <input 
               type="text" value={input} onChange={(e) => setInput(e.target.value)} 
               onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
-              placeholder={status === 'OFFLINE' ? "Ask a question or start voice..." : "Voice chat is active..."} 
+              placeholder={"Ask a question or start voice..."} 
               className="flex-1 text-sm bg-transparent outline-none py-2"
-              disabled={status !== 'OFFLINE' || isLoading}
+              disabled={isLoading}
             />
             <button 
               onClick={handleSendMessage} 
-              disabled={status !== 'OFFLINE' || isLoading || !input.trim()}
-              className={`p-2 transition-all ${status !== 'OFFLINE' || isLoading || !input.trim() ? 'opacity-20 cursor-not--allowed' : 'text-[var(--trust-blue)] hover:scale-110'}`}
+              disabled={isLoading || !input.trim()}
+              className={`p-2 transition-all ${isLoading || !input.trim() ? 'opacity-20 cursor-not--allowed' : 'text-[var(--trust-blue)] hover:scale-110'}`}
             >
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
             </button>
