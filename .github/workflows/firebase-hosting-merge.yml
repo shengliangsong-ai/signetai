@@ -12,7 +12,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Generate Private Keys
-        run: 'echo "export const GOOGLE_OAUTH_CLIENT_ID = \"${{ secrets.VITE_GOOGLE_CLIENT_ID }}\"; export const GOOGLE_GEMINI_KEY = \"${{ secrets.VITE_GOOGLE_GEMINI_KEY }}\";" > src/private_keys.ts'
+        run: |
+          echo "export const GOOGLE_GEMINI_KEY = \"${{ secrets.VITE_GOOGLE_GEMINI_KEY }}\";" > src/private_keys.ts
+          echo "export const firebaseConfig = ${{ secrets.VITE_FIREBASE_CONFIG }};" >> src/private_keys.ts
       - run: npm ci && npm run build
       - uses: FirebaseExtended/action-hosting-deploy@v0
         with:
