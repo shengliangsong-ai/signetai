@@ -10,13 +10,26 @@ jobs:
   build_and_deploy:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v3
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+      - name: Install Dependencies
+        run: npm install
       - name: Generate Private Keys
         uses: ./.github/actions/generate-keys
         with:
-          gemini-key: ${{ secrets.VITE_GOOGLE_GEMINI_KEY }}
-          firebase-config: ${{ secrets.VITE_FIREBASE_CONFIG }}
-      - run: npm ci && npm run build
+          gemini-key: ${{ secrets.GOOGLE_GEMINI_KEY }}
+          api-key: ${{ secrets.FIREBASE_API_KEY }}
+          auth-domain: ${{ secrets.FIREBASE_AUTH_DOMAIN }}
+          project-id: ${{ secrets.FIREBASE_PROJECT_ID }}
+          storage-bucket: ${{ secrets.FIREBASE_STORAGE_BUCKET }}
+          messaging-sender-id: ${{ secrets.FIREBASE_MESSAGING_SENDER_ID }}
+          app-id: ${{ secrets.FIREBASE_APP_ID }}
+          measurement-id: ${{ secrets.FIREBASE_MEASUREMENT_ID }}
+      - name: Build Project
+        run: npm run build
       - uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: '${{ secrets.GITHUB_TOKEN }}'
