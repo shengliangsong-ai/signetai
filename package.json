@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@google/genai": "^1.42.0",
+    "@google/generative-ai": "^0.24.1",
     "@tensorflow-models/coco-ssd": "^2.2.3",
     "@tensorflow/tfjs": "^4.19.0",
     "browser-image-hash": "^0.0.5",
