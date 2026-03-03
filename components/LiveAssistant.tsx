@@ -38,14 +38,18 @@ export const LiveAssistant: React.FC = () => {
   }, [messages]);
 
   const getApiKey = () => {
-    if (GOOGLE_GEMINI_KEY && GOOGLE_GEMINI_KEY.startsWith('AIza')) {
-      return GOOGLE_GEMINI_KEY;
-    }
-    const envKey = process.env.API_KEY;
-    if (envKey && !envKey.includes('UNUSED')) {
+    // For Vite apps, env vars are on import.meta.env and must be prefixed with VITE_
+    const envKey = import.meta.env.VITE_GOOGLE_GEMINI_KEY;
+    if (envKey && envKey.startsWith('AIza')) {
       return envKey;
     }
-    console.warn("LiveAssistant: No valid API Key found.");
+
+    // Fallback for local development via git-ignored private_keys.ts
+    if (typeof GOOGLE_GEMINI_KEY !== 'undefined' && GOOGLE_GEMINI_KEY.startsWith('AIza')) {
+      return GOOGLE_GEMINI_KEY;
+    }
+    
+    console.warn("LiveAssistant: No valid API Key found. Ensure VITE_GOOGLE_GEMINI_KEY is set.");
     return '';
   };
 
