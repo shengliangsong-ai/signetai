@@ -14,13 +14,13 @@ import {
   linkWithCredential
 } from 'firebase/auth';
 import type { ConfirmationResult, User, AuthCredential } from 'firebase/auth';
-import { firebaseConfig } from '../private_keys';
+import { FIREBASE_CONFIG } from '../private_keys';
 import { PersistenceService, VaultRecord } from '../services/PersistenceService';
 import { BIP39_WORDS } from '../constants/Bip39Words';
 
 const initSignetFirebase = () => {
   try {
-    if (getApps().length === 0) return initializeApp(firebaseConfig);
+    if (getApps().length === 0) return initializeApp(FIREBASE_CONFIG);
     return getApp();
   } catch (e) { return null; }
 };
@@ -443,7 +443,7 @@ export const TrustKeyService: React.FC = () => {
         const existingOwnerUid = existing?.ownerUid || '';
         const existingOwnerEmail = existing?.ownerEmail || '';
         const actorUid = actor.uid;
-        const projectId = firebaseConfig?.projectId || 'unknown-project';
+        const projectId = FIREBASE_CONFIG?.projectId || 'unknown-project';
         
         const providerIds = (actor.providerData || [])
           .map((p) => p.providerId)
@@ -511,7 +511,7 @@ export const TrustKeyService: React.FC = () => {
         const providerList = (actor?.providerData || []).map((p) => p.providerId).filter(Boolean).join(',') || 'unknown-provider';
         const actorEmail = actor?.email || 'no-email-claim';
         const actorUid = actor?.uid || 'no-uid';
-        const projectId = firebaseConfig?.projectId || 'unknown-project';
+        const projectId = FIREBASE_CONFIG?.projectId || 'unknown-project';
         errMsg = `CRITICAL: Permission denied. Firestore rejected update for "${identity}". Signed-in account: ${actorEmail} (${providerList}) uid=${actorUid} project=${projectId}. This anchor may be owned by a different UID/email in registry or rules are deployed to a different project.`;
       }
       setStatus(`${errMsg}`);
@@ -566,7 +566,7 @@ export const TrustKeyService: React.FC = () => {
                   <div className="p-3 border border-[var(--border-light)] rounded bg-[var(--bg-sidebar)]">
                     <p className="font-mono text-[9px] uppercase font-bold opacity-50 mb-2">Identity Diagnostics</p>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-2 font-mono text-[9px] opacity-80">
-                      <div>Project: <span className="font-bold">{firebaseConfig?.projectId || 'unknown'}</span></div>
+                      <div>Project: <span className="font-bold">{FIREBASE_CONFIG?.projectId || 'unknown'}</span></div>
                       <div>UID: <span className="font-bold break-all">{diagnosticsActor?.uid || 'none'}</span></div>
                       <div className="md:col-span-2">Providers: <span className="font-bold break-all">{authProviderIds.join(',') || 'none'}</span></div>
                       <div className="md:col-span-2">Anchor Status: <span className="font-bold">{availability?.status || 'idle'}{availability?.owner ? ` (${availability.owner})` : ''}</span></div>
@@ -831,7 +831,7 @@ export const TrustKeyService: React.FC = () => {
                            }
                         }} className="p-3 opacity-0 group-hover:opacity-100 text-red-500 hover:scale-110 transition-all">✕</button>
                       </div>
-                    ))}
+                    ))ж
                   </div>
                 </div>
               )}
@@ -865,7 +865,7 @@ export const TrustKeyService: React.FC = () => {
                       <span className="block text-[8px] opacity-30 font-mono mb-1">{i + 1}</span>
                       <span className="font-mono text-[11px] text-[var(--text-header)] font-bold uppercase">{word}</span>
                     </div>
-                  ))}
+                  ))ж
                 </div>
                 <div className="flex items-center gap-6 p-6 bg-amber-500/5 border border-amber-500/20 rounded-lg">
                    <span className="text-3xl">🛡️</span>
