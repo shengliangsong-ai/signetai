@@ -4,8 +4,26 @@ inputs:
   gemini-key:
     description: 'Google Gemini API Key'
     required: true
-  firebase-config:
-    description: 'Firebase Config object'
+  api-key:
+    description: 'Firebase API Key'
+    required: true
+  auth-domain:
+    description: 'Firebase Auth Domain'
+    required: true
+  project-id:
+    description: 'Firebase Project ID'
+    required: true
+  storage-bucket:
+    description: 'Firebase Storage Bucket'
+    required: true
+  messaging-sender-id:
+    description: 'Firebase Messaging Sender ID'
+    required: true
+  app-id:
+    description: 'Firebase App ID'
+    required: true
+  measurement-id:
+    description: 'Firebase Measurement ID'
     required: true
 runs:
   using: "composite"
@@ -15,9 +33,16 @@ runs:
         GEMINI_KEY: ${{ inputs.gemini-key }}
       shell: bash
       run: |
-        # Write the Gemini key using an environment variable.
+        # Overwrite the file with the Gemini key.
         printf 'export const GOOGLE_GEMINI_KEY = "%s";\n' "$GEMINI_KEY" > src/private_keys.ts
-        
-        # Append the Firebase config, injecting the input directly.
-        # Single quotes ensure the shell treats the JSON as a literal string.
-        printf 'export const firebaseConfig = %s;\n' '${{ inputs.firebase-config }}' >> src/private_keys.ts
+
+        # Append the Firebase config object, built from individual inputs.
+        printf 'export const firebaseConfig = {\n' >> src/private_keys.ts
+        printf '  apiKey: "%s",\n' '${{ inputs.api-key }}' >> src/private_keys.ts
+        printf '  authDomain: "%s",\n' '${{ inputs.auth-domain }}' >> src/private_keys.ts
+        printf '  projectId: "%s",\n' '${{ inputs.project-id }}' >> src/private_keys.ts
+        printf '  storageBucket: "%s",\n' '${{ inputs.storage-bucket }}' >> src/private_keys.ts
+        printf '  messagingSenderId: "%s",\n' '${{ inputs.messaging-sender-id }}' >> src/private_keys.ts
+        printf '  appId: "%s",\n' '${{ inputs.app-id }}' >> src/private_keys.ts
+        printf '  measurementId: "%s"\n' '${{ inputs.measurement-id }}' >> src/private_keys.ts
+        printf '};\n' >> src/private_keys.ts
