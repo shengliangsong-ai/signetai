@@ -21,6 +21,7 @@ jobs:
         uses: ./.github/actions/generate-keys
         with:
           gemini-key: ${{ secrets.GOOGLE_GEMINI_KEY }}
+          google-oauth-client-id: ${{ secrets.GOOGLE_OAUTH_CLIENT_ID }}
           api-key: ${{ secrets.FIREBASE_API_KEY }}
           auth-domain: ${{ secrets.FIREBASE_AUTH_DOMAIN }}
           project-id: ${{ secrets.FIREBASE_PROJECT_ID }}

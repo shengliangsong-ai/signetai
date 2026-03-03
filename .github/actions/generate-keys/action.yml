@@ -5,6 +5,9 @@ inputs:
   gemini-key:
     description: "Google Gemini API Key"
     required: true
+  google-oauth-client-id:
+    description: "Google OAuth Client ID"
+    required: true
   api-key:
     description: "Firebase API Key"
     required: true
@@ -35,6 +38,8 @@ runs:
       run: |
         # Overwrite the file with the Gemini key.
         printf 'export const GOOGLE_GEMINI_KEY = "%s";\n' "${{ inputs.gemini-key }}" > private_keys.ts
+        # Append the Google OAuth Client ID
+        printf 'export const GOOGLE_OAUTH_CLIENT_ID = "%s";\n' "${{ inputs.google-oauth-client-id }}" >> private_keys.ts
 
         # Append the Firebase config object, built from individual inputs.
         printf 'export const firebaseConfig = {\n' >> private_keys.ts
