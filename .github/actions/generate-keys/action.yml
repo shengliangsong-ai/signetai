@@ -13,5 +13,7 @@ runs:
     - name: Generate Private Keys File
       shell: bash
       run: |
-        echo "export const GOOGLE_GEMINI_KEY = \"${{ inputs.gemini-key }}\"" > src/private_keys.ts
-        echo "export const firebaseConfig = ${{ inputs.firebase-config }}" >> src/private_keys.ts
+        cat <<EOF > src/private_keys.ts
+        export const GOOGLE_GEMINI_KEY = "${{ inputs.gemini-key }}";
+        export const firebaseConfig = ${{ inputs.firebase-config }};
+        EOF
