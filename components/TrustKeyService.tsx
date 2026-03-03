@@ -831,7 +831,7 @@ export const TrustKeyService: React.FC = () => {
                            }
                         }} className="p-3 opacity-0 group-hover:opacity-100 text-red-500 hover:scale-110 transition-all">✕</button>
                       </div>
-                    ))ж
+                    ))}
                   </div>
                 </div>
               )}
@@ -865,7 +865,7 @@ export const TrustKeyService: React.FC = () => {
                       <span className="block text-[8px] opacity-30 font-mono mb-1">{i + 1}</span>
                       <span className="font-mono text-[11px] text-[var(--text-header)] font-bold uppercase">{word}</span>
                     </div>
-                  ))ж
+                  ))}
                 </div>
                 <div className="flex items-center gap-6 p-6 bg-amber-500/5 border border-amber-500/20 rounded-lg">
                    <span className="text-3xl">🛡️</span>
