@@ -1,48 +1,48 @@
-name: 'Generate Private Keys'
-description: 'Generates the private_keys.ts file from secrets'
+name: "Generate Private Keys File"
+description: "Generates a private_keys.ts file from secrets."
+
 inputs:
   gemini-key:
-    description: 'Google Gemini API Key'
+    description: "Google Gemini API Key"
     required: true
   api-key:
-    description: 'Firebase API Key'
+    description: "Firebase API Key"
     required: true
   auth-domain:
-    description: 'Firebase Auth Domain'
+    description: "Firebase Auth Domain"
     required: true
   project-id:
-    description: 'Firebase Project ID'
+    description: "Firebase Project ID"
     required: true
   storage-bucket:
-    description: 'Firebase Storage Bucket'
+    description: "Firebase Storage Bucket"
     required: true
   messaging-sender-id:
-    description: 'Firebase Messaging Sender ID'
+    description: "Firebase Messaging Sender ID"
     required: true
   app-id:
-    description: 'Firebase App ID'
+    description: "Firebase App ID"
     required: true
   measurement-id:
-    description: 'Firebase Measurement ID'
+    description: "Firebase Measurement ID"
     required: true
+
 runs:
   using: "composite"
   steps:
-    - name: Generate Private Keys File
-      env:
-        GEMINI_KEY: ${{ inputs.gemini-key }}
+    - name: "Generate Keys File"
       shell: bash
       run: |
         # Overwrite the file with the Gemini key.
-        printf 'export const GOOGLE_GEMINI_KEY = "%s";\n' "$GEMINI_KEY" > src/private_keys.ts
+        printf 'export const GOOGLE_GEMINI_KEY = "%s";\n' "${{ inputs.gemini-key }}" > private_keys.ts
 
         # Append the Firebase config object, built from individual inputs.
-        printf 'export const firebaseConfig = {\n' >> src/private_keys.ts
-        printf '  apiKey: "%s",\n' '${{ inputs.api-key }}' >> src/private_keys.ts
-        printf '  authDomain: "%s",\n' '${{ inputs.auth-domain }}' >> src/private_keys.ts
-        printf '  projectId: "%s",\n' '${{ inputs.project-id }}' >> src/private_keys.ts
-        printf '  storageBucket: "%s",\n' '${{ inputs.storage-bucket }}' >> src/private_keys.ts
-        printf '  messagingSenderId: "%s",\n' '${{ inputs.messaging-sender-id }}' >> src/private_keys.ts
-        printf '  appId: "%s",\n' '${{ inputs.app-id }}' >> src/private_keys.ts
-        printf '  measurementId: "%s"\n' '${{ inputs.measurement-id }}' >> src/private_keys.ts
-        printf '};\n' >> src/private_keys.ts
+        printf 'export const firebaseConfig = {\n' >> private_keys.ts
+        printf '  apiKey: "%s",\n' "${{ inputs.api-key }}" >> private_keys.ts
+        printf '  authDomain: "%s",\n' "${{ inputs.auth-domain }}" >> private_keys.ts
+        printf '  projectId: "%s",\n' "${{ inputs.project-id }}" >> private_keys.ts
+        printf '  storageBucket: "%s",\n' "${{ inputs.storage-bucket }}" >> private_keys.ts
+        printf '  messagingSenderId: "%s",\n' "${{ inputs.messaging-sender-id }}" >> private_keys.ts
+        printf '  appId: "%s",\n' "${{ inputs.app-id }}" >> private_keys.ts
+        printf '  measurementId: "%s"\n' "${{ inputs.measurement-id }}" >> private_keys.ts
+        printf '};\n' >> private_keys.ts
