@@ -16,12 +16,12 @@ runs:
         FIREBASE_CONFIG: ${{ inputs.firebase-config }}
       shell: bash
       run: |
-        # Use printf, the safest method for writing strings that may contain
-        # special characters. The secret is passed as an environment variable
-        # and supplied as a format string argument to prevent shell interpretation.
-        
-        # Overwrite the file with the Gemini key.
         printf 'export const GOOGLE_GEMINI_KEY = "%s";\n' "$GEMINI_KEY" > src/private_keys.ts
-        
-        # Append the Firebase config object.
         printf 'export const firebaseConfig = %s;\n' "$FIREBASE_CONFIG" >> src/private_keys.ts
+
+    - name: DEBUG - Display Generated File Content
+      shell: bash
+      run: |
+        echo "--- Start of generated private_keys.ts ---"
+        cat src/private_keys.ts
+        echo "--- End of generated private_keys.ts ---"
