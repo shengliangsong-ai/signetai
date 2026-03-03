@@ -33,15 +33,15 @@ runs:
   using: "composite"
   steps:
     - run: |
-        echo "export const GOOGLE_GEMINI_KEY = '${{ inputs.gemini-key }}';" > src/private_keys.ts
-        echo "export const GOOGLE_OAUTH_CLIENT_ID = '${{ inputs.google-oauth-client-id }}';" >> src/private_keys.ts
-        echo "export const FIREBASE_CONFIG = {" >> src/private_keys.ts
-        echo "  apiKey: '${{ inputs.api-key }}'," >> src/private_keys.ts
-        echo "  authDomain: '${{ inputs.auth-domain }}'," >> src/private_keys.ts
-        echo "  projectId: '${{ inputs.project-id }}'," >> src/private_keys.ts
-        echo "  storageBucket: '${{ inputs.storage-bucket }}'," >> src/private_keys.ts
-        echo "  messagingSenderId: '${{ inputs.messaging-sender-id }}'," >> src/private_keys.ts
-        echo "  appId: '${{ inputs.app-id }}'," >> src/private_keys.ts
-        echo "  measurementId: '${{ inputs.measurement-id }}'" >> src/private_keys.ts
-        echo "};" >> src/private_keys.ts
+        echo "export const GOOGLE_GEMINI_KEY = '${{ inputs.gemini-key }}';" > private_keys.ts
+        echo "export const GOOGLE_OAUTH_CLIENT_ID = '${{ inputs.google-oauth-client-id }}';" >> private_keys.ts
+        echo "export const FIREBASE_CONFIG = {" >> private_keys.ts
+        echo "  apiKey: '${{ inputs.api-key }}'," >> private_keys.ts
+        echo "  authDomain: '${{ inputs.auth-domain }}'," >> private_keys.ts
+        echo "  projectId: '${{ inputs.project-id }}'," >> private_keys.ts
+        echo "  storageBucket: '${{ inputs.storage-bucket }}'," >> private_keys.ts
+        echo "  messagingSenderId: '${{ inputs.messaging-sender-id }}'," >> private_keys.ts
+        echo "  appId: '${{ inputs.app-id }}'," >> private_keys.ts
+        echo "  measurementId: '${{ inputs.measurement-id }}'" >> private_keys.ts
+        echo "};" >> private_keys.ts
       shell: bash
