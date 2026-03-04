@@ -59,10 +59,7 @@ const criticalAssets = [
     '192.png',
     '512.png',
     'signet_192.png',
-    'signet_512.png',
-    'Gemini_Generated_Image_8ki6e78ki6e78ki6.png',
-    'Gemini_Generated_Image_hmlrobhmlrobhmlr.png',
-    'Gemini_Generated_Image_sohps5sohps5sohp.png'
+    'signet_512.png'
 ];
 
 criticalAssets.forEach(file => {

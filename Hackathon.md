@@ -21,9 +21,6 @@ SignetAI is built as a modern, serverless multi-page application deployed via au
 5.  **Cryptography:** We implemented client-side hashing and a full Public/Private Key Registration system using the Web Crypto API to ensure files never leave the user's device unencrypted. The core hashing mechanism relies on a dual-hash approach:
     $$ H_{final} = \text{SHA-256}( \text{SHA-256}(Data) \parallel \text{Metadata} ) $$
 
-## Architecture Diagram
-[View Architecture Diagram](architecture.svg)
-
 ## Challenges we ran into
 Integrating real-time, bidirectional audio streaming in the browser was our biggest hurdle. Managing the `AudioContext`, ensuring precise sample rates (16kHz for input, 24kHz for output), and handling raw PCM encoding/decoding without relying on high-level abstractions required deep dives into browser audio APIs. 
 

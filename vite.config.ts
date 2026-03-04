@@ -129,11 +129,6 @@ export default defineConfig(({ mode }) => {
       'process.env.FIREBASE_APP_ID': JSON.stringify(env.FIREBASE_APP_ID || ''),
       'process.env.FIREBASE_MEASUREMENT_ID': JSON.stringify(env.FIREBASE_MEASUREMENT_ID || '')
     },
-    resolve: {
-      alias: {
-        'private_keys': path.resolve((process as any).cwd(), 'private_keys.ts'),
-      },
-    },
     server: {
       port: 3000,
       open: true
@@ -141,8 +136,6 @@ export default defineConfig(({ mode }) => {
     build: {
       outDir: 'dist',
       sourcemap: false
-    },
-    assetsInclude: ['**/*.png', '**/*.svg', '**/*.jpg', '**/*.jpeg', '**/*.gif', '**/*.mp4', '**/*.wav'],
-    publicDir: 'public'
+    }
   };
 });

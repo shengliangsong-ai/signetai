@@ -1,59 +1,48 @@
-
-import React, { useState } from 'react';
-
-const SecurityFeature: React.FC<{ title: string; value: string; status: string; statusColor: string }> = ({ title, value, status, statusColor }) => (
-  <tr>
-    <td className="p-3">
-      <div className="font-mono text-[10px] uppercase tracking-widest text-[var(--text-header)] font-bold">{title}</div>
-      <div className="font-mono text-[10px] text-[var(--text-body)] opacity-60 italic">{value}</div>
-    </td>
-    <td className="p-3 text-right">
-      <div className={`inline-block text-[9px] font-bold font-mono uppercase tracking-widest px-2 py-1 border ${statusColor}`}>
-        [{status}]
-      </div>
-    </td>
-  </tr>
-);
+import React, { useState, useEffect } from 'react';
+import { PersistenceService } from '../services/PersistenceService';
 
 export const SecurityIntegrityMonitor: React.FC = () => {
-  const [showSecurityDetails, setShowSecurityDetails] = useState(false);
-  const confidence = 0.9997;
-  const confidencePercentage = confidence * 100;
+  const [vaultActive, setVaultActive] = useState(false);
+
+  useEffect(() => {
+    const check = async () => {
+      const active = await PersistenceService.getActiveVault();
+      setVaultActive(!!active);
+    };
+    check();
+    const interval = setInterval(check, 5000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const securityChecks = [
+    { label: "Referrer Shield", status: "ENFORCED", detail: "signetai.io only" },
+    { label: "Local Vault", status: vaultActive ? "SEALED" : "EMPTY", detail: "IndexedDB isolated" },
+    { label: "Master Signatory", status: "LOCKED", detail: "signetai.io:ssl" },
+    { label: "Project Isolation", status: "ACTIVE", detail: "signetai_prod" }
+  ];
 
   return (
-    <div className="space-y-6">
-      <button
-        onClick={() => setShowSecurityDetails(!showSecurityDetails)}
-        className="w-full py-2 border border-[var(--border-light)] rounded text-[10px] font-mono uppercase font-bold hover:bg-[var(--bg-sidebar)]"
-      >
-        {showSecurityDetails ? 'Hide Security Details' : 'Show Security Details'}
-      </button>
-
-      {showSecurityDetails && (
-        <div className="border border-[var(--border-light)] rounded overflow-hidden">
-          <table className="w-full text-[10px] text-left">
-            <tbody className="divide-y divide-[var(--border-light)]">
-              <SecurityFeature title="Referrer Shield" value="signetai.io only" status="ENFORCED" statusColor="text-green-400 border-green-400/50" />
-              <SecurityFeature title="Local Vault" value="IndexedDB isolated" status="SEALED" statusColor="text-green-400 border-green-400/50" />
-              <SecurityFeature title="Master Signatory" value="signetai.io:ssl" status="LOCKED" statusColor="text-green-400 border-green-400/50" />
-              <SecurityFeature title="Project Isolation" value="signetai_prod" status="ACTIVE" statusColor="text-blue-400 border-blue-400/50" />
-            </tbody>
-          </table>
+    <div className="p-6 bg-black/40 border border-white/5 rounded-lg space-y-4">
+      <div className="flex items-center justify-between border-b border-white/10 pb-2">
+        <span className="font-mono text-[9px] text-blue-500 font-bold uppercase tracking-widest">Neural Audit 03.1</span>
+        <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse"></div>
+      </div>
+      <div className="space-y-3">
+        {securityChecks.map((check, i) => (
+          <div key={i} className="flex justify-between items-start">
+            <div className="space-y-0.5">
+              <p className="font-mono text-[10px] text-white/40 uppercase font-bold">{check.label}</p>
+              <p className="font-mono text-[8px] text-white/20 italic">{check.detail}</p>
+            </div>
+            <span className={`font-mono text-[9px] font-bold ${check.status === 'EMPTY' ? 'text-amber-500' : 'text-green-500'}`}>[{check.status}]</span>
+          </div>
+        ))}
+      </div>
+      <div className="pt-2">
+        <div className="h-1 bg-white/5 rounded-full overflow-hidden">
+          <div className="h-full bg-blue-500 w-[100%]"></div>
         </div>
-      )}
-
-      <div className="space-y-3 pt-2">
-        <div className="w-full bg-[var(--border-light)] rounded-full h-1.5">
-          <div
-            className="bg-[var(--trust-blue)] h-1.5 rounded-full"
-            style={{ width: `${confidencePercentage}%` }}
-          ></div>
-        </div>
-        <div className="text-center">
-          <span className="font-mono text-[10px] text-[var(--text-body)] opacity-60 tracking-widest">
-            INTEGRITY CONFIDENCE: {confidence.toFixed(4)}
-          </span>
-        </div>
+        <p className="mt-2 font-mono text-[7px] text-white/20 uppercase text-center tracking-tighter">Integrity Confidence: 0.9997</p>
       </div>
     </div>
   );

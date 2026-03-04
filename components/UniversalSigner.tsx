@@ -2,7 +2,6 @@ import React, { useEffect, useState, useRef } from 'react';
 import { PersistenceService } from '../services/PersistenceService';
 import { Admonition } from './Admonition';
 import { buildMinuteSamplingTimestamps, generateDualHash } from './scoring';
-import { GOOGLE_OAUTH_CLIENT_ID } from '../private_keys';
 
 // --- STREAMING HELPERS ---
 
@@ -84,7 +83,7 @@ export const UniversalSigner: React.FC = () => {
   const [youtubeDebugLog, setYoutubeDebugLog] = useState<string[]>([]);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || GOOGLE_OAUTH_CLIENT_ID || '';
+  const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
   const YT_UPLOAD_SCOPE = 'https://www.googleapis.com/auth/youtube.upload https://www.googleapis.com/auth/youtube.force-ssl';
 
   useEffect(() => {

@@ -14,11 +14,7 @@
     "strict": true,
     "noUnusedLocals": false,
     "noUnusedParameters": false,
-    "noFallthroughCasesInSwitch": true,
-    "baseUrl": ".",
-    "paths": {
-      "private_keys": ["private_keys.ts"]
-    }
+    "noFallthroughCasesInSwitch": true
   },
   "include": ["**/*.ts", "**/*.tsx", "src/vite-env.d.ts"],
   "exclude": ["node_modules"]

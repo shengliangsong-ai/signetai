@@ -1,8 +1,8 @@
+
 # Signet Protocol: Verifiable Proof of Reasoning (VPR)
 **Deterministic Telemetry for AI Assets**
 
-Official Repository: [github.com/shengliangsong-ai/signetai](https://github.com/shengliangsong-ai/signetai)
-Official Website: [https://signetai.web.app](https://signetai.web.app)
+Official Repository: [github.com/signetai-io/website](https://github.com/signetai-io/website)
 
 The Signet Protocol (draft-song-signet-03.2) defines a framework for the cryptographic attestation of AI-generated reasoning paths. It transforms non-deterministic LLM outputs into formally verified "Signets" aligned with C2PA 2.3.
 
@@ -14,34 +14,24 @@ As AI moves from "Chat" to "Reasoning," current watermarking standards (C2PA) ar
 - **2.2. Neural Lens Engine**: A deterministic verifier that probes AI telemetry for logic drift.
 - **2.3. Universal Tail-Wrap (UTW)**: A Zero-Copy injection method for arbitrary binary formats (Video/Audio/PDF).
 
-## 3. Tools & Utilities
-
-### 3.1. Image Comparator
-A web-based utility for visually and algorithmically comparing two images. This tool is an implementation of the **Trident Engine**.
-
--   **Usage**: Upload two images (Image A and Image B) to initiate the comparison.
--   **Output**:
-    -   **Trident Score**: A quantitative score measuring the structural similarity (SSIM) between the two images.
-    -   **Visual Diff Map**: An output image that visually highlights the exact areas of difference.
-
-## 4. CLI & Developer Tools (New in v0.3.2)
+## 3. CLI & Developer Tools (New in v0.3.2)
 The protocol now includes standalone Node.js tools and a Web Batch Processor.
 
-### 4.1 Batch Processor (Web)
-A high-performance audit engine available at `https://signetai.web.app/batch`.
+### 3.1 Batch Processor (Web)
+A high-performance audit engine available at `/#batch`.
 - **Supported Formats**: Universal support for **Images** (PNG, JPG, SVG), **Video** (MP4, MOV), **Audio** (WAV, MP3), and **Documents** (PDF).
 - **Deep Audit**: Slices binary streams to verify original content integrity against appended signatures.
 - **Telemetry**: Real-time reporting of **Throughput (MB/s)** and **Velocity (Files/s)**.
 - **Dual Strategy**: Supports both **Embedded (UTW)** and **Sidecar (.json)** verification.
 
-### 4.2 Batch Signer (CLI)
+### 3.2 Batch Signer (CLI)
 Zero-dependency script for recursively signing directory trees.
 ```bash
-# Download from https://signetai.web.app/cli
+# Download from /#cli
 node signet-cli.js --dir ./assets --identity "your.name"
 ```
 
-## 5. Security Standards
+## 4. Security Standards
 - **Public Keys**: Professional-grade **256-bit** Ed25519.
 - **Entropy Floor**: **264-bit Sovereign Grade** (24-word mnemonics).
 - **Master Signatory**: `signetai.io:ssl`
@@ -52,49 +42,49 @@ node signet-cli.js --dir ./assets --identity "your.name"
 3. **Adversarial Probing (L3)**: Logic Stress Test.
 4. **Human-in-the-Loop (L4)**: Final Curatorial Attestation.
 
-## Local Development & Deployment
+## Local Development & Compilation (MacBook/Linux)
 
-This section covers how to run the site locally and deploy it to Firebase Hosting.
+To compile the full Signet Platform offline on your machine:
 
 ### Prerequisites
 - **Node.js** (v18 or higher)
 - **npm** (v9 or higher)
-- **Firebase CLI**: Install globally with `npm install -g firebase-tools`
 
-### 1. Local Development
-```bash
-# Clone the repository
-git clone https://github.com/shengliangsong-ai/signetai.git
-cd signetai
+### Installation Steps
 
-# Install dependencies
-npm install
+1. **Clone the Repository**
+   ```bash
+   git clone https://github.com/signetai-io/website.git
+   cd website
+   ```
 
-# Run the local development server (live at http://localhost:3000)
-npm run dev
-```
+2. **Install Dependencies**
+   This installs React, Vite, Tailwind, and the Google GenAI SDK locally.
+   ```bash
+   npm install
+   ```
 
-### 2. Production Deployment
-To deploy the site to the live URL, you must use the Firebase CLI.
+3. **Run Development Server**
+   Starts a hot-reloading local server at `http://localhost:3000`.
+   ```bash
+   npm run dev
+   ```
 
-```bash
-# 1. Authenticate with Firebase (only needs to be done once)
-firebase login
+4. **Compile for Production**
+   Generates a static, offline-ready build in the `dist/` folder.
+   ```bash
+   npm run build
+   ```
 
-# 2. Select the correct Firebase project
-firebase use signetai
-
-# 3. Build the production-ready static files
-npm run build
-
-# 4. Deploy to Firebase Hosting
-firebase deploy --only hosting
-```
-**Note:** Using `firebase deploy` is essential as it correctly processes the `firebase.json` file, which contains the rewrite rules necessary for the site's routing to work correctly.
+5. **Preview Production Build**
+   To test the compiled artifacts locally:
+   ```bash
+   npm run preview
+   ```
 
 ## Live Documentation
-The official technical specification is served directly from the platform. Access it here:
-**https://signetai.web.app/spec**
+The official technical specification is served directly from the platform. Access it by navigating to:
+`https://signetai.io/#spec`
 
 ---
 *Signet Protocol addresses "Agreeability Bias" and "Hallucination Masking" by ensuring architectural independence.*
