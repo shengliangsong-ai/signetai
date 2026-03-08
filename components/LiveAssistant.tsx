@@ -242,7 +242,7 @@ export const LiveAssistant: React.FC = () => {
       }
       
       const sessionPromise = ai.live.connect({
-        model: 'gemini-2.5-flash-native-audio-preview-12-2025',
+        model: 'gemini-2.0-flash-exp',
         callbacks: {
           onopen: () => {
             setStatus('CONNECTED');
@@ -548,15 +548,16 @@ export const LiveAssistant: React.FC = () => {
     try {
       const ai = new GoogleGenAI({ apiKey });
       const response = await ai.models.generateContent({
-        model: 'gemini-3-flash-preview',
-        contents: userText,
+        model: 'gemini-2.0-flash', 
+        contents: [{ role: 'user', parts: [{ text: userText }] }],
         config: {
-          systemInstruction: `Signet-Alpha AI Support. Spec v0.3.2. Authority: signetai.io:ssl.`,
+          systemInstruction: { parts: [{ text: `Signet-Alpha AI Support. Spec v0.3.2. Authority: signetai.io:ssl.` }] },
         }
       });
       setMessages(prev => [...prev, { role: 'assistant', text: response.text || "Neural link timeout." }]);
-    } catch (error) {
-      setMessages(prev => [...prev, { role: 'assistant', text: "Logic drift detected. Link dropped." }]);
+    } catch (error: any) {
+      console.error("LiveAssistant Error:", error);
+      setMessages(prev => [...prev, { role: 'assistant', text: `Logic drift detected: ${error.message || 'Link dropped.'}` }]);
     } finally {
       setIsLoading(false);
     }

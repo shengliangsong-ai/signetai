@@ -385,17 +385,18 @@ export const CliDownload: React.FC = () => {
            </Admonition>
         </div>
 
-        <div className="bg-[#1e1e1e] rounded-xl overflow-hidden border border-neutral-700 shadow-2xl flex flex-col h-[600px]">
-           <div className="flex items-center px-4 py-3 bg-[#252526] border-b border-black">
+        <div className="bg-[var(--code-bg)] rounded-xl overflow-hidden border border-[var(--border-light)] shadow-sm flex flex-col h-[600px]">
+           <div className="flex items-center justify-between px-4 py-3 bg-[var(--table-header)] border-b border-[var(--border-light)]">
               <div className="flex gap-2">
-                 <div className="w-3 h-3 rounded-full bg-red-500"></div>
-                 <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
-                 <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                 <div className="w-3 h-3 rounded-full bg-[var(--border-light)]"></div>
+                 <div className="w-3 h-3 rounded-full bg-[var(--border-light)]"></div>
+                 <div className="w-3 h-3 rounded-full bg-[var(--border-light)]"></div>
               </div>
-              <span className="ml-4 font-mono text-[10px] text-neutral-400">{getFilename()}</span>
+              <span className="font-mono text-[10px] text-[var(--text-body)] opacity-60 uppercase tracking-widest">{getFilename()}</span>
+              <div className="w-10"></div> {/* Spacer for centering */}
            </div>
-           <div className="flex-1 overflow-auto p-4">
-              <pre className="font-mono text-[10px] text-blue-300 leading-relaxed whitespace-pre">
+           <div className="flex-1 overflow-auto p-6">
+              <pre className="font-mono text-[11px] text-[var(--text-body)] leading-relaxed whitespace-pre">
                  {getSource()}
               </pre>
            </div>

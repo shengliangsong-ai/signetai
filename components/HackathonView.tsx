@@ -1,6 +1,6 @@
 import React from 'react';
 import Markdown from 'react-markdown';
-import hackathonContent from '../HACKATHON.md?raw';
+import hackathonContent from '../Hackathon.md?raw';
 
 export const HackathonView: React.FC = () => {
   return (
