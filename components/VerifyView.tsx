@@ -2,7 +2,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Admonition } from './Admonition';
 import { NutritionLabel } from './NutritionLabel';
-import { GOOGLE_GEMINI_KEY } from '../private_keys';
+import { GOOGLE_GEMINI_KEY, YOUTUBE_API_KEY } from '../src/config/env';
 import { 
   generateDualHash, 
   computePairwiseFrameAuditScore,
@@ -19,7 +19,13 @@ import {
 
 import { FrameAnalysisTable } from './FrameAnalysisTable';
 
-export const VerifyView: React.FC = () => {
+export interface VerifyViewProps {
+  defaultUrlInput?: string;
+  defaultReferenceInput?: string;
+  autoRun?: boolean;
+}
+
+export const VerifyView: React.FC<VerifyViewProps> = ({ defaultUrlInput, defaultReferenceInput, autoRun }) => {
   type PerfMetrics = {
     framesRead: number;
     bytesProcessed: number;
@@ -56,12 +62,12 @@ export const VerifyView: React.FC = () => {
   const [verificationStatus, setVerificationStatus] = useState<'IDLE' | 'VERIFYING' | 'SUCCESS' | 'UNSIGNED' | 'TAMPERED' | 'BATCH_REPORT'>('IDLE');
   
   // Inputs
-  const [urlInput, setUrlInput] = useState('https://www.youtube.com/playlist?list=PLjnwycFexttARFrzatvBjzL0BEH-78Bft'); // Default Source B
-  const [referenceInput, setReferenceInput] = useState('https://www.youtube.com/playlist?list=PLjnwycFexttARFrzatvBjzL0BEH-78Bft'); // Default Source A
+  const [urlInput, setUrlInput] = useState(defaultUrlInput || 'https://www.youtube.com/playlist?list=PLjnwycFexttARFrzatvBjzL0BEH-78Bft'); // Default Source B
+  const [referenceInput, setReferenceInput] = useState(defaultReferenceInput || 'https://www.youtube.com/playlist?list=PLjnwycFexttARFrzatvBjzL0BEH-78Bft'); // Default Source A
   const [sampleOffsetSec, setSampleOffsetSec] = useState(7);
   const [sampleIntervalSec, setSampleIntervalSec] = useState(60);
   const [checkerMode, setCheckerMode] = useState<'QUICK' | 'DEEP'>('QUICK');
-  const [autoMode, setAutoMode] = useState(true);
+  const [autoMode, setAutoMode] = useState(autoRun !== undefined ? autoRun : true);
   const [autoBatchMode, setAutoBatchMode] = useState(false);
   const [showAdvancedControls, setShowAdvancedControls] = useState(false);
   const [capturePermissionEnabled, setCapturePermissionEnabled] = useState(false);
@@ -223,12 +229,22 @@ export const VerifyView: React.FC = () => {
   };
 
   const getApiKey = () => {
-      if (GOOGLE_GEMINI_KEY && GOOGLE_GEMINI_KEY.startsWith("AIza")) {
-          return GOOGLE_GEMINI_KEY;
+      if (YOUTUBE_API_KEY && !YOUTUBE_API_KEY.includes("UNUSED")) {
+          console.log("Using YOUTUBE_API_KEY");
+          return YOUTUBE_API_KEY;
       }
-      const envKey = process.env.API_KEY;
-      if (envKey && envKey.startsWith("AIza") && !envKey.includes("UNUSED")) {
-          return envKey;
+      try {
+        const envKey = process.env.GEMINI_API_KEY || process.env.API_KEY;
+        if (envKey && !envKey.includes("UNUSED")) {
+            console.log("Using process.env key");
+            return envKey;
+        }
+      } catch (e) {
+        // Ignore
+      }
+      if (GOOGLE_GEMINI_KEY && !GOOGLE_GEMINI_KEY.includes("UNUSED")) {
+          console.log("Using GOOGLE_GEMINI_KEY");
+          return GOOGLE_GEMINI_KEY;
       }
       throw new Error("Client Configuration Error: GOOGLE_GEMINI_KEY is missing/invalid.");
   };
@@ -284,6 +300,9 @@ export const VerifyView: React.FC = () => {
           const apiKey = getApiKey();
           const res = await fetch(`https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&maxResults=50&playlistId=${playlistId}&key=${apiKey}`);
           const data = await res.json();
+          if (data.error) {
+              throw new Error(data.error.message || "YouTube API Error");
+          }
           if (data.items) {
               const items = data.items.map((item: any) => ({
                   playlistItemId: item.id, // Unique ID within the playlist
@@ -297,7 +316,12 @@ export const VerifyView: React.FC = () => {
               addLog(`Loaded ${items.length} videos from playlist.`);
           }
       } catch (e: any) {
-          addLog(`Playlist Error: ${e.message}`);
+          addLog(`Playlist Error: ${e.message}. Using fallback videos.`);
+          // Fallback videos for demo purposes if API key is invalid
+          setSourceAItems([
+              { id: 'dQw4w9WgXcQ', title: 'Demo Video 1', thumbnail: 'https://img.youtube.com/vi/dQw4w9WgXcQ/0.jpg', size: 'Stream (N/A)' },
+              { id: 'jNQXAC9IVRw', title: 'Demo Video 2', thumbnail: 'https://img.youtube.com/vi/jNQXAC9IVRw/0.jpg', size: 'Stream (N/A)' }
+          ]);
       } finally {
           setIsFetching(false);
       }
@@ -329,6 +353,9 @@ export const VerifyView: React.FC = () => {
           const apiKey = getApiKey();
           const listRes = await fetch(`https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&maxResults=50&playlistId=${playlistId}&key=${apiKey}`);
           const data = await listRes.json();
+          if (data.error) {
+              throw new Error(data.error.message || "YouTube API Error");
+          }
           const files = data.items || [];
           
           const processedFiles = files.map((f: any) => ({
@@ -346,8 +373,13 @@ export const VerifyView: React.FC = () => {
           addLog(`Source B ready: ${processedFiles.length} playlist videos.`);
 
       } catch (e: any) {
-          addLog(`Source B Playlist Error: ${e.message}`);
+          addLog(`Source B Playlist Error: ${e.message}. Using fallback videos.`);
           setFetchError(e.message);
+          // Fallback videos for demo purposes if API key is invalid
+          setFolderContents([
+              { id: 'dQw4w9WgXcQ', name: 'Demo Video 1', type: 'youtube/video', size: 'Stream (N/A)', thumbnailLink: 'https://img.youtube.com/vi/dQw4w9WgXcQ/0.jpg', webContentLink: null, diffScore: null, date: 'N/A' },
+              { id: 'jNQXAC9IVRw', name: 'Demo Video 2', type: 'youtube/video', size: 'Stream (N/A)', thumbnailLink: 'https://img.youtube.com/vi/jNQXAC9IVRw/0.jpg', webContentLink: null, diffScore: null, date: 'N/A' }
+          ]);
       } finally {
           setIsFetching(false);
       }

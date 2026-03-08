@@ -2,11 +2,26 @@
 import React, { useState } from 'react';
 import { jsPDF } from 'jspdf';
 import { SPEC_PAGES } from './SpecContent';
+import { PersistenceService } from '../services/PersistenceService';
 
 export const SpecView: React.FC = () => {
   const [activePage, setActivePage] = useState(0);
+  const [isTocOpen, setIsTocOpen] = useState(false);
 
   const handleDownload = async () => {
+    let vault = await PersistenceService.getActiveVault();
+    if (!vault) {
+        vault = {
+            identity: 'signetai.io:ssl',
+            anchor: 'signetai.io:ssl',
+            publicKey: 'ed25519:signet_v3.1_sovereign_5b9878a8583b7b38d719c7c8498f8981adc17bec0c311d76269e1275e4a8bdf9',
+            mnemonic: '',
+            timestamp: Date.now(),
+            type: 'SOVEREIGN'
+        } as any;
+    }
+    const activeVault = vault!;
+
     const doc = new jsPDF();
     const width = doc.internal.pageSize.getWidth();
     const height = doc.internal.pageSize.getHeight();
@@ -19,7 +34,7 @@ export const SpecView: React.FC = () => {
         doc.setFont("times", "normal");
         doc.setFontSize(8);
         doc.setTextColor(150);
-        doc.text("MASTER SIGNATORY ATTESTATION | Authorized by: signetai.io:ssl | PROVENANCE_ROOT: SHA256:7B8C...44A2", margin, pageHeight - 10);
+        doc.text(`MASTER SIGNATORY ATTESTATION | Authorized by: ${activeVault.identity} | PROVENANCE_ROOT: SHA256:7B8C...44A2`, margin, pageHeight - 10);
         doc.text(`Page ${pageNo} of ${total}`, pageWidth - margin - 20, pageHeight - 10);
         doc.setTextColor(0);
     };
@@ -129,7 +144,7 @@ export const SpecView: React.FC = () => {
         ["Status:", "Active Draft / Implementation Ready"],
         ["Date:", new Date().toLocaleDateString()],
         ["Author:", "Signet Protocol Group"],
-        ["Master Signatory:", "signetai.io:ssl"],
+        ["Master Signatory:", activeVault.identity],
         ["Classification:", "Public Specification"]
     ];
 
@@ -262,7 +277,7 @@ export const SpecView: React.FC = () => {
     doc.text("SIGNED BY IDENTITY:", width/2, barcodeY + barcodeH + 30, { align: 'center' });
     doc.setTextColor(0, 0, 0); 
     doc.setFont("courier", "bold");
-    doc.text("signetai.io:ssl", width/2, barcodeY + barcodeH + 35, { align: 'center' });
+    doc.text(activeVault.identity, width/2, barcodeY + barcodeH + 35, { align: 'center' });
 
     // Public Key
     doc.setTextColor(100, 100, 100); 
@@ -271,7 +286,7 @@ export const SpecView: React.FC = () => {
     doc.setTextColor(0, 85, 255); 
     doc.setFontSize(8);
     // Display FULL key (v3.1)
-    doc.text("ed25519:signet_v3.1_sovereign_5b9878a8583b7b38d719c7c8498f8981adc17bec0c311d76269e1275e4a8bdf9", width/2, barcodeY + barcodeH + 50, { align: 'center' });
+    doc.text(activeVault.publicKey, width/2, barcodeY + barcodeH + 50, { align: 'center' });
     
     // --- SIGNATURE INJECTION (UTW) ---
     const pdfBuffer = doc.output('arraybuffer');
@@ -295,7 +310,9 @@ export const SpecView: React.FC = () => {
         "byte_length": pdfBuffer.byteLength
       },
       "signature": {
-        "signer": "signetai.io:ssl",
+        "signer": activeVault.identity,
+        "anchor": activeVault.anchor,
+        "key": activeVault.publicKey,
         "timestamp": new Date().toISOString(),
         "role": "MASTER_SIGNATORY",
         "note": "Self-signed specification artifact (UTW)"
@@ -324,66 +341,175 @@ ${JSON.stringify(manifest, null, 2)}
   };
 
   return (
-    <div className="py-24 max-w-7xl mx-auto border-v">
-      <div className="flex flex-col lg:flex-row gap-12">
-        <div className="w-full lg:w-80 space-y-8">
-           <div className="p-6 border border-[var(--border-light)] bg-[var(--bg-standard)] rounded-lg">
-              <h3 className="font-mono text-[10px] uppercase font-bold text-[var(--trust-blue)] mb-4 tracking-widest">Table of Contents</h3>
-              <div className="space-y-1">
-                 {SPEC_PAGES.map((page, i) => (
-                    <button
-                      key={i}
-                      onClick={() => setActivePage(i)}
-                      className={`w-full text-left px-3 py-2 text-[10px] font-mono uppercase tracking-tight rounded transition-all ${activePage === i ? 'bg-[var(--trust-blue)] text-white font-bold' : 'text-[var(--text-body)] opacity-60 hover:opacity-100 hover:bg-[var(--bg-sidebar)]'}`}
-                    >
-                      {/* Safety check for title splitting */}
-                      {page.title.includes('.') ? (
-                        <>
-                          <span className="font-bold opacity-50 mr-1">{page.title.split('.')[0]}.</span>
-                          {page.title.split('.').slice(1).join('.').trim()}
-                        </>
-                      ) : page.title}
-                    </button>
-                 ))}
-              </div>
-           </div>
-           
-           <button 
-             onClick={handleDownload}
-             className="w-full py-4 bg-[var(--text-header)] text-[var(--bg-standard)] font-mono text-[10px] uppercase font-bold tracking-widest rounded shadow-xl hover:brightness-110 transition-all flex items-center justify-center gap-2"
-           >
-             <span>⭳</span> Download PDF
-           </button>
+    <div className="py-12 lg:py-24 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="flex flex-col lg:flex-row gap-8 lg:gap-12">
+        {/* Mobile TOC (Collapsible) */}
+        <div className="lg:hidden w-full">
+          <details className="group bg-[var(--bg-sidebar)] border border-[var(--border-light)] rounded-lg overflow-hidden">
+            <summary className="p-4 font-mono text-xs uppercase font-bold text-[var(--text-header)] cursor-pointer flex justify-between items-center list-none">
+              <span>Table of Contents</span>
+              <span className="group-open:rotate-180 transition-transform">▼</span>
+            </summary>
+            <div className="p-4 pt-0 border-t border-[var(--border-light)] space-y-1 max-h-64 overflow-y-auto">
+              {SPEC_PAGES.map((page, i) => (
+                <button
+                  key={i}
+                  onClick={() => {
+                    setActivePage(i);
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                  className={`w-full text-left px-3 py-2 text-[11px] font-mono uppercase tracking-tight rounded transition-all ${activePage === i ? 'bg-[var(--trust-blue)] text-white font-bold' : 'text-[var(--text-body)] opacity-70 hover:opacity-100 hover:bg-[var(--bg-standard)]'}`}
+                >
+                  {page.title.includes('.') ? (
+                    <>
+                      <span className="font-bold opacity-50 mr-1">{page.title.split('.')[0]}.</span>
+                      {page.title.split('.').slice(1).join('.').trim()}
+                    </>
+                  ) : page.title}
+                </button>
+              ))}
+            </div>
+          </details>
         </div>
 
-        <div className="flex-1">
-           <div className="mb-8 flex justify-between items-end border-b border-[var(--border-light)] pb-4">
-              <div>
-                <span className="font-mono text-[10px] text-[var(--trust-blue)] uppercase tracking-[0.3em] font-bold">{SPEC_PAGES[activePage].category}</span>
-                <h1 className="text-4xl font-serif italic font-bold text-[var(--text-header)] mt-2">{SPEC_PAGES[activePage].title}</h1>
-              </div>
-              <span className="font-mono text-[10px] opacity-30">Page {activePage + 1} of {SPEC_PAGES.length}</span>
+        {/* Desktop TOC (Sticky) */}
+        <div className={`hidden lg:block shrink-0 transition-all duration-300 ease-in-out ${isTocOpen ? 'w-80 opacity-100' : 'w-0 opacity-0 overflow-hidden'}`}>
+          <div className="w-80 sticky top-24 space-y-6">
+             <div className="p-6 border border-[var(--border-light)] bg-[var(--bg-standard)] rounded-lg shadow-sm">
+                <h3 className="font-mono text-[10px] uppercase font-bold text-[var(--trust-blue)] mb-4 tracking-widest">Table of Contents</h3>
+                <div className="space-y-1 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
+                   {SPEC_PAGES.map((page, i) => (
+                      <button
+                        key={i}
+                        onClick={() => {
+                          setActivePage(i);
+                          window.scrollTo({ top: 0, behavior: 'smooth' });
+                        }}
+                        className={`w-full text-left px-3 py-2 text-[10px] font-mono uppercase tracking-tight rounded transition-all ${activePage === i ? 'bg-[var(--trust-blue)] text-white font-bold shadow-sm' : 'text-[var(--text-body)] opacity-60 hover:opacity-100 hover:bg-[var(--bg-sidebar)]'}`}
+                      >
+                        {page.title.includes('.') ? (
+                          <>
+                            <span className="font-bold opacity-50 mr-1">{page.title.split('.')[0]}.</span>
+                            {page.title.split('.').slice(1).join('.').trim()}
+                          </>
+                        ) : page.title}
+                      </button>
+                   ))}
+                </div>
+             </div>
+             
+             <button 
+               onClick={handleDownload}
+               className="w-full py-3 bg-[var(--text-header)] text-[var(--bg-standard)] font-mono text-[10px] uppercase font-bold tracking-widest rounded shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2"
+             >
+               <span>⭳</span> Download PDF Spec
+             </button>
+          </div>
+        </div>
+
+        {/* Main Content Area */}
+        <div className="flex-1 min-w-0 bg-[var(--bg-standard)] rounded-xl lg:p-8 lg:border lg:border-[var(--border-light)] lg:shadow-sm transition-all duration-300">
+           {/* Desktop TOC Toggle */}
+           <div className="hidden lg:flex mb-6">
+             <button 
+               onClick={() => setIsTocOpen(!isTocOpen)}
+               className="flex items-center gap-2 text-[10px] font-mono uppercase tracking-widest text-[var(--text-body)] opacity-50 hover:opacity-100 hover:text-[var(--trust-blue)] transition-colors"
+             >
+               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                 <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                 <line x1="9" y1="3" x2="9" y2="21"></line>
+               </svg>
+               {isTocOpen ? 'Hide Index' : 'Show Index'}
+             </button>
            </div>
 
-           <div className="prose prose-lg max-w-none prose-headings:font-serif prose-p:text-[var(--text-body)] prose-headings:text-[var(--text-header)]">
+           {/* Spec Header (W3C Style) */}
+           {activePage === 0 && (
+             <div className="mb-12 pb-8 border-b-2 border-[var(--trust-blue)]">
+               <div className="flex items-center gap-4 mb-6">
+                 <div className="w-16 h-16 bg-[var(--trust-blue)] rounded-lg flex items-center justify-center text-white font-bold text-2xl shadow-lg">SA</div>
+                 <div>
+                   <h2 className="text-sm font-mono uppercase tracking-widest text-[var(--trust-blue)] font-bold">Signet Protocol Group</h2>
+                   <p className="text-xs font-mono text-[var(--text-body)] opacity-60">Technical Specification Document</p>
+                 </div>
+               </div>
+               <h1 className="text-3xl sm:text-4xl lg:text-5xl font-serif font-bold text-[var(--text-header)] leading-tight mb-6">
+                 Signet Protocol: Verifiable Proof of Reasoning (VPR)
+               </h1>
+               <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2 text-sm font-mono">
+                 <dt className="text-[var(--text-body)] opacity-60">Version:</dt>
+                 <dd className="text-[var(--text-header)] font-bold">0.3.2 (Draft)</dd>
+                 <dt className="text-[var(--text-body)] opacity-60">Date:</dt>
+                 <dd className="text-[var(--text-header)]">{new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</dd>
+                 <dt className="text-[var(--text-body)] opacity-60">Editors:</dt>
+                 <dd className="text-[var(--text-header)]">Signet Protocol Core Team</dd>
+                 <dt className="text-[var(--text-body)] opacity-60">Status:</dt>
+                 <dd className="text-amber-600 font-bold">Active Draft / Implementation Ready</dd>
+               </dl>
+             </div>
+           )}
+
+           {/* Page Header */}
+           {activePage !== 0 && (
+             <div className="mb-8 flex flex-col sm:flex-row sm:justify-between sm:items-end border-b border-[var(--border-light)] pb-4 gap-4">
+                <div>
+                  <span className="font-mono text-[10px] text-[var(--trust-blue)] uppercase tracking-[0.3em] font-bold">{SPEC_PAGES[activePage].category}</span>
+                  <h1 className="text-2xl sm:text-3xl font-serif font-bold text-[var(--text-header)] mt-2">{SPEC_PAGES[activePage].title}</h1>
+                </div>
+                <span className="font-mono text-[10px] opacity-40 whitespace-nowrap">Page {activePage + 1} of {SPEC_PAGES.length}</span>
+             </div>
+           )}
+
+           {/* Content */}
+           <div className="prose prose-sm sm:prose-base lg:prose-lg max-w-none 
+             prose-headings:font-serif prose-headings:font-bold prose-headings:text-[var(--text-header)]
+             prose-p:text-[var(--text-body)] prose-p:leading-relaxed
+             prose-a:text-[var(--trust-blue)] prose-a:no-underline hover:prose-a:underline
+             prose-code:text-[var(--trust-blue)] prose-code:bg-blue-500/10 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:font-normal
+             prose-pre:bg-[#0D1117] prose-pre:border prose-pre:border-gray-800 prose-pre:shadow-inner
+             prose-strong:text-[var(--text-header)] prose-strong:font-bold
+             prose-li:text-[var(--text-body)]
+             prose-blockquote:border-l-4 prose-blockquote:border-[var(--trust-blue)] prose-blockquote:bg-[var(--bg-sidebar)] prose-blockquote:py-1 prose-blockquote:px-4 prose-blockquote:not-italic prose-blockquote:text-[var(--text-body)]">
               {SPEC_PAGES[activePage].content}
            </div>
 
-           <div className="mt-16 flex justify-between pt-8 border-t border-[var(--border-light)]">
+           {/* Navigation Footer */}
+           <div className="mt-16 flex flex-col sm:flex-row justify-between items-center gap-4 pt-8 border-t border-[var(--border-light)]">
               <button 
-                onClick={() => setActivePage(Math.max(0, activePage - 1))}
+                onClick={() => {
+                  setActivePage(Math.max(0, activePage - 1));
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
                 disabled={activePage === 0}
-                className="font-mono text-[10px] uppercase font-bold tracking-widest opacity-50 hover:opacity-100 disabled:opacity-20"
+                className="w-full sm:w-auto px-6 py-3 border border-[var(--border-light)] rounded font-mono text-xs uppercase font-bold tracking-widest text-[var(--text-header)] hover:bg-[var(--bg-sidebar)] disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
               >
-                &larr; Previous
+                &larr; Previous Section
               </button>
+              
+              <span className="font-mono text-[10px] opacity-40 hidden sm:block">
+                {activePage + 1} / {SPEC_PAGES.length}
+              </span>
+
               <button 
-                onClick={() => setActivePage(Math.min(SPEC_PAGES.length - 1, activePage + 1))}
+                onClick={() => {
+                  setActivePage(Math.min(SPEC_PAGES.length - 1, activePage + 1));
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
                 disabled={activePage === SPEC_PAGES.length - 1}
-                className="font-mono text-[10px] uppercase font-bold tracking-widest opacity-50 hover:opacity-100 disabled:opacity-20"
+                className="w-full sm:w-auto px-6 py-3 bg-[var(--trust-blue)] text-white rounded font-mono text-xs uppercase font-bold tracking-widest hover:brightness-110 disabled:opacity-30 disabled:hover:brightness-100 transition-all shadow-sm"
               >
-                Next &rarr;
+                Next Section &rarr;
               </button>
+           </div>
+           
+           {/* Mobile Download Button */}
+           <div className="mt-8 lg:hidden">
+             <button 
+               onClick={handleDownload}
+               className="w-full py-4 bg-[var(--text-header)] text-[var(--bg-standard)] font-mono text-[10px] uppercase font-bold tracking-widest rounded shadow-md flex items-center justify-center gap-2"
+             >
+               <span>⭳</span> Download PDF Spec
+             </button>
            </div>
         </div>
       </div>

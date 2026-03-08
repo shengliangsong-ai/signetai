@@ -169,7 +169,7 @@ export const ManualView: React.FC = () => {
                     <td className="p-4 font-mono text-[var(--text-header)]">GOOGLE_GEMINI_KEY</td>
                     <td className="p-4 font-bold text-emerald-600">PRIMARY</td>
                     <td className="p-4 opacity-70">
-                       Defined in <code>private_keys.ts</code>. This is the <strong>default</strong> key for all Generative AI and Drive API operations.
+                       Defined in <code>.env</code> or environment variables. This is the <strong>default</strong> key for all Generative AI and Drive API operations.
                     </td>
                  </tr>
                  <tr>

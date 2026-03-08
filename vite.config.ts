@@ -119,7 +119,9 @@ export default defineConfig(({ mode }) => {
       }
     ],
     define: {
+      'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY || ''),
       'process.env.API_KEY': JSON.stringify(env.API_KEY || ''),
+      'process.env.YOUTUBE_API_KEY': JSON.stringify(env.YOUTUBE_API_KEY || ''),
       'process.env.EXTRACTOR_TIMEOUT_MS': JSON.stringify(env.EXTRACTOR_TIMEOUT_MS || '5000'),
       'process.env.FIREBASE_API_KEY': JSON.stringify(env.FIREBASE_API_KEY || ''),
       'process.env.FIREBASE_AUTH_DOMAIN': JSON.stringify(env.FIREBASE_AUTH_DOMAIN || ''),

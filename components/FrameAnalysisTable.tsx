@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { AuditResult, FrameCandidate } from './scoring';
 import { GoogleGenAI } from "@google/genai";
+import { GOOGLE_GEMINI_KEY } from '../src/config/env';
 
 interface FrameAnalysisTableProps {
   auditResult: AuditResult;
@@ -76,11 +77,19 @@ export const FrameAnalysisTable: React.FC<FrameAnalysisTableProps> = ({ auditRes
   const runAiAnalysis = async () => {
     setAnalyzing(true);
     try {
-      const apiKey = process.env.GEMINI_API_KEY || ''; 
+      let apiKey = GOOGLE_GEMINI_KEY || '';
+      try {
+        const envKey = process.env.GEMINI_API_KEY || process.env.API_KEY;
+        if (envKey && !envKey.includes('UNUSED')) {
+          apiKey = envKey;
+        }
+      } catch (e) {
+        // Ignore
+      }
       // Note: In a real app, we'd handle the key more securely or prompt for it.
       // For this demo, we assume it's available or we mock the response if missing.
       
-      if (!apiKey && !process.env.API_KEY) {
+      if (!apiKey) {
          // Mock simulation for demo if no key
          await new Promise(r => setTimeout(r, 2000));
          const mocks: Record<string, string> = {};
@@ -92,7 +101,7 @@ export const FrameAnalysisTable: React.FC<FrameAnalysisTableProps> = ({ auditRes
          return;
       }
 
-      const genAI = new GoogleGenAI({ apiKey: apiKey || process.env.API_KEY || '' });
+      const genAI = new GoogleGenAI({ apiKey: apiKey || '' });
       
       // We'll analyze the first frame as a sample to save tokens/time in this demo
       // In a full version, we'd loop through all

@@ -273,6 +273,42 @@ export const PART_2 = [
     )
   },
   {
+    category: "TECHNICAL AUDIT",
+    title: "12.6 The Trident Image Engine",
+    text: "12.6.1 Multimodal Forensic Analysis\nSignet's Image Diff Lab utilizes the Trident Engine to perform human-like perceptual comparisons between two image sources. It combines deterministic pixel-level structural analysis (SSIM) with advanced multimodal AI (Gemini 3.1 Pro) to detect semantic and perceptual alterations such as flipping, cropping, rotation, or deepfake manipulation.\n\n12.6.2 The Three Pillars of Trident\n1. Structural Similarity: Fast, deterministic pixel-by-pixel comparison generating a visual diff map.\n2. Perceptual Similarity: AI-driven analysis of how a human perceives the visual changes.\n3. Semantic Similarity: AI-driven analysis of the underlying meaning and context of the image.",
+    content: (
+      <div className="space-y-8 animate-in fade-in duration-500">
+        <h2 className="text-[var(--text-header)] font-serif text-2xl font-bold mb-6 italic">12.6 The Trident Image Engine</h2>
+        
+        <p className="opacity-80 leading-loose mb-6">
+          The <strong>Trident Engine</strong> powers the Image Diff Lab, providing a robust, human-like forensic analysis of visual media. By combining deterministic pixel math with multimodal AI reasoning, it can detect complex manipulations that traditional hashing algorithms miss.
+        </p>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+           <div className="p-6 bg-[var(--code-bg)] border border-[var(--border-light)] rounded-lg">
+              <h4 className="font-mono text-[10px] uppercase font-bold text-[var(--trust-blue)] mb-2">1. Structural</h4>
+              <p className="text-xs opacity-80">Deterministic, pixel-by-pixel SSIM comparison. Generates a precise visual difference map highlighting altered regions.</p>
+           </div>
+           <div className="p-6 bg-[var(--code-bg)] border border-[var(--border-light)] rounded-lg">
+              <h4 className="font-mono text-[10px] uppercase font-bold text-amber-500 mb-2">2. Perceptual</h4>
+              <p className="text-xs opacity-80">AI-driven analysis evaluating how a human eye perceives the changes (e.g., ignoring minor compression artifacts).</p>
+           </div>
+           <div className="p-6 bg-[var(--code-bg)] border border-[var(--border-light)] rounded-lg">
+              <h4 className="font-mono text-[10px] uppercase font-bold text-emerald-500 mb-2">3. Semantic</h4>
+              <p className="text-xs opacity-80">Deep contextual analysis. Detects if the <em>meaning</em> of the image has changed (e.g., a stop sign changed to a yield sign).</p>
+           </div>
+        </div>
+
+        <div className="p-6 border-l-4 border-[var(--trust-blue)] bg-[var(--admonition-bg)]">
+           <h4 className="font-bold text-[var(--text-header)] text-sm mb-2">Resilience to Spatial Manipulation</h4>
+           <p className="text-xs opacity-80 leading-relaxed">
+             Unlike strict cryptographic hashes, the Trident Engine's multimodal approach can accurately identify images that have been <strong>flipped, shifted, rotated, cropped, or trimmed</strong>, assigning a precise difference score (Δ 0-1000) while explaining the nature of the alteration.
+           </p>
+        </div>
+      </div>
+    )
+  },
+  {
     category: "PROTOCOL GOVERNANCE",
     title: "13. Trust Economy & Penalties",
     text: "To discourage the stripping of provenance data, the Signet Protocol introduces Trust Score Attrition.\n\n12.1 Malicious Actor Penalties\nRepeated 'Clean Slate' signatures on assets found to be stripped versions of existing registry entries lead to Trust Score Decay.",

@@ -21,7 +21,7 @@ fi
 if [ -z "$API_KEY" ]; then
   echo "Warning: API_KEY environment variable is not set."
   echo "Usage: API_KEY=your_api_key ./start_local.sh"
-  # Default to the key from private_keys.ts if not provided, but it's better to be explicit
+  # Default to the key from .env if not provided, but it's better to be explicit
 fi
 
 # Start the dev server

@@ -1,5 +1,4 @@
 # Signet AI Security Ignore List
-private_keys.ts
 .env
 .env.local
 node_modules/

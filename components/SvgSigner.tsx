@@ -16,7 +16,7 @@ export const SvgSigner: React.FC = () => {
   const [isLoadingDemo, setIsLoadingDemo] = useState(false);
   const [activeTab, setActiveTab] = useState<'PREVIEW' | 'CODE' | 'DIFF'>('PREVIEW');
   const [verificationResult, setVerificationResult] = useState<any>(null);
-  const [fileName, setFileName] = useState<string>('upload.svg');
+  const [fileName, setFileName] = useState<string>('signetai-solar-system.svg');
   const [showADR, setShowADR] = useState(false);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -40,6 +40,10 @@ export const SvgSigner: React.FC = () => {
       setIsLoadingDemo(false);
     }
   };
+
+  useEffect(() => {
+    handleLoadDemo();
+  }, []);
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];

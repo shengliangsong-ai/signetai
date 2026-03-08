@@ -15,13 +15,13 @@ import { BrandingView } from './components/BrandingView';
 import { ManualView } from './components/ManualView';
 import { LiveAssistant } from './components/LiveAssistant';
 import { ProvenanceLab } from './components/ProvenanceLab';
-import { SecurityIntegrityMonitor } from './components/SecurityIntegrityMonitor';
 import { ComplianceDashboard } from './components/ComplianceDashboard';
 import { VerifyView } from './components/VerifyView';
 import { EcosystemView } from './components/EcosystemView';
 import { SvgSigner } from './components/SvgSigner';
 import { PdfSigner } from './components/PdfSigner';
 import { UniversalSigner } from './components/UniversalSigner';
+import { ImageComparator } from './components/ImageComparator';
 import { ProjectStatusView } from './components/ProjectStatusView';
 import { BatchVerifier } from './components/BatchVerifier';
 import { CliDownload } from './components/CliDownload';
@@ -32,6 +32,7 @@ import { PodcastDemo } from './components/PodcastDemo';
 import { TermsOfServiceView } from './components/TermsOfServiceView';
 import { UserDataDeletionView } from './components/UserDataDeletionView';
 import { DemoNotebook } from './components/DemoNotebook';
+import { HackathonView } from './components/HackathonView';
 
 export type Theme = 'standard' | 'midnight';
 
@@ -105,7 +106,10 @@ const Sidebar: React.FC<{ currentView: string; isOpen: boolean }> = ({ currentVi
       <SidebarGroup title="Getting Started">
         <SidebarLink id="" currentView={currentView} label="Introduction" />
         <SidebarLink id="mission" currentView={currentView} label="Mission & Team" />
-        <SidebarLink id="demo" currentView={currentView} label="▶ Run Demo Notebook" highlight />
+        <div className="lg:hidden">
+          <SidebarLink id="hackathon" currentView={currentView} label="Hackathon Submission" highlight />
+          <SidebarLink id="demo" currentView={currentView} label="▶ Run Demo Notebook" highlight />
+        </div>
       </SidebarGroup>
 
       <SidebarGroup title="Core Protocol">
@@ -124,6 +128,7 @@ const Sidebar: React.FC<{ currentView: string; isOpen: boolean }> = ({ currentVi
 
       <SidebarGroup title="Media Labs">
         <SidebarLink id="universal-lab" currentView={currentView} label="Universal Media Lab" />
+        <SidebarLink id="image-diff" currentView={currentView} label="Image Diff Lab" isSub />
         <SidebarLink id="svg-lab" currentView={currentView} label="SVG Vector Lab" isSub />
         <SidebarLink id="pdf-lab" currentView={currentView} label="PDF Doc Lab" isSub />
         <SidebarLink id="auditor" currentView={currentView} label="Provenance Lab (Sim)" />
@@ -145,8 +150,7 @@ const Sidebar: React.FC<{ currentView: string; isOpen: boolean }> = ({ currentVi
     </nav>
 
     <div className="p-6 border-t border-[var(--border-light)] bg-[var(--bg-sidebar)]">
-      <SecurityIntegrityMonitor />
-      <div className="flex items-center gap-2 mt-4 text-[10px] font-mono opacity-50 text-[var(--text-body)]">
+      <div className="flex items-center gap-2 text-[10px] font-mono opacity-50 text-[var(--text-body)]">
         <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
         <span>MAINNET_NODE: ACTIVE</span>
       </div>
@@ -162,26 +166,35 @@ const Header: React.FC<{
   installPrompt: any;
   onInstall: () => void;
 }> = ({ onToggleSidebar, theme, onToggleTheme, onOpenPortal, installPrompt, onInstall }) => (
-  <header className="fixed top-0 right-0 left-0 lg:left-72 h-16 bg-[var(--bg-standard)] border-b border-[var(--border-light)] z-30 flex items-center justify-between px-8">
+  <header className="fixed top-0 right-0 left-0 lg:left-72 h-16 bg-[var(--bg-standard)] border-b border-[var(--border-light)] z-30 flex items-center justify-between px-4 lg:px-8">
     <button onClick={onToggleSidebar} className="lg:hidden p-2 text-2xl text-[var(--text-header)]">☰</button>
     <div className="hidden lg:block text-[11px] font-mono text-[var(--text-body)] opacity-40 uppercase tracking-widest">
       ISO/TC 290 - Cognitive Provenance Standard
     </div>
     
-    <div className="flex items-center gap-6">
+    <div className="flex items-center gap-4 lg:gap-6 ml-auto">
+      <a href="#hackathon" className="hidden lg:block text-[11px] font-bold uppercase tracking-widest text-[var(--trust-blue)] hover:brightness-125 transition-all">Hackathon Submission</a>
+      
       {installPrompt && (
         <button 
           onClick={onInstall}
-          className="flex items-center gap-2 px-3 py-1.5 bg-[var(--bg-sidebar)] border border-[var(--trust-blue)] rounded hover:bg-[var(--admonition-bg)] transition-all animate-pulse shadow-[0_0_10px_rgba(0,85,255,0.3)]"
+          className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-[var(--bg-sidebar)] border border-[var(--trust-blue)] rounded hover:bg-[var(--admonition-bg)] transition-all animate-pulse shadow-[0_0_10px_rgba(0,85,255,0.3)]"
         >
           <SignetLogo className="w-3 h-3" />
           <span className="text-[10px] font-mono uppercase font-bold text-[var(--trust-blue)] tracking-wider">Install App</span>
         </button>
       )}
 
+      <a 
+        href="#demo" 
+        className="flex items-center gap-2 px-3 py-1.5 bg-green-500/10 border border-green-500/50 rounded text-[10px] lg:text-[11px] font-bold uppercase tracking-widest text-green-500 hover:bg-green-500 hover:text-white transition-all shadow-[0_0_10px_rgba(34,197,94,0.2)] whitespace-nowrap"
+      >
+        ▶ Run Demo
+      </a>
+
       <button 
         onClick={() => window.location.reload()}
-        className="text-[var(--text-body)] opacity-40 hover:opacity-100 hover:text-[var(--trust-blue)] transition-all"
+        className="text-[var(--text-body)] opacity-40 hover:opacity-100 hover:text-[var(--trust-blue)] transition-all flex-shrink-0"
         title="Check for Updates / Reload"
       >
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -219,7 +232,7 @@ const Header: React.FC<{
 );
 
 const App: React.FC = () => {
-  const [view, setView] = useState<'home' | 'mission' | 'spec' | 'standards' | 'schema' | 'branding' | 'manual' | 'auditor' | 'identity' | 'compliance' | 'verify' | 'ecosystem' | 'svg-lab' | 'pdf-lab' | 'universal-lab' | 'status' | 'batch' | 'cli' | 'privacy' | 'donate' | 'terms' | 'data-deletion' | 'demo'>('home');
+  const [view, setView] = useState<'home' | 'mission' | 'spec' | 'standards' | 'schema' | 'branding' | 'manual' | 'auditor' | 'identity' | 'compliance' | 'verify' | 'ecosystem' | 'svg-lab' | 'pdf-lab' | 'universal-lab' | 'image-diff' | 'status' | 'batch' | 'cli' | 'privacy' | 'donate' | 'terms' | 'data-deletion' | 'demo' | 'hackathon'>('home');
   const [theme, setTheme] = useState<Theme>('standard');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isPortalOpen, setIsPortalOpen] = useState(false);
@@ -266,6 +279,8 @@ const App: React.FC = () => {
         setView('pdf-lab');
       } else if (route === '#universal-lab') {
         setView('universal-lab');
+      } else if (route === '#image-diff') {
+        setView('image-diff');
       } else if (route === '#status') {
         setView('status');
       } else if (route === '#batch') {
@@ -282,6 +297,8 @@ const App: React.FC = () => {
         setView('donate');
       } else if (route === '#demo') {
         setView('demo');
+      } else if (route === '#hackathon') {
+        setView('hackathon');
       } else {
         setView('home');
       }
@@ -364,6 +381,7 @@ const App: React.FC = () => {
           {view === 'svg-lab' && <SvgSigner />}
           {view === 'pdf-lab' && <PdfSigner />}
           {view === 'universal-lab' && <UniversalSigner />}
+          {view === 'image-diff' && <ImageComparator defaultImageA="/signet_Gemini_Generated_Image_ABCD.png" defaultImageB="/signet_Gemini_Generated_Image_XYZZ.png" />}
           {view === 'status' && <ProjectStatusView />}
           {view === 'batch' && <BatchVerifier />}
           {view === 'cli' && <CliDownload />}
@@ -372,6 +390,7 @@ const App: React.FC = () => {
           {view === 'terms' && <TermsOfServiceView />}
           {view === 'data-deletion' && <UserDataDeletionView />}
           {view === 'demo' && <DemoNotebook />}
+          {view === 'hackathon' && <HackathonView />}
 
           <footer className="mt-24 pt-12 border-t border-[var(--border-light)] flex flex-wrap justify-between items-center gap-6 text-[10px] font-mono opacity-50 uppercase tracking-widest text-[var(--text-body)]">
             <div className="flex items-center gap-4">

@@ -2,7 +2,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { GoogleGenAI, LiveServerMessage, Modality, Type } from "@google/genai";
 import ReactMarkdown from 'react-markdown';
-import { GOOGLE_GEMINI_KEY } from '../private_keys';
+import { GOOGLE_GEMINI_KEY } from '../src/config/env';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -22,7 +22,9 @@ function encode(bytes: Uint8Array) {
 }
 
 function decode(base64: string) {
-  const binaryString = atob(base64);
+  const cleanBase64 = base64.replace(/[^A-Za-z0-9+/]/g, '');
+  const paddedBase64 = cleanBase64.padEnd(cleanBase64.length + (4 - cleanBase64.length % 4) % 4, '=');
+  const binaryString = atob(paddedBase64);
   const len = binaryString.length;
   const bytes = new Uint8Array(len);
   for (let i = 0; i < len; i++) {
@@ -31,20 +33,20 @@ function decode(base64: string) {
   return bytes;
 }
 
-async function decodeAudioData(
+function decodeAudioData(
   data: Uint8Array,
   ctx: AudioContext,
   sampleRate: number,
   numChannels: number,
-): Promise<AudioBuffer> {
-  const dataInt16 = new Int16Array(data.buffer);
-  const frameCount = dataInt16.length / numChannels;
+): AudioBuffer {
+  const dataView = new DataView(data.buffer);
+  const frameCount = Math.floor(data.length / 2 / numChannels);
   const buffer = ctx.createBuffer(numChannels, frameCount, sampleRate);
 
   for (let channel = 0; channel < numChannels; channel++) {
     const channelData = buffer.getChannelData(channel);
     for (let i = 0; i < frameCount; i++) {
-      channelData[i] = dataInt16[i * numChannels + channel] / 32768.0;
+      channelData[i] = dataView.getInt16((i * numChannels + channel) * 2, true) / 32768.0;
     }
   }
   return buffer;
@@ -52,11 +54,14 @@ async function decodeAudioData(
 
 export const LiveAssistant: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const [isMinimized, setIsMinimized] = useState(false);
   const [status, setStatus] = useState<ConnectionStatus>('OFFLINE');
   const [volume, setVolume] = useState(0);
   const [messages, setMessages] = useState<Message[]>([
     { role: 'assistant', text: "Systems online. I am **Signet-Alpha**, your Live Digital Notary.\n\nI can help you verify media using our Image and Video Diff Engines, or guide you through Universal Media Signing using your registered keys. How can I help you today?" }
   ]);
+  const [streamingInput, setStreamingInput] = useState('');
+  const [streamingOutput, setStreamingOutput] = useState('');
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isVideoEnabled, setIsVideoEnabled] = useState(false);
@@ -77,6 +82,8 @@ export const LiveAssistant: React.FC = () => {
   // Transcripts
   const currentInputTranscription = useRef('');
   const currentOutputTranscription = useRef('');
+  const pendingDemoNarrate = useRef(false);
+  const speakingTimeoutRef = useRef<number | null>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -84,16 +91,67 @@ export const LiveAssistant: React.FC = () => {
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages]);
+  }, [messages, streamingInput, streamingOutput]);
+
+  useEffect(() => {
+    const handleStartDemo = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      if (customEvent.detail?.fromAgent) return; // Agent already knows
+
+      setIsOpen(true);
+      
+      if (status === 'OFFLINE') {
+        pendingDemoNarrate.current = true;
+        initVoiceChat();
+      } else if (status === 'CONNECTED' && sessionRef.current) {
+        try {
+          sessionRef.current.sendClientContent({ turns: [{ role: 'user', parts: [{ text: "I just started the demo notebook manually. Please provide a 1-minute introduction summarizing the key of the project, addressing the hackathon requirements (Live Agent, Gemini Live API, Google Cloud). Then, explain Stage 1: Sovereign Identity Initialization. Do NOT explain the other stages yet. I will prompt you when the UI advances to the next stage." }] }], turnComplete: true });
+        } catch (err) {
+          console.error("Failed to send demo prompt:", err);
+        }
+      }
+    };
+
+    const handleNarrateStep = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      const step = customEvent.detail?.step;
+      if (status === 'CONNECTED' && sessionRef.current) {
+        try {
+          let prompt = `The demo has automatically advanced to stage ${step}. Please explain this stage briefly to the user. Do NOT explain any subsequent stages. I will prompt you again when the UI advances.`;
+          if (step === 4) {
+            prompt = `The demo has automatically advanced to stage 4: Image Forensic Diff Analysis. Please provide a detailed explanation of how the Trident Engine performs deterministic pixel-perfect diffs for static images to detect deepfakes or synthetic alterations. Explain the SSIM map and the score composition. Aim for about 45 seconds of speaking. Do NOT explain any subsequent stages. I will prompt you again when the UI advances.`;
+          } else if (step === 5) {
+            prompt = `The demo has automatically advanced to stage 5: Video Authenticity Verification. Please provide a detailed explanation of how the Trident Engine performs frame-by-frame temporal analysis for video authenticity to detect deepfakes. Aim for about 45 seconds of speaking. Do NOT explain any subsequent stages. I will prompt you again when the UI advances.`;
+          } else if (step === 6) {
+            prompt = `The demo has automatically advanced to stage 6: Conclusion & Future Outlook. Please wrap up the demo. Emphasize that Signet is ready for integration today, bringing transparency back to the digital world. Thank the audience for their time. Aim for about 30 seconds of speaking.`;
+          }
+          sessionRef.current.sendClientContent({ turns: [{ role: 'user', parts: [{ text: prompt }] }], turnComplete: true });
+        } catch (err) {
+          console.error("Failed to send step prompt:", err);
+        }
+      }
+    };
+
+    window.addEventListener('signet:start-demo', handleStartDemo);
+    window.addEventListener('signet:narrate-step', handleNarrateStep);
+    return () => {
+      window.removeEventListener('signet:start-demo', handleStartDemo);
+      window.removeEventListener('signet:narrate-step', handleNarrateStep);
+    };
+  }, [status]);
 
   // Robust Key Retrieval
   const getApiKey = () => {
-    if (GOOGLE_GEMINI_KEY && GOOGLE_GEMINI_KEY.startsWith('AIza')) {
-      return GOOGLE_GEMINI_KEY;
+    try {
+      const envKey = process.env.GEMINI_API_KEY || process.env.API_KEY;
+      if (envKey && !envKey.includes('UNUSED')) {
+        return envKey;
+      }
+    } catch (e) {
+      // Ignore process is not defined error
     }
-    const envKey = process.env.API_KEY;
-    if (envKey && !envKey.includes('UNUSED')) {
-      return envKey;
+    if (GOOGLE_GEMINI_KEY && !GOOGLE_GEMINI_KEY.includes('UNUSED')) {
+      return GOOGLE_GEMINI_KEY;
     }
     console.warn("LiveAssistant: No valid API Key found.");
     return '';
@@ -127,6 +185,11 @@ export const LiveAssistant: React.FC = () => {
       outputAudioContextRef.current.close().catch(() => {});
       outputAudioContextRef.current = null;
     }
+    if (speakingTimeoutRef.current) {
+      window.clearTimeout(speakingTimeoutRef.current);
+      speakingTimeoutRef.current = null;
+    }
+    window.dispatchEvent(new CustomEvent('signet:speaking-status', { detail: { isSpeaking: false } }));
     setStatus('OFFLINE');
     setVolume(0);
     nextStartTimeRef.current = 0;
@@ -140,7 +203,7 @@ export const LiveAssistant: React.FC = () => {
 
     const apiKey = getApiKey();
     if (!apiKey) {
-      setMessages(prev => [...prev, { role: 'assistant', text: "⚠️ **Config Error:** No valid API Key found. Please check private_keys.ts or environment variables." }]);
+      setMessages(prev => [...prev, { role: 'assistant', text: "⚠️ **Config Error:** No valid API Key found. Please check .env or environment variables." }]);
       return;
     }
 
@@ -149,6 +212,8 @@ export const LiveAssistant: React.FC = () => {
     // 1. Setup Audio Contexts
     inputAudioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 16000 });
     outputAudioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
+    inputAudioContextRef.current.resume();
+    outputAudioContextRef.current.resume();
     
     // 2. Resolve API Key selection (Race condition handling)
     const hasKey = await (window as any).aistudio?.hasSelectedApiKey();
@@ -161,13 +226,19 @@ export const LiveAssistant: React.FC = () => {
     const ai = new GoogleGenAI({ apiKey });
 
     try {
-      streamRef.current = await navigator.mediaDevices.getUserMedia({ 
-        audio: true, 
-        video: isVideoEnabled ? { facingMode: 'user' } : false 
-      });
-      
-      if (isVideoEnabled && videoRef.current) {
-        videoRef.current.srcObject = streamRef.current;
+      try {
+        streamRef.current = await navigator.mediaDevices.getUserMedia({ 
+          audio: true, 
+          video: isVideoEnabled ? { facingMode: 'user' } : false 
+        });
+        
+        if (isVideoEnabled && videoRef.current) {
+          videoRef.current.srcObject = streamRef.current;
+        }
+      } catch (mediaErr) {
+        console.warn("Microphone access denied or unavailable. Connecting without audio input.", mediaErr);
+        setMessages(prev => [...prev, { role: 'assistant', text: "⚠️ **Microphone Error:** Access denied or unavailable. I cannot hear you. If you are in the preview, try opening the app in a new tab." }]);
+        // We will proceed without streamRef.current
       }
       
       const sessionPromise = ai.live.connect({
@@ -175,38 +246,50 @@ export const LiveAssistant: React.FC = () => {
         callbacks: {
           onopen: () => {
             setStatus('CONNECTED');
-            const source = inputAudioContextRef.current!.createMediaStreamSource(streamRef.current!);
-            const scriptProcessor = inputAudioContextRef.current!.createScriptProcessor(4096, 1, 1);
             
-            scriptProcessor.onaudioprocess = (e) => {
-              const inputData = e.inputBuffer.getChannelData(0);
+            if (streamRef.current) {
+              const source = inputAudioContextRef.current!.createMediaStreamSource(streamRef.current!);
+              const scriptProcessor = inputAudioContextRef.current!.createScriptProcessor(4096, 1, 1);
               
-              // Volume visualization
-              let sum = 0;
-              for(let i=0; i<inputData.length; i++) sum += inputData[i] * inputData[i];
-              setVolume(Math.sqrt(sum / inputData.length));
+              scriptProcessor.onaudioprocess = (e) => {
+                const inputData = e.inputBuffer.getChannelData(0);
+                
+                // Volume visualization
+                let sum = 0;
+                for(let i=0; i<inputData.length; i++) sum += inputData[i] * inputData[i];
+                setVolume(Math.sqrt(sum / inputData.length));
 
-              // PCM Blob preparation
-              const l = inputData.length;
-              const int16 = new Int16Array(l);
-              for (let i = 0; i < l; i++) {
-                int16[i] = inputData[i] * 32768;
-              }
-              const pcmBlob = {
-                data: encode(new Uint8Array(int16.buffer)),
-                mimeType: 'audio/pcm;rate=16000',
+                // PCM Blob preparation
+                const l = inputData.length;
+                const int16 = new Int16Array(l);
+                for (let i = 0; i < l; i++) {
+                  int16[i] = inputData[i] * 32768;
+                }
+                const pcmBlob = {
+                  data: encode(new Uint8Array(int16.buffer)),
+                  mimeType: 'audio/pcm;rate=16000',
+                };
+                
+                // Rely solely on sessionPromise to prevent stale closure issues
+                sessionPromise.then(session => {
+                  session.sendRealtimeInput({ media: pcmBlob });
+                }).catch(() => {});
               };
               
-              // Rely solely on sessionPromise to prevent stale closure issues
-              sessionPromise.then(session => {
-                session.sendRealtimeInput({ media: pcmBlob });
-              }).catch(() => {});
-            };
-            
-            source.connect(scriptProcessor);
-            scriptProcessor.connect(inputAudioContextRef.current!.destination);
+              source.connect(scriptProcessor);
+              scriptProcessor.connect(inputAudioContextRef.current!.destination);
+            } else if (!pendingDemoNarrate.current) {
+              // Fallback prompt if mic failed and it's not a demo narration
+              try {
+                sessionPromise.then(session => {
+                  session.sendClientContent({ turns: [{ role: 'user', parts: [{ text: "Hello. Please tell the user that you are connected, but you cannot hear them because microphone access was denied. Ask them to open the app in a new tab if they want to use voice chat." }] }], turnComplete: true });
+                });
+              } catch (err) {
+                console.error("Failed to send fallback prompt:", err);
+              }
+            }
 
-            if (isVideoEnabled) {
+            if (isVideoEnabled && streamRef.current) {
               videoIntervalRef.current = window.setInterval(() => {
                 if (!videoRef.current || !canvasRef.current) return;
                 const video = videoRef.current;
@@ -226,13 +309,22 @@ export const LiveAssistant: React.FC = () => {
                 }).catch(() => {});
               }, 1000); // 1 frame per second
             }
+
+            if (pendingDemoNarrate.current) {
+              pendingDemoNarrate.current = false;
+              sessionPromise.then(session => {
+                session.sendClientContent({ turns: [{ role: 'user', parts: [{ text: "I just started the demo notebook manually. Please provide a 1-minute introduction summarizing the key of the project, addressing the hackathon requirements (Live Agent, Gemini Live API, Google Cloud). Then, explain Stage 1: Sovereign Identity Initialization. Do NOT explain the other stages yet. I will prompt you when the UI advances to the next stage." }] }], turnComplete: true });
+              }).catch(() => {});
+            }
           },
           onmessage: async (message: LiveServerMessage) => {
             // 1. Process Transcriptions
             if (message.serverContent?.outputTranscription) {
               currentOutputTranscription.current += message.serverContent.outputTranscription.text;
+              setStreamingOutput(currentOutputTranscription.current);
             } else if (message.serverContent?.inputTranscription) {
               currentInputTranscription.current += message.serverContent.inputTranscription.text;
+              setStreamingInput(currentInputTranscription.current);
             }
 
             // 2. Handle Turn Completion (Capture local variables to avoid async loss)
@@ -250,23 +342,52 @@ export const LiveAssistant: React.FC = () => {
               }
               currentInputTranscription.current = '';
               currentOutputTranscription.current = '';
+              setStreamingInput('');
+              setStreamingOutput('');
             }
 
             // 3. Process Model Audio Output
-            const base64Audio = message.serverContent?.modelTurn?.parts?.[0]?.inlineData?.data;
-            if (base64Audio && outputAudioContextRef.current) {
-              const ctx = outputAudioContextRef.current;
-              nextStartTimeRef.current = Math.max(nextStartTimeRef.current, ctx.currentTime);
-              
-              const audioBuffer = await decodeAudioData(decode(base64Audio), ctx, 24000, 1);
-              const source = ctx.createBufferSource();
-              source.buffer = audioBuffer;
-              source.connect(ctx.destination);
-              source.addEventListener('ended', () => audioSourcesRef.current.delete(source));
-              
-              source.start(nextStartTimeRef.current);
-              nextStartTimeRef.current += audioBuffer.duration;
-              audioSourcesRef.current.add(source);
+            const audioParts = message.serverContent?.modelTurn?.parts;
+            if (audioParts) {
+              for (const part of audioParts) {
+                const base64Audio = part.inlineData?.data;
+                if (base64Audio && outputAudioContextRef.current) {
+                  window.dispatchEvent(new CustomEvent('signet:speaking-status', { detail: { isSpeaking: true } }));
+                  if (speakingTimeoutRef.current) {
+                    window.clearTimeout(speakingTimeoutRef.current);
+                    speakingTimeoutRef.current = null;
+                  }
+
+                  try {
+                    const ctx = outputAudioContextRef.current;
+                    if (ctx.state === 'suspended') {
+                      await ctx.resume();
+                    }
+                    nextStartTimeRef.current = Math.max(nextStartTimeRef.current, ctx.currentTime);
+                    
+                    const audioBuffer = decodeAudioData(decode(base64Audio), ctx, 24000, 1);
+                    const source = ctx.createBufferSource();
+                    source.buffer = audioBuffer;
+                    source.connect(ctx.destination);
+                    source.addEventListener('ended', () => {
+                      audioSourcesRef.current.delete(source);
+                      if (audioSourcesRef.current.size === 0) {
+                        speakingTimeoutRef.current = window.setTimeout(() => {
+                          if (audioSourcesRef.current.size === 0) {
+                            window.dispatchEvent(new CustomEvent('signet:speaking-status', { detail: { isSpeaking: false } }));
+                          }
+                        }, 3000); // 3.0s debounce to allow for network gaps between chunks and natural pauses
+                      }
+                    });
+                    
+                    source.start(nextStartTimeRef.current);
+                    nextStartTimeRef.current += audioBuffer.duration;
+                    audioSourcesRef.current.add(source);
+                  } catch (audioErr) {
+                    console.error("Failed to decode or play audio chunk:", audioErr);
+                  }
+                }
+              }
             }
 
             // 4. Handle Interruptions
@@ -276,12 +397,13 @@ export const LiveAssistant: React.FC = () => {
               }
               audioSourcesRef.current.clear();
               nextStartTimeRef.current = 0;
+              window.dispatchEvent(new CustomEvent('signet:speaking-status', { detail: { isSpeaking: false } }));
             }
 
             // 5. Handle Function Calls
-            const parts = message.serverContent?.modelTurn?.parts;
-            if (parts) {
-              for (const part of parts) {
+            const functionParts = message.serverContent?.modelTurn?.parts;
+            if (functionParts) {
+              for (const part of functionParts) {
                 if (part.functionCall) {
                   const call = part.functionCall;
                   let result = "";
@@ -296,9 +418,14 @@ export const LiveAssistant: React.FC = () => {
                     setMessages(prev => [...prev, { role: 'assistant', text: `⚙️ **Action:** Opening Demo Notebook...` }]);
                     window.location.hash = '#demo';
                     setTimeout(() => {
-                      window.dispatchEvent(new CustomEvent('signet:start-demo'));
+                      window.dispatchEvent(new CustomEvent('signet:start-demo', { detail: { fromAgent: true } }));
                     }, 500);
-                    result = "Demo Notebook opened and sequence started. Narrate the 4 steps (15 seconds each) as they execute.";
+                    result = "Demo Notebook opened. The UI will advance automatically. Please provide a 1-minute introduction summarizing the key of the project, addressing the hackathon requirements (Live Agent, Gemini Live API, Google Cloud). Then, explain Stage 1: Sovereign Identity Initialization. Do NOT explain the other stages yet. I will prompt you when the UI advances to the next stage.";
+                  } else if (call.name === "setDemoStep") {
+                    const stepNum = call.args?.stepNumber;
+                    setMessages(prev => [...prev, { role: 'assistant', text: `⚙️ **Action:** Advancing to Step ${stepNum}...` }]);
+                    window.dispatchEvent(new CustomEvent('signet:set-step', { detail: { step: stepNum } }));
+                    result = `Step ${stepNum} is now visible on screen. Please explain it, and then immediately call setDemoStep for the next step without waiting for user input.`;
                   }
 
                   if (result && sessionRef.current) {
@@ -328,11 +455,11 @@ export const LiveAssistant: React.FC = () => {
         },
         config: {
           responseModalities: [Modality.AUDIO],
-          inputAudioTranscription: {},
-          outputAudioTranscription: {},
           speechConfig: {
             voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Zephyr' } },
           },
+          outputAudioTranscription: {},
+          inputAudioTranscription: {},
           systemInstruction: `You are Signet-Alpha, the Live Digital Notary for Signet Protocol.
           Your role is to guide users through verifying and signing digital media (images, videos, documents).
           
@@ -341,7 +468,7 @@ export const LiveAssistant: React.FC = () => {
           - You can help users detect deepfakes, tampering, or synthetic alterations.
           - You guide users through the Universal Media Signing process.
           - You explain cryptographic concepts (like dual-hashing and Public/Private keys) simply and clearly.
-          - If the user asks for a demo, you MUST call the "startSelfDemo" tool. This will open the Demo Notebook page. You should then narrate the 4 steps as they execute on screen: 1. TrustKey Registry, 2. Universal Media Signing, 3. Public Verifier, 4. Diff Engine Analysis. Each step takes 15 seconds.
+          - If the user asks for a demo, you MUST call the "startSelfDemo" tool. This will open the Demo Notebook page. You should then narrate the 6 stages: 1. Sovereign Identity Initialization, 2. Universal Media Signing, 3. Public Ledger Verification, 4. Image Forensic Diff Analysis, 5. Video Authenticity Verification, 6. Conclusion & Future Outlook. The UI will advance automatically, and you will receive a prompt when it's time to explain the next stage. Do NOT explain all stages at once. Wait for the prompt for each stage. Do NOT call the setDemoStep tool during the automated demo unless the user explicitly asks you to skip to a specific stage.
           
           IDENTITY RECOGNITION:
           Master Signatory is signetai.io:ssl.
@@ -379,7 +506,18 @@ export const LiveAssistant: React.FC = () => {
               },
               {
                 name: "startSelfDemo",
-                description: "Start the automated 4-minute self-demo sequence. Call this when the user asks for a demo.",
+                description: "Start the automated self-demo sequence. Call this when the user asks for a demo.",
+              },
+              {
+                name: "setDemoStep",
+                description: "Advance the demo to a specific step (1 to 6). Call this right before you start explaining that step.",
+                parameters: {
+                  type: Type.OBJECT,
+                  properties: {
+                    stepNumber: { type: Type.NUMBER, description: "The step number to display (1 to 5)" }
+                  },
+                  required: ["stepNumber"]
+                }
               }
             ]
           }]
@@ -432,7 +570,7 @@ export const LiveAssistant: React.FC = () => {
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="relative z-10"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
         </button>
       ) : (
-        <div className="w-80 md:w-96 h-[550px] bg-[var(--bg-standard)] border border-[var(--border-light)] shadow-2xl rounded-xl flex flex-col overflow-hidden animate-in slide-in-from-bottom-4">
+        <div className={`w-80 md:w-96 ${isMinimized ? 'h-auto' : 'h-[550px]'} bg-[var(--bg-standard)] border border-[var(--border-light)] shadow-2xl rounded-xl flex flex-col overflow-hidden animate-in slide-in-from-bottom-4 transition-all duration-300`}>
           <div className="p-4 bg-[var(--table-header)] border-b border-[var(--border-light)] flex justify-between items-center">
             <div className="flex items-center gap-3">
               <div className="relative">
@@ -479,55 +617,87 @@ export const LiveAssistant: React.FC = () => {
                   <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
                 </svg>
               </button>
-              <button onClick={() => setIsOpen(false)} className="opacity-40 hover:opacity-100 p-2">✕</button>
+              <button onClick={() => setIsMinimized(!isMinimized)} className="opacity-40 hover:opacity-100 p-2">
+                {isMinimized ? (
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 15l-6-6-6 6"/></svg>
+                ) : (
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 9l6 6 6-6"/></svg>
+                )}
+              </button>
+              <button onClick={() => { setIsOpen(false); setIsMinimized(false); }} className="opacity-40 hover:opacity-100 p-2">✕</button>
             </div>
           </div>
           
-          {isVideoEnabled && (
-            <div className="bg-black flex justify-center items-center overflow-hidden border-b border-[var(--border-light)]" style={{ height: status !== 'OFFLINE' ? '120px' : '0px', transition: 'height 0.3s ease' }}>
-              <video ref={videoRef} autoPlay playsInline muted className="h-full object-cover opacity-80" />
-              <canvas ref={canvasRef} className="hidden" />
-            </div>
-          )}
-          
-          <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-[var(--code-bg)]">
-            {messages.map((m, i) => (
-              <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                <div className={`max-w-[90%] p-4 rounded-lg text-sm shadow-sm ${m.role === 'user' ? 'bg-[var(--trust-blue)] text-white shadow-blue-500/20' : 'bg-white border border-[var(--border-light)]'}`}>
-                  <div className="prose-signet">
-                    <ReactMarkdown>{m.text}</ReactMarkdown>
-                  </div>
+          {!isMinimized && (
+            <>
+              {isVideoEnabled && (
+                <div className="bg-black flex justify-center items-center overflow-hidden border-b border-[var(--border-light)]" style={{ height: status !== 'OFFLINE' ? '120px' : '0px', transition: 'height 0.3s ease' }}>
+                  <video ref={videoRef} autoPlay playsInline muted className="h-full object-cover opacity-80" />
+                  <canvas ref={canvasRef} className="hidden" />
                 </div>
+              )}
+              
+              <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-[var(--code-bg)]">
+                {messages.map((m, i) => (
+                  <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                    <div className={`max-w-[90%] p-4 rounded-lg text-sm shadow-sm ${m.role === 'user' ? 'bg-[var(--trust-blue)] text-white shadow-blue-500/20' : 'bg-white border border-[var(--border-light)]'}`}>
+                      <div className="prose-signet">
+                        <ReactMarkdown>{m.text}</ReactMarkdown>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                
+                {streamingInput && (
+                  <div className="flex justify-end">
+                    <div className="max-w-[90%] p-4 rounded-lg text-sm shadow-sm bg-[var(--trust-blue)] text-white shadow-blue-500/20 opacity-70">
+                      <div className="prose-signet">
+                        <ReactMarkdown>{streamingInput}</ReactMarkdown>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
+                {streamingOutput && (
+                  <div className="flex justify-start">
+                    <div className="max-w-[90%] p-4 rounded-lg text-sm shadow-sm bg-white border border-[var(--border-light)] opacity-70">
+                      <div className="prose-signet">
+                        <ReactMarkdown>{streamingOutput}</ReactMarkdown>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
+                <div ref={messagesEndRef} />
               </div>
-            ))}
-            <div ref={messagesEndRef} />
-          </div>
 
-          <div className="p-4 border-t border-[var(--border-light)] bg-white flex gap-2">
-            <input 
-              type="text" value={input} onChange={(e) => setInput(e.target.value)} 
-              onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
-              placeholder={status !== 'OFFLINE' ? "Mic active..." : "Ask about v0.3.2..."} 
-              className="flex-1 text-sm bg-transparent outline-none py-2"
-              disabled={status !== 'OFFLINE'}
-            />
-            <button 
-              onClick={handleSendMessage} 
-              disabled={status !== 'OFFLINE' || isLoading}
-              className={`p-2 transition-all ${status !== 'OFFLINE' || isLoading ? 'opacity-20' : 'text-[var(--trust-blue)] hover:scale-110'}`}
-            >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
-            </button>
-          </div>
-          
-          {status !== 'OFFLINE' && (
-            <div className={`px-4 py-2 border-t flex justify-between items-center ${status === 'CONNECTED' ? 'bg-blue-50 border-blue-100' : 'bg-amber-50 border-amber-100'}`}>
-               <p className={`font-mono text-[8px] uppercase tracking-widest font-bold flex items-center gap-2 ${status === 'CONNECTED' ? 'text-blue-600' : 'text-amber-600'}`}>
-                 <span className={`w-1.5 h-1.5 rounded-full animate-pulse ${status === 'CONNECTED' ? 'bg-blue-500' : 'bg-amber-500'}`}></span>
-                 {status === 'CONNECTED' ? 'Neural Link: Deterministic' : 'Establishing Handshake...'}
-               </p>
-               <span className="font-mono text-[7px] opacity-40 uppercase tracking-widest font-bold">HEARTBEAT_SYNC</span>
-            </div>
+              <div className="p-4 border-t border-[var(--border-light)] bg-white flex gap-2">
+                <input 
+                  type="text" value={input} onChange={(e) => setInput(e.target.value)} 
+                  onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
+                  placeholder={status !== 'OFFLINE' ? "Mic active..." : "Ask about v0.3.2..."} 
+                  className="flex-1 text-sm bg-transparent outline-none py-2"
+                  disabled={status !== 'OFFLINE'}
+                />
+                <button 
+                  onClick={handleSendMessage} 
+                  disabled={status !== 'OFFLINE' || isLoading}
+                  className={`p-2 transition-all ${status !== 'OFFLINE' || isLoading ? 'opacity-20' : 'text-[var(--trust-blue)] hover:scale-110'}`}
+                >
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+                </button>
+              </div>
+              
+              {status !== 'OFFLINE' && (
+                <div className={`px-4 py-2 border-t flex justify-between items-center ${status === 'CONNECTED' ? 'bg-blue-50 border-blue-100' : 'bg-amber-50 border-amber-100'}`}>
+                   <p className={`font-mono text-[8px] uppercase tracking-widest font-bold flex items-center gap-2 ${status === 'CONNECTED' ? 'text-blue-600' : 'text-amber-600'}`}>
+                     <span className={`w-1.5 h-1.5 rounded-full animate-pulse ${status === 'CONNECTED' ? 'bg-blue-500' : 'bg-amber-500'}`}></span>
+                     {status === 'CONNECTED' ? 'Neural Link: Deterministic' : 'Establishing Handshake...'}
+                   </p>
+                   <span className="font-mono text-[7px] opacity-40 uppercase tracking-widest font-bold">HEARTBEAT_SYNC</span>
+                </div>
+              )}
+            </>
           )}
         </div>
       )}

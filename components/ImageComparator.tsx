@@ -22,9 +22,15 @@ type PerfMetrics = {
 // NEW: State for real-time progress tracking
 type ProgressState = { stage: string; percent: number; elapsed: number };
 
-export const ImageComparator: React.FC = () => {
-  const [imageA, setImageA] = useState<string | null>(null);
-  const [imageB, setImageB] = useState<string | null>(null);
+export interface ImageComparatorProps {
+  defaultImageA?: string;
+  defaultImageB?: string;
+  autoRun?: boolean;
+}
+
+export const ImageComparator: React.FC<ImageComparatorProps> = ({ defaultImageA, defaultImageB, autoRun }) => {
+  const [imageA, setImageA] = useState<string | null>(defaultImageA || null);
+  const [imageB, setImageB] = useState<string | null>(defaultImageB || null);
   const [error, setError] = useState<string | null>(null);
   const [isComparing, setIsComparing] = useState(false);
   const [logMessages, setLogMessages] = useState<string[]>([]);
@@ -36,6 +42,7 @@ export const ImageComparator: React.FC = () => {
   const [perfMetrics, setPerfMetrics] = useState<PerfMetrics | null>(null);
   const [progress, setProgress] = useState<ProgressState>({ stage: 'Idle', percent: 0, elapsed: 0 });
   const [diffMap, setDiffMap] = useState<ImageData | null>(null);
+  const [imagesLoaded, setImagesLoaded] = useState({ a: false, b: false });
 
   const imageARef = useRef<HTMLImageElement>(null);
   const imageBRef = useRef<HTMLImageElement>(null);
@@ -59,6 +66,13 @@ export const ImageComparator: React.FC = () => {
     };
     initializeEngine();
   }, []);
+
+  // Auto-run when ready
+  useEffect(() => {
+    if (autoRun && isEngineReady && imageA && imageB && imagesLoaded.a && imagesLoaded.b && !isComparing && !auditResult) {
+      handleCompare();
+    }
+  }, [autoRun, isEngineReady, imageA, imageB, imagesLoaded, isComparing, auditResult]);
 
   // Effect to draw the diffMap to the canvas when it's available
   useEffect(() => {
@@ -278,7 +292,7 @@ export const ImageComparator: React.FC = () => {
                     <h3 className="font-mono text-[11px] uppercase opacity-40 font-bold tracking-[0.3em]">Source A</h3>
                     <div className="p-4 border border-dashed border-[var(--border-light)] rounded-lg">
                         <input className="file-input text-xs" type="file" accept="image/*" onChange={(e) => handleImageUpload(e, setImageA)} />
-                        {imageA && <img ref={imageARef} className="mt-4 w-full h-auto rounded shadow-md" src={imageA} alt="Image A Preview" />}
+                        {imageA && <img ref={imageARef} onLoad={() => setImagesLoaded(prev => ({...prev, a: true}))} className="mt-4 w-full h-auto rounded shadow-md" src={imageA} alt="Image A Preview" />}
                     </div>
                 </div>
                 {/* Image Upload B */}
@@ -286,7 +300,7 @@ export const ImageComparator: React.FC = () => {
                     <h3 className="font-mono text-[11px] uppercase opacity-40 font-bold tracking-[0.3em]">Source B</h3>
                     <div className="p-4 border border-dashed border-[var(--border-light)] rounded-lg">
                         <input className="file-input text-xs" type="file" accept="image/*" onChange={(e) => handleImageUpload(e, setImageB)} />
-                        {imageB && <img ref={imageBRef} className="mt-4 w-full h-auto rounded shadow-md" src={imageB} alt="Image B Preview" />}
+                        {imageB && <img ref={imageBRef} onLoad={() => setImagesLoaded(prev => ({...prev, b: true}))} className="mt-4 w-full h-auto rounded shadow-md" src={imageB} alt="Image B Preview" />}
                     </div>
                 </div>
             </div>

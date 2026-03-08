@@ -14,15 +14,22 @@ import {
   linkWithCredential
 } from 'firebase/auth';
 import type { ConfirmationResult, User, AuthCredential } from 'firebase/auth';
-import { firebaseConfig } from '../private_keys';
+import { firebaseConfig } from '../src/config/env';
 import { PersistenceService, VaultRecord } from '../services/PersistenceService';
 import { BIP39_WORDS } from '../constants/Bip39Words';
 
 const initSignetFirebase = () => {
   try {
+    if (!firebaseConfig.apiKey) {
+      console.warn("Firebase config is missing API key. Firebase will not be initialized.");
+      return null;
+    }
     if (getApps().length === 0) return initializeApp(firebaseConfig);
     return getApp();
-  } catch (e) { return null; }
+  } catch (e) { 
+    console.error("Failed to initialize Firebase:", e);
+    return null; 
+  }
 };
 
 const app = initSignetFirebase();
