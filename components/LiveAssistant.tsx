@@ -58,7 +58,7 @@ export const LiveAssistant: React.FC = () => {
   const [status, setStatus] = useState<ConnectionStatus>('OFFLINE');
   const [volume, setVolume] = useState(0);
   const [messages, setMessages] = useState<Message[]>([
-    { role: 'assistant', text: "Systems online. I am **Signet-Alpha**, your Live Digital Notary.\\n\\nI can help you verify media using our Image and Video Diff Engines, or guide you through Universal Media Signing using your registered keys. How can I help you today?" }
+    { role: 'assistant', text: "Systems online. I am **Signet-Alpha**, your Live Digital Notary.\n\nI can help you verify media using our Image and Video Diff Engines, or guide you through Universal Media Signing using your registered keys. How can I help you today?" }
   ]);
   const [streamingInput, setStreamingInput] = useState('');
   const [streamingOutput, setStreamingOutput] = useState('');
@@ -144,27 +144,33 @@ export const LiveAssistant: React.FC = () => {
     };
   }, [status]);
 
-  // Robust Key Retrieval
-  const getApiKey = () => {
+  // Robust Key Retrieval for Standard (HTTP) API calls
+  const getStandardApiKey = () => {
+    try {
+      const envKey = process.env.GEMINI_API_KEY || process.env.API_KEY;
+      if (envKey && !envKey.includes('UNUSED')) {
+        return envKey;
+      }
+    } catch (e) { /* Ignore process is not defined error */ }
+    if (GOOGLE_GEMINI_KEY && !GOOGLE_GEMINI_KEY.includes('UNUSED')) {
+      return GOOGLE_GEMINI_KEY;
+    }
+    console.warn("LiveAssistant: No valid Standard API Key found. You may need to set GEMINI_API_KEY or API_KEY in your .env file.");
+    return '';
+  };
+
+  // Robust Key Retrieval for Live (WebSocket) API calls
+  const getLiveApiKey = () => {
     try {
       const liveKey = process.env.GEMINI_LIVE_API_KEY;
       if (liveKey && !liveKey.includes('UNUSED')) {
         return liveKey;
       }
-      const envKey = process.env.GEMINI_API_KEY || process.env.API_KEY;
-      if (envKey && !envKey.includes('UNUSED')) {
-        return envKey;
-      }
-    } catch (e) {
-      // Ignore process is not defined error
-    }
+    } catch (e) { /* Ignore process is not defined error */ }
     if (GOOGLE_GEMINI_LIVE_KEY && !GOOGLE_GEMINI_LIVE_KEY.includes('UNUSED')) {
       return GOOGLE_GEMINI_LIVE_KEY;
     }
-    if (GOOGLE_GEMINI_KEY && !GOOGLE_GEMINI_KEY.includes('UNUSED')) {
-      return GOOGLE_GEMINI_KEY;
-    }
-    console.warn("LiveAssistant: No valid API Key found.");
+     console.warn("LiveAssistant: No valid Live API Key found. You may need to set GEMINI_LIVE_API_KEY in your .env file.");
     return '';
   };
 
@@ -212,9 +218,9 @@ export const LiveAssistant: React.FC = () => {
       return;
     }
 
-    const apiKey = getApiKey();
+    const apiKey = getLiveApiKey();
     if (!apiKey) {
-      setMessages(prev => [...prev, { role: 'assistant', text: "⚠️ **Config Error:** No valid API Key found. Please check .env or environment variables for GEMINI_LIVE_API_KEY or GEMINI_API_KEY." }]);
+      setMessages(prev => [...prev, { role: 'assistant', text: "⚠️ **Config Error:** No valid API Key found. Please check .env or environment variables for GEMINI_LIVE_API_KEY." }]);
       return;
     }
 
@@ -545,9 +551,9 @@ export const LiveAssistant: React.FC = () => {
   const handleSendMessage = async () => {
     if (!input.trim() || isLoading) return;
     
-    const apiKey = getApiKey();
+    const apiKey = getStandardApiKey();
     if (!apiKey) {
-      setMessages(prev => [...prev, { role: 'assistant', text: "⚠️ **Auth Error:** Missing API Key." }]);
+      setMessages(prev => [...prev, { role: 'assistant', text: "⚠️ **Auth Error:** Missing API Key. Please set GEMINI_API_KEY in your .env file." }]);
       return;
     }
 
@@ -567,6 +573,7 @@ export const LiveAssistant: React.FC = () => {
       });
       setMessages(prev => [...prev, { role: 'assistant', text: response.text || "Neural link timeout." }]);
     } catch (error) {
+      console.error("Standard API call failed:", error);
       setMessages(prev => [...prev, { role: 'assistant', text: "Logic drift detected. Link dropped." }]);
     } finally {
       setIsLoading(false);
