@@ -1,7 +1,7 @@
 # Signet Protocol: Technical Architecture & VPR Pipeline
 
 ### 1. Verifiable Proof of Reasoning (VPR) Overview
-The Signet Protocol (v0.3.2) implements a four-layer cryptographic pipeline to ensure the provenance of AI-generated reasoning paths.
+The Signet Protocol (v0.4.0) implements a four-layer cryptographic pipeline to ensure the provenance of AI-generated reasoning paths.
 
 ### 2. The Four-Layer Stack
 * **L1: Vision Substrate:** Captures and binds the initial intent and prompt "ingredients".

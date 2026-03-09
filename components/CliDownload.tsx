@@ -6,7 +6,7 @@ import { Admonition } from './Admonition';
 const CLI_HEADER = `#!/usr/bin/env node
 
 /**
- * SIGNET BATCH SIGNER CLI (v0.3.2)
+ * SIGNET BATCH SIGNER CLI (v0.4.0)
  * --------------------------------
  * A zero-dependency, C2PA-native injection tool for Node.js.
  * Implements Universal Tail-Wrap (UTW) for arbitrary binary formats.
@@ -134,7 +134,7 @@ const CLI_SOURCE_CODE = CLI_HEADER + CLI_CORE;
 const BENCHMARK_SOURCE_CODE = `#!/usr/bin/env node
 
 /**
- * SIGNET BENCHMARK SUITE (v0.3.2)
+ * SIGNET BENCHMARK SUITE (v0.4.0)
  * -------------------------------
  * Comparative Performance Test: Sidecar vs Embedded (UTW).
  * 

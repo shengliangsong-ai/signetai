@@ -9,6 +9,25 @@ export const DemoNotebook: React.FC = () => {
   const [activeStep, setActiveStep] = useState(0);
   const [isRunning, setIsRunning] = useState(false);
   const [showSpeakerNotes, setShowSpeakerNotes] = useState(true);
+  const [timeElapsed, setTimeElapsed] = useState(0);
+
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (isRunning) {
+      interval = setInterval(() => {
+        setTimeElapsed((prev) => prev + 1);
+      }, 1000);
+    } else {
+      setTimeElapsed(0);
+    }
+    return () => clearInterval(interval);
+  }, [isRunning]);
+
+  const formatTime = (seconds: number) => {
+    const m = Math.floor(seconds / 60).toString().padStart(2, '0');
+    const s = (seconds % 60).toString().padStart(2, '0');
+    return `${m}:${s}`;
+  };
 
   const steps = [
     { 
@@ -181,14 +200,25 @@ export const DemoNotebook: React.FC = () => {
       </div>
 
       {isRunning && activeStep <= steps.length && (
-        <div className="mb-8 p-4 bg-blue-500/10 border border-[var(--trust-blue)] rounded-xl flex items-center gap-4 animate-in fade-in slide-in-from-top-4">
-          <div className="relative">
-            <div className="w-3 h-3 rounded-full bg-blue-500"></div>
-            <div className="absolute inset-0 bg-blue-500 rounded-full animate-ping opacity-75"></div>
+        <div className="mb-8 p-4 bg-blue-500/10 border border-[var(--trust-blue)] rounded-xl flex items-center justify-between animate-in fade-in slide-in-from-top-4">
+          <div className="flex items-center gap-4">
+            <div className="relative">
+              <div className="w-3 h-3 rounded-full bg-blue-500"></div>
+              <div className="absolute inset-0 bg-blue-500 rounded-full animate-ping opacity-75"></div>
+            </div>
+            <p className="text-sm text-[var(--trust-blue)] font-bold uppercase tracking-widest">
+              Live Agent Narration Active
+            </p>
           </div>
-          <p className="text-sm text-[var(--trust-blue)] font-bold uppercase tracking-widest">
-            Live Agent Narration Active
-          </p>
+          <div className="flex items-center gap-2 bg-[var(--bg-standard)] px-3 py-1.5 rounded border border-[var(--trust-blue)] shadow-sm">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={timeElapsed > 240 ? 'text-red-500' : 'text-[var(--trust-blue)]'}>
+              <circle cx="12" cy="12" r="10"></circle>
+              <polyline points="12 6 12 12 16 14"></polyline>
+            </svg>
+            <span className={`font-mono font-bold text-sm ${timeElapsed > 240 ? 'text-red-500' : 'text-[var(--trust-blue)]'}`}>
+              {formatTime(timeElapsed)}
+            </span>
+          </div>
         </div>
       )}
 

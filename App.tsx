@@ -98,7 +98,7 @@ const Sidebar: React.FC<{ currentView: string; isOpen: boolean }> = ({ currentVi
     <div className="p-6 border-b border-[var(--border-light)]">
       <div className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity" onClick={() => window.location.hash = ''}>
         <SignetLogo className="w-8 h-8 rounded-lg shadow-sm" />
-        <span className="font-bold tracking-tight text-xl text-[var(--text-header)]">Signet v0.3.3</span>
+        <span className="font-bold tracking-tight text-xl text-[var(--text-header)]">Signet v0.4.0</span>
       </div>
     </div>
 

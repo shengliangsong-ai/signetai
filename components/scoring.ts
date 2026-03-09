@@ -1,6 +1,6 @@
 
 /**
- * SIGNET AUDIT ENGINE (v0.3.3)
+ * SIGNET AUDIT ENGINE (v0.4.0)
  * ----------------------------
  * Deterministic scoring logic for verifying media integrity across lossy boundaries.
  * Implements "Multi-Frame Consensus" and "Temporal Structure" fusion.

@@ -14,7 +14,7 @@ As AI moves from "Chat" to "Reasoning," current watermarking standards (C2PA) ar
 - **2.2. Neural Lens Engine**: A deterministic verifier that probes AI telemetry for logic drift.
 - **2.3. Universal Tail-Wrap (UTW)**: A Zero-Copy injection method for arbitrary binary formats (Video/Audio/PDF).
 
-## 3. CLI & Developer Tools (New in v0.3.2)
+## 3. CLI & Developer Tools (New in v0.4.0)
 The protocol now includes standalone Node.js tools and a Web Batch Processor.
 
 ### 3.1 Batch Processor (Web)
@@ -43,6 +43,30 @@ node signet-cli.js --dir ./assets --identity "your.name"
 4. **Human-in-the-Loop (L4)**: Final Curatorial Attestation.
 
 ## Local Development & Compilation (MacBook/Linux)
+
+### API Key Configuration
+
+Signet Protocol uses two different Google Gemini APIs that require different security configurations. For the application to work correctly, you must configure **two separate API keys** in your Google Cloud Console:
+
+1. **Diff Engine (Standard API Key)**
+   - **Usage:** Used by the Image and Video Diff Engines for semantic analysis.
+   - **Protocol:** Standard HTTP requests (`fetch`).
+   - **Security:** Requires **HTTP referrers (web sites)** restriction. To ensure both the Google AI Studio Preview and the live website work, add the following to your restricted websites list:
+     - `https://ais-dev-volxjj72guvgx7lp3qo724-21086313823.us-west1.run.app/*` (AI Studio Dev Preview)
+     - `https://ais-pre-volxjj72guvgx7lp3qo724-21086313823.us-west1.run.app/*` (AI Studio Shared Preview)
+     - `https://www.signetai.io/*` (Production Domain)
+   - **Environment Variable:** `GEMINI_API_KEY` (or `API_KEY`)
+
+2. **Signet-Alpha Live Assistant (Live API Key)**
+   - **Usage:** Used by the real-time voice assistant (Gemini Live API).
+   - **Protocol:** WebSockets (`wss://`).
+   - **Security:** Requires **None** for Application restrictions. Browsers **do not** send the `Referer` header when opening a WebSocket connection. If you apply HTTP referrer restrictions to this key, the Live Assistant will fail with a `Requests from referer <empty> are blocked` error.
+   - **Environment Variable:** Set this unrestricted key in your environment or select it via the UI when prompted by the Live Assistant.
+
+3. **YouTube Data API (YouTube API Key)**
+   - **Usage:** Used by the Universal Signer to verify and fetch metadata for YouTube videos before signing them.
+   - **Security:** Can be restricted by **HTTP referrers (web sites)** using the same whitelist as the Diff Engine.
+   - **Environment Variable:** `YOUTUBE_API_KEY`
 
 To compile the full Signet Platform offline on your machine:
 

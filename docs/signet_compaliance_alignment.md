@@ -1,4 +1,4 @@
-# Compliance Mapping: Signet Protocol v0.3.2
+# Compliance Mapping: Signet Protocol v0.4.0
 
 ### 1. C2PA v2.3 Alignment
 Signet implements mandatory "Hard-Binding" using SHA-256 hashes of raw asset byte streams to prevent metadata stripping.

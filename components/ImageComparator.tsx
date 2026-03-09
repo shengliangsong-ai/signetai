@@ -218,11 +218,11 @@ export const ImageComparator: React.FC<ImageComparatorProps> = ({ defaultImageA,
            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 border-t border-[var(--border-light)] pt-6">
               <div className="space-y-2">
                 <h5 className="font-mono text-[10px] uppercase font-bold text-[var(--text-header)] mb-2">Source A</h5>
-                <img src={imageA!} className="w-full h-auto object-cover rounded border border-[var(--border-light)]" />
+                <img src={imageA!} crossOrigin="anonymous" referrerPolicy="no-referrer" className="w-full h-auto object-cover rounded border border-[var(--border-light)]" />
               </div>
               <div className="space-y-2">
                 <h5 className="font-mono text-[10px] uppercase font-bold text-[var(--text-header)] mb-2">Source B</h5>
-                <img src={imageB!} className="w-full h-auto object-cover rounded border border-[var(--border-light)]" />
+                <img src={imageB!} crossOrigin="anonymous" referrerPolicy="no-referrer" className="w-full h-auto object-cover rounded border border-[var(--border-light)]" />
               </div>
               <div className="space-y-2">
                  <h5 className="font-mono text-[10px] uppercase font-bold text-[var(--text-header)] mb-2">SSIM Difference Map</h5>
@@ -292,7 +292,7 @@ export const ImageComparator: React.FC<ImageComparatorProps> = ({ defaultImageA,
                     <h3 className="font-mono text-[11px] uppercase opacity-40 font-bold tracking-[0.3em]">Source A</h3>
                     <div className="p-4 border border-dashed border-[var(--border-light)] rounded-lg">
                         <input className="file-input text-xs" type="file" accept="image/*" onChange={(e) => handleImageUpload(e, setImageA)} />
-                        {imageA && <img ref={imageARef} onLoad={() => setImagesLoaded(prev => ({...prev, a: true}))} className="mt-4 w-full h-auto rounded shadow-md" src={imageA} alt="Image A Preview" />}
+                        {imageA && <img ref={imageARef} crossOrigin="anonymous" referrerPolicy="no-referrer" onLoad={() => setImagesLoaded(prev => ({...prev, a: true}))} className="mt-4 w-full h-auto rounded shadow-md" src={imageA} alt="Image A Preview" />}
                     </div>
                 </div>
                 {/* Image Upload B */}
@@ -300,7 +300,7 @@ export const ImageComparator: React.FC<ImageComparatorProps> = ({ defaultImageA,
                     <h3 className="font-mono text-[11px] uppercase opacity-40 font-bold tracking-[0.3em]">Source B</h3>
                     <div className="p-4 border border-dashed border-[var(--border-light)] rounded-lg">
                         <input className="file-input text-xs" type="file" accept="image/*" onChange={(e) => handleImageUpload(e, setImageB)} />
-                        {imageB && <img ref={imageBRef} onLoad={() => setImagesLoaded(prev => ({...prev, b: true}))} className="mt-4 w-full h-auto rounded shadow-md" src={imageB} alt="Image B Preview" />}
+                        {imageB && <img ref={imageBRef} crossOrigin="anonymous" referrerPolicy="no-referrer" onLoad={() => setImagesLoaded(prev => ({...prev, b: true}))} className="mt-4 w-full h-auto rounded shadow-md" src={imageB} alt="Image B Preview" />}
                     </div>
                 </div>
             </div>

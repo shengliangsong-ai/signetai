@@ -2,7 +2,7 @@
 # Signet AI Project Status & Roadmap
 
 **Current Version:** 0.3.3_UTW  
-**Protocol Spec:** v0.3.2
+**Protocol Spec:** v0.4.0
 
 ## Phase 1: Core Architecture (Foundation)
 *Focus: Identity, Cryptography, and Basic Asset Signing*

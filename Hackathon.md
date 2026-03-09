@@ -42,6 +42,9 @@ H_final = SHA-256( SHA-256(Data) || Metadata )
 
 ## Challenges we ran into
 
+**API Key Configuration & Security Restrictions:**
+We discovered that the Gemini Live API and standard Gemini API requests require fundamentally different security configurations in Google Cloud. The Diff Engines use standard HTTP requests (`fetch`), which automatically send the `Referer` header, allowing us to secure the API key using HTTP referrer restrictions (whitelisting our AI Studio preview URLs and `https://www.signetai.io/*`). However, the Live Agent connects via WebSockets (`wss://`), and browsers do not send the `Referer` header when opening a WebSocket connection. This resulted in `Requests from referer <empty> are blocked` errors. To solve this, we had to architect the system to support two separate API keys: one restricted key for standard HTTP requests, and one unrestricted key specifically for the Live API WebSocket connection.
+
 Integrating real-time, bidirectional audio streaming in the browser was our biggest hurdle. Managing the `AudioContext`, ensuring precise sample rates (16kHz for input, 24kHz for output), and handling raw PCM encoding/decoding without relying on high-level abstractions required deep dives into browser audio APIs. 
 
 Additionally, synchronizing visual frames with the audio stream over the Live API WebSocket connection while maintaining low latency was challenging. We had to implement careful throttling to ensure we didn't overwhelm the connection while still providing the agent with enough visual context to be helpful.

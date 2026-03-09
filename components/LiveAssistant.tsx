@@ -2,7 +2,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { GoogleGenAI, LiveServerMessage, Modality, Type } from "@google/genai";
 import ReactMarkdown from 'react-markdown';
-import { GOOGLE_GEMINI_KEY } from '../src/config/env';
+import { GOOGLE_GEMINI_KEY, GOOGLE_GEMINI_LIVE_KEY } from '../src/config/env';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -118,7 +118,11 @@ export const LiveAssistant: React.FC = () => {
       if (status === 'CONNECTED' && sessionRef.current) {
         try {
           let prompt = `The demo has automatically advanced to stage ${step}. Please explain this stage briefly to the user. Do NOT explain any subsequent stages. I will prompt you again when the UI advances.`;
-          if (step === 4) {
+          if (step === 2) {
+            prompt = `The demo has automatically advanced to stage 2: Universal Media Signing (C2PA+). Please explain how we inject a C2PA-compliant manifest directly into the asset's JUMBF boxes, and point out the 'org.signetai.vpr' assertion where our proprietary Visual Provenance Record is stored. Aim for about 30 seconds of speaking. Do NOT explain any subsequent stages. I will prompt you again when the UI advances.`;
+          } else if (step === 3) {
+            prompt = `The demo has automatically advanced to stage 3: Public Ledger Verification. Please explain how we verify the signature against our distributed ledger to ensure the asset hasn't been backdated or re-signed, acting as a Proof of Existence. Aim for about 30 seconds of speaking. Do NOT explain any subsequent stages. I will prompt you again when the UI advances.`;
+          } else if (step === 4) {
             prompt = `The demo has automatically advanced to stage 4: Image Forensic Diff Analysis. Please provide a detailed explanation of how the Trident Engine performs deterministic pixel-perfect diffs for static images to detect deepfakes or synthetic alterations. Explain the SSIM map and the score composition. Aim for about 45 seconds of speaking. Do NOT explain any subsequent stages. I will prompt you again when the UI advances.`;
           } else if (step === 5) {
             prompt = `The demo has automatically advanced to stage 5: Video Authenticity Verification. Please provide a detailed explanation of how the Trident Engine performs frame-by-frame temporal analysis for video authenticity to detect deepfakes. Aim for about 45 seconds of speaking. Do NOT explain any subsequent stages. I will prompt you again when the UI advances.`;
@@ -143,12 +147,19 @@ export const LiveAssistant: React.FC = () => {
   // Robust Key Retrieval
   const getApiKey = () => {
     try {
+      const liveKey = process.env.GEMINI_LIVE_API_KEY;
+      if (liveKey && !liveKey.includes('UNUSED')) {
+        return liveKey;
+      }
       const envKey = process.env.GEMINI_API_KEY || process.env.API_KEY;
       if (envKey && !envKey.includes('UNUSED')) {
         return envKey;
       }
     } catch (e) {
       // Ignore process is not defined error
+    }
+    if (GOOGLE_GEMINI_LIVE_KEY && !GOOGLE_GEMINI_LIVE_KEY.includes('UNUSED')) {
+      return GOOGLE_GEMINI_LIVE_KEY;
     }
     if (GOOGLE_GEMINI_KEY && !GOOGLE_GEMINI_KEY.includes('UNUSED')) {
       return GOOGLE_GEMINI_KEY;
@@ -203,7 +214,7 @@ export const LiveAssistant: React.FC = () => {
 
     const apiKey = getApiKey();
     if (!apiKey) {
-      setMessages(prev => [...prev, { role: 'assistant', text: "⚠️ **Config Error:** No valid API Key found. Please check .env or environment variables." }]);
+      setMessages(prev => [...prev, { role: 'assistant', text: "⚠️ **Config Error:** No valid API Key found. Please check .env or environment variables for GEMINI_LIVE_API_KEY or GEMINI_API_KEY." }]);
       return;
     }
 
@@ -242,7 +253,7 @@ export const LiveAssistant: React.FC = () => {
       }
       
       const sessionPromise = ai.live.connect({
-        model: 'gemini-2.0-flash-exp',
+        model: 'gemini-2.5-flash-native-audio-preview-12-2025',
         callbacks: {
           onopen: () => {
             setStatus('CONNECTED');
@@ -548,16 +559,15 @@ export const LiveAssistant: React.FC = () => {
     try {
       const ai = new GoogleGenAI({ apiKey });
       const response = await ai.models.generateContent({
-        model: 'gemini-2.0-flash', 
-        contents: [{ role: 'user', parts: [{ text: userText }] }],
+        model: 'gemini-3-flash-preview',
+        contents: userText,
         config: {
-          systemInstruction: { parts: [{ text: `Signet-Alpha AI Support. Spec v0.3.2. Authority: signetai.io:ssl.` }] },
+          systemInstruction: `Signet-Alpha AI Support. Spec v0.4.0. Authority: signetai.io:ssl.`,
         }
       });
       setMessages(prev => [...prev, { role: 'assistant', text: response.text || "Neural link timeout." }]);
-    } catch (error: any) {
-      console.error("LiveAssistant Error:", error);
-      setMessages(prev => [...prev, { role: 'assistant', text: `Logic drift detected: ${error.message || 'Link dropped.'}` }]);
+    } catch (error) {
+      setMessages(prev => [...prev, { role: 'assistant', text: "Logic drift detected. Link dropped." }]);
     } finally {
       setIsLoading(false);
     }
@@ -571,8 +581,8 @@ export const LiveAssistant: React.FC = () => {
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="relative z-10"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
         </button>
       ) : (
-        <div className={`w-80 md:w-96 ${isMinimized ? 'h-auto' : 'h-[550px]'} bg-[var(--bg-standard)] border border-[var(--border-light)] shadow-2xl rounded-xl flex flex-col overflow-hidden animate-in slide-in-from-bottom-4 transition-all duration-300`}>
-          <div className="p-4 bg-[var(--table-header)] border-b border-[var(--border-light)] flex justify-between items-center">
+        <div className={`w-80 md:w-96 ${isMinimized ? 'h-auto' : 'h-[60vh] min-h-[400px] min-w-[300px] max-w-[100vw] max-h-[100vh] resize overflow-hidden'} bg-[var(--bg-standard)] border border-[var(--border-light)] shadow-2xl rounded-xl flex flex-col animate-in slide-in-from-bottom-4 transition-all duration-300`}>
+          <div className="p-4 bg-[var(--table-header)] border-b border-[var(--border-light)] flex justify-between items-center shrink-0">
             <div className="flex items-center gap-3">
               <div className="relative">
                 <div className={`w-3 h-3 rounded-full ${status === 'CONNECTED' ? 'bg-blue-500' : status === 'CONNECTING' ? 'bg-amber-500 animate-pulse' : 'bg-green-500'}`}></div>
@@ -676,7 +686,7 @@ export const LiveAssistant: React.FC = () => {
                 <input 
                   type="text" value={input} onChange={(e) => setInput(e.target.value)} 
                   onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
-                  placeholder={status !== 'OFFLINE' ? "Mic active..." : "Ask about v0.3.2..."} 
+                  placeholder={status !== 'OFFLINE' ? "Mic active..." : "Ask about v0.4.0..."} 
                   className="flex-1 text-sm bg-transparent outline-none py-2"
                   disabled={status !== 'OFFLINE'}
                 />

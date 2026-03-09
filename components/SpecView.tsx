@@ -44,7 +44,7 @@ export const SpecView: React.FC = () => {
         doc.setFont("helvetica", "bold");
         doc.setFontSize(10);
         doc.setTextColor(100);
-        doc.text("SIGNET PROTOCOL v0.3.2_OFFICIAL", margin, 15);
+        doc.text("SIGNET PROTOCOL v0.4.0_OFFICIAL", margin, 15);
         doc.setLineWidth(0.5);
         doc.setDrawColor(200);
         doc.line(margin, 18, pageWidth - margin, 18);
@@ -304,7 +304,7 @@ export const SpecView: React.FC = () => {
       "asset": {
         "type": "application/pdf",
         "hash_algorithm": "SHA-256",
-        "filename": "signet_spec_v0.3.2.pdf",
+        "filename": "signet_spec_v0.4.0.pdf",
         "generated_by": "signetai.io",
         "content_hash": pdfContentHash,
         "byte_length": pdfBuffer.byteLength
@@ -335,7 +335,7 @@ ${JSON.stringify(manifest, null, 2)}
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = "signet_spec_v0.3.2.pdf";
+    a.download = "signet_spec_v0.4.0.pdf";
     a.click();
     URL.revokeObjectURL(url);
   };

@@ -55,7 +55,7 @@ export const StandardsView: React.FC = () => {
     <article className="prose prose-slate max-w-none">
       <header className="mb-16">
         <div className="text-[10px] font-mono text-[var(--trust-blue)] uppercase font-bold mb-4 tracking-[0.3em]">Section 1.0</div>
-        <h2 className="text-4xl font-bold mb-6 text-[var(--text-header)]">Standards & Compliance (v0.3.1)</h2>
+        <h2 className="text-4xl font-bold mb-6 text-[var(--text-header)]">Standards & Compliance (v0.4.0)</h2>
         <p className="text-lg text-[var(--text-body)] opacity-80">
           Signet Protocol adheres to the <strong>C2PA 2.3 Technical Specification</strong> while introducing specialized architectural patterns for lightweight, browser-native verification.
         </p>

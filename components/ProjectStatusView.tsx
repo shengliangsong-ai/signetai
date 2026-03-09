@@ -59,7 +59,7 @@ const TODO_CONTENT = `# Signet AI Project Status & Roadmap
     - [x] Drag-and-drop external URL support
     - [x] CORS Policy update for cross-origin fetching
 
-- [x] **The Difference Engine (v0.3.3)**
+- [x] **The Difference Engine (v0.4.0)**
     - [x] **Neutral Architecture**: Source A (Reference) vs Source B (Candidate).
     - [x] **Playlist Support**: Ingest YouTube Playlists as Source A.
     - [x] **Delta Scoring**: 0-1023 Difference Bands (Match -> Distinct).
@@ -266,8 +266,8 @@ export const ProjectStatusView: React.FC = () => {
         <div className="p-4 border border-[var(--border-light)] rounded-lg bg-[var(--bg-standard)]">
           <div className="font-mono text-[9px] uppercase font-bold opacity-50 mb-2">Release Notes</div>
           <div className="flex flex-wrap gap-3 text-[11px] font-mono">
-            <a href="https://www.signetai.io/docs/release-notes/2026-02-22-v0.3.3_UTW.md" target="_blank" rel="noreferrer" className="text-[var(--trust-blue)] hover:underline">
-              Latest: v0.3.3_UTW (2026-02-22)
+            <a href="https://www.signetai.io/docs/release-notes/2026-02-22-v0.4.0_UTW.md" target="_blank" rel="noreferrer" className="text-[var(--trust-blue)] hover:underline">
+              Latest: v0.4.0_UTW (2026-02-22)
             </a>
             <a href="https://www.signetai.io/docs/release-notes/README.md" target="_blank" rel="noreferrer" className="opacity-70 hover:underline">
               Release Notes Index

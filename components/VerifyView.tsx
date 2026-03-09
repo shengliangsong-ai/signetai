@@ -1131,7 +1131,7 @@ export const VerifyView: React.FC<VerifyViewProps> = ({ defaultUrlInput, default
       <header className="space-y-4">
         <div className="flex items-center justify-between">
            <div>
-             <span className="font-mono text-[10px] text-[var(--trust-blue)] tracking-[0.4em] uppercase font-bold">Public Verification Tool (v0.3.3)</span>
+             <span className="font-mono text-[10px] text-[var(--trust-blue)] tracking-[0.4em] uppercase font-bold">Public Verification Tool (v0.4.0)</span>
              <h2 className="text-5xl font-bold italic tracking-tighter text-[var(--text-header)]">The Difference Engine.</h2>
            </div>
            <button 

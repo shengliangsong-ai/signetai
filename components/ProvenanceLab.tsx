@@ -64,7 +64,7 @@ export const ProvenanceLab: React.FC = () => {
           {
             "label": "c2pa.actions.v2",
             "data": {
-              "actions": [{ "action": "c2pa.created", "softwareAgent": "Neural Prism v0.3.1 (2026)" }]
+              "actions": [{ "action": "c2pa.created", "softwareAgent": "Neural Prism v0.4.0 (2026)" }]
             }
           },
           {

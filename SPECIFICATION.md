@@ -1,5 +1,5 @@
 
-# Signet Protocol Specification (v0.3.2)
+# Signet Protocol Specification (v0.4.0)
 **Neural-Lens-03.2**
 
 ## 1. Introduction
@@ -53,7 +53,7 @@ This ensures the original binary substrate is cryptographically intact, even tho
 All Signet-compliant API responses MUST include the `X-Signet-VPR` header.
 
 ---
-**Official Master Signatory (v0.3.2):**
+**Official Master Signatory (v0.4.0):**
 **Anchor:** `signetai.io:ssl`
 **Organization:** [signetai-io](https://github.com/signetai-io)
 **Public Key:** `ed25519:signet_v3.1_sovereign_5b9878a8583b7b38d719c7c8498f8981adc17bec0c311d76269e1275e4a8bdf9`
