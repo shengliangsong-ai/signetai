@@ -138,7 +138,13 @@ export default defineConfig(({ mode }) => {
     },
     build: {
       outDir: 'dist',
-      sourcemap: false
+      sourcemap: false,
+      rollupOptions: {
+        input: {
+          main: path.resolve(__dirname, 'index.html'),
+          bridge: path.resolve(__dirname, 'bridge.html')
+        }
+      }
     }
   };
 });
