@@ -116,3 +116,6 @@ dist
 
 #dotenv
 .env
+
+# Firebase
+.firebase/hosting.*.cache
