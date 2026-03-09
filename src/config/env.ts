@@ -29,10 +29,6 @@ const getEnv = (key: string, processEnvValue?: string) => {
   return undefined;
 };
 
-// Safe debug line
-console.log('VITE_GEMINI_LIVE_API_KEY is present:', !!import.meta.env.VITE_GEMINI_LIVE_API_KEY);
-console.log('VITE_GEMINI_LIVE_API_KEY length:', import.meta.env.VITE_GEMINI_LIVE_API_KEY?.length || 0);
-
 // Explicitly pass the statically replaced process.env values
 export const GOOGLE_GEMINI_KEY = getEnv('GEMINI_API_KEY', typeof process !== 'undefined' ? process.env?.GEMINI_API_KEY : undefined) 
   || getEnv('API_KEY', typeof process !== 'undefined' ? process.env?.API_KEY : undefined) 
@@ -47,7 +43,7 @@ export const GOOGLE_OAUTH_CLIENT_ID = getEnv('OAUTH_CLIENT_ID', typeof process !
 export const firebaseConfig = {
   apiKey: getEnv('FIREBASE_API_KEY', typeof process !== 'undefined' ? process.env?.FIREBASE_API_KEY : undefined) || "",
   authDomain: getEnv('FIREBASE_AUTH_DOMAIN', typeof process !== 'undefined' ? process.env?.FIREBASE_AUTH_DOMAIN : undefined) || "",
-  projectId: getEnv('FIREBASE_PROJECT_ID', typeof process !== 'undefined' ? process.env?.PROJECT_ID : undefined) || "",
+  projectId: getEnv('FIREBASE_PROJECT_ID', typeof process !== 'undefined' ? process.env?.FIREBASE_PROJECT_ID : undefined) || "",
   storageBucket: getEnv('FIREBASE_STORAGE_BUCKET', typeof process !== 'undefined' ? process.env?.FIREBASE_STORAGE_BUCKET : undefined) || "",
   messagingSenderId: getEnv('FIREBASE_MESSAGING_SENDER_ID', typeof process !== 'undefined' ? process.env?.FIREBASE_MESSAGING_SENDER_ID : undefined) || "",
   appId: getEnv('FIREBASE_APP_ID', typeof process !== 'undefined' ? process.env?.FIREBASE_APP_ID : undefined) || "",

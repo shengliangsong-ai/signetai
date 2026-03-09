@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { GoogleGenAI, LiveServerMessage, Modality, Type } from "@google/genai";
 import ReactMarkdown from 'react-markdown';
@@ -118,9 +119,9 @@ export const LiveAssistant: React.FC = () => {
         try {
           let prompt = `The demo has automatically advanced to stage ${step}. Please explain this stage briefly to the user. Do NOT explain any subsequent stages. I will prompt you again when the UI advances.`;
           if (step === 2) {
-            prompt = `The demo has automatically advanced to stage 2: Universal Media Signing (C2PA+). Please explain how we inject a C2PA-compliant manifest directly into the asset's JUMBF boxes, and point out the \'org.signetai.vpr\' assertion where our proprietary Visual Provenance Record is stored. Aim for about 30 seconds of speaking. Do NOT explain any subsequent stages. I will prompt you again when the UI advances.`;
+            prompt = `The demo has automatically advanced to stage 2: Universal Media Signing (C2PA+). Please explain how we inject a C2PA-compliant manifest directly into the asset's JUMBF boxes, and point out the 'org.signetai.vpr' assertion where our proprietary Visual Provenance Record is stored. Aim for about 30 seconds of speaking. Do NOT explain any subsequent stages. I will prompt you again when the UI advances.`;
           } else if (step === 3) {
-            prompt = `The demo has automatically advanced to stage 3: Public Ledger Verification. Please explain how we verify the signature against our distributed ledger to ensure the asset has not been backdated or re-signed, acting as a Proof of Existence. Aim for about 30 seconds of speaking. Do NOT explain any subsequent stages. I will prompt you again when the UI advances.`;
+            prompt = `The demo has automatically advanced to stage 3: Public Ledger Verification. Please explain how we verify the signature against our distributed ledger to ensure the asset hasn't been backdated or re-signed, acting as a Proof of Existence. Aim for about 30 seconds of speaking. Do NOT explain any subsequent stages. I will prompt you again when the UI advances.`;
           } else if (step === 4) {
             prompt = `The demo has automatically advanced to stage 4: Image Forensic Diff Analysis. Please provide a detailed explanation of how the Trident Engine performs deterministic pixel-perfect diffs for static images to detect deepfakes or synthetic alterations. Explain the SSIM map and the score composition. Aim for about 45 seconds of speaking. Do NOT explain any subsequent stages. I will prompt you again when the UI advances.`;
           } else if (step === 5) {
@@ -143,33 +144,35 @@ export const LiveAssistant: React.FC = () => {
     };
   }, [status]);
 
-  // Robust Key Retrieval for Standard (HTTP) API calls
-  const getStandardApiKey = () => {
+  // Robust Key Retrieval
+  const getApiKey = () => {
     try {
-      const envKey = process.env.GEMINI_API_KEY || process.env.API_KEY;
-      if (envKey && !envKey.includes('UNUSED')) {
-        return envKey;
+      const viteLiveKey = import.meta.env.VITE_GEMINI_LIVE_API_KEY;
+      if (viteLiveKey && !viteLiveKey.includes('UNUSED')) {
+        return viteLiveKey;
       }
-    } catch (e) { /* Ignore process is not defined error */ }
-    if (GOOGLE_GEMINI_KEY && !GOOGLE_GEMINI_KEY.includes('UNUSED')) {
-      return GOOGLE_GEMINI_KEY;
-    }
-    console.warn("LiveAssistant: No valid Standard API Key found. You may need to set GEMINI_API_KEY or API_KEY in your .env file.");
-    return '';
-  };
-
-  // Robust Key Retrieval for Live (WebSocket) API calls
-  const getLiveApiKey = () => {
-    try {
       const liveKey = process.env.VITE_GEMINI_LIVE_API_KEY;
       if (liveKey && !liveKey.includes('UNUSED')) {
         return liveKey;
       }
-    } catch (e) { /* Ignore process is not defined error */ }
+      const userKey = process.env.API_KEY;
+      if (userKey && !userKey.includes('UNUSED')) {
+        return userKey;
+      }
+      const envKey = process.env.GEMINI_API_KEY;
+      if (envKey && !envKey.includes('UNUSED')) {
+        return envKey;
+      }
+    } catch (e) {
+      // Ignore process is not defined error
+    }
     if (GOOGLE_GEMINI_LIVE_KEY && !GOOGLE_GEMINI_LIVE_KEY.includes('UNUSED')) {
       return GOOGLE_GEMINI_LIVE_KEY;
     }
-     console.warn("LiveAssistant: No valid Live API Key found. You may need to set VITE_GEMINI_LIVE_API_KEY in your .env file.");
+    if (GOOGLE_GEMINI_KEY && !GOOGLE_GEMINI_KEY.includes('UNUSED')) {
+      return GOOGLE_GEMINI_KEY;
+    }
+    console.warn("LiveAssistant: No valid API Key found.");
     return '';
   };
 
@@ -217,12 +220,6 @@ export const LiveAssistant: React.FC = () => {
       return;
     }
 
-    const apiKey = getLiveApiKey();
-    if (!apiKey) {
-      setMessages(prev => [...prev, { role: 'assistant', text: "⚠️ **Config Error:** No valid API Key found. Please check .env or environment variables for VITE_GEMINI_LIVE_API_KEY." }]);
-      return;
-    }
-
     setStatus('CONNECTING');
 
     // 1. Setup Audio Contexts
@@ -236,6 +233,12 @@ export const LiveAssistant: React.FC = () => {
     if (!hasKey) {
       // Per instructions: assume selection successful after trigger and proceed
       (window as any).aistudio?.openSelectKey();
+    }
+
+    const apiKey = getApiKey();
+    if (!apiKey) {
+      setMessages(prev => [...prev, { role: 'assistant', text: "⚠️ **Config Error:** No valid API Key found. Please check .env or environment variables for VITE_GEMINI_LIVE_API_KEY or GEMINI_API_KEY." }]);
+      return;
     }
 
     // Always create new instance for the most up-to-date key
@@ -550,9 +553,9 @@ export const LiveAssistant: React.FC = () => {
   const handleSendMessage = async () => {
     if (!input.trim() || isLoading) return;
     
-    const apiKey = getStandardApiKey();
+    const apiKey = getApiKey();
     if (!apiKey) {
-      setMessages(prev => [...prev, { role: 'assistant', text: "⚠️ **Auth Error:** Missing API Key. Please set GEMINI_API_KEY in your .env file." }]);
+      setMessages(prev => [...prev, { role: 'assistant', text: "⚠️ **Auth Error:** Missing API Key." }]);
       return;
     }
 
@@ -564,16 +567,16 @@ export const LiveAssistant: React.FC = () => {
     try {
       const ai = new GoogleGenAI({ apiKey });
       const response = await ai.models.generateContent({
-        model: 'gemini-1.5-flash',
+        model: 'gemini-3-flash-preview',
         contents: userText,
         config: {
           systemInstruction: `Signet-Alpha AI Support. Spec v0.4.0. Authority: signetai.io:ssl.`,
         }
       });
       setMessages(prev => [...prev, { role: 'assistant', text: response.text || "Neural link timeout." }]);
-    } catch (error) {
-      console.error("Standard API call failed:", error);
-      setMessages(prev => [...prev, { role: 'assistant', text: "Logic drift detected. Link dropped." }]);
+    } catch (error: any) {
+      console.error("Chat Error:", error);
+      setMessages(prev => [...prev, { role: 'assistant', text: `Logic drift detected. Link dropped. Error: ${error.message}` }]);
     } finally {
       setIsLoading(false);
     }
