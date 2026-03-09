@@ -9,9 +9,16 @@
     "cleanUrls": true,
     "rewrites": [
       {
+        "source": "/api/extract-drive-frames",
+        "function": "extractDriveFrames"
+      },
+      {
         "source": "**",
         "destination": "/index.html"
       }
     ]
+  },
+  "functions": {
+    "source": "functions"
   }
 }
