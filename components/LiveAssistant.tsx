@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { GoogleGenAI, LiveServerMessage, Modality, Type } from "@google/genai";
 import ReactMarkdown from 'react-markdown';
@@ -119,7 +118,7 @@ export const LiveAssistant: React.FC = () => {
         try {
           let prompt = `The demo has automatically advanced to stage ${step}. Please explain this stage briefly to the user. Do NOT explain any subsequent stages. I will prompt you again when the UI advances.`;
           if (step === 2) {
-            prompt = `The demo has automatically advanced to stage 2: Universal Media Signing (C2PA+). Please explain how we inject a C2PA-compliant manifest directly into the asset'''s JUMBF boxes, and point out the \'org.signetai.vpr\' assertion where our proprietary Visual Provenance Record is stored. Aim for about 30 seconds of speaking. Do NOT explain any subsequent stages. I will prompt you again when the UI advances.`;
+            prompt = `The demo has automatically advanced to stage 2: Universal Media Signing (C2PA+). Please explain how we inject a C2PA-compliant manifest directly into the asset's JUMBF boxes, and point out the \'org.signetai.vpr\' assertion where our proprietary Visual Provenance Record is stored. Aim for about 30 seconds of speaking. Do NOT explain any subsequent stages. I will prompt you again when the UI advances.`;
           } else if (step === 3) {
             prompt = `The demo has automatically advanced to stage 3: Public Ledger Verification. Please explain how we verify the signature against our distributed ledger to ensure the asset has not been backdated or re-signed, acting as a Proof of Existence. Aim for about 30 seconds of speaking. Do NOT explain any subsequent stages. I will prompt you again when the UI advances.`;
           } else if (step === 4) {
@@ -162,7 +161,7 @@ export const LiveAssistant: React.FC = () => {
   // Robust Key Retrieval for Live (WebSocket) API calls
   const getLiveApiKey = () => {
     try {
-      const liveKey = process.env.GEMINI_LIVE_API_KEY;
+      const liveKey = process.env.VITE_GEMINI_LIVE_API_KEY;
       if (liveKey && !liveKey.includes('UNUSED')) {
         return liveKey;
       }
@@ -170,7 +169,7 @@ export const LiveAssistant: React.FC = () => {
     if (GOOGLE_GEMINI_LIVE_KEY && !GOOGLE_GEMINI_LIVE_KEY.includes('UNUSED')) {
       return GOOGLE_GEMINI_LIVE_KEY;
     }
-     console.warn("LiveAssistant: No valid Live API Key found. You may need to set GEMINI_LIVE_API_KEY in your .env file.");
+     console.warn("LiveAssistant: No valid Live API Key found. You may need to set VITE_GEMINI_LIVE_API_KEY in your .env file.");
     return '';
   };
 
@@ -220,7 +219,7 @@ export const LiveAssistant: React.FC = () => {
 
     const apiKey = getLiveApiKey();
     if (!apiKey) {
-      setMessages(prev => [...prev, { role: 'assistant', text: "⚠️ **Config Error:** No valid API Key found. Please check .env or environment variables for GEMINI_LIVE_API_KEY." }]);
+      setMessages(prev => [...prev, { role: 'assistant', text: "⚠️ **Config Error:** No valid API Key found. Please check .env or environment variables for VITE_GEMINI_LIVE_API_KEY." }]);
       return;
     }
 
