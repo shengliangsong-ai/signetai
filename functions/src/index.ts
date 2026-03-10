@@ -5,14 +5,14 @@ import * as logger from "firebase-functions/logger";
 import axios from "axios";
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-const API_VERSION = "0.5.0"; // Version of the API
+const API_VERSION = "0.5.1"; // Version of the API
 const DEPLOYMENT_TIME = new Date().toISOString(); // Records the time of initialization
 
 // Pricing for gemini-1.5-flash-latest in USD as of June 2024
 const INPUT_PRICE_PER_MILLION_TOKENS = 0.35;
 const OUTPUT_PRICE_PER_MILLION_TOKENS = 1.05;
 
-export const api = onRequest(
+export const chat = onRequest(
   { cors: true },
   async (req, res) => {
 
@@ -133,7 +133,7 @@ export const api = onRequest(
         note: "This is a transparent, end-to-end trace of the data sent to and received from the Gemini API via the Firebase Cloud Function proxy.",
         serverEnvironment: {
           requestPath: req.path,
-          firebaseFunction: "api",
+          firebaseFunction: "chat",
           region: process.env.FUNCTION_REGION || "us-central1",
           serverApiKeyUsed: `...${GEMINI_API_KEY.slice(-5)}`,
           version: API_VERSION,
