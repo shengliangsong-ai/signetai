@@ -7,19 +7,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Create .env file from secrets
+      - name: Create .env file for Frontend Build
         run: |
           echo "VITE_GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}" >> .env
-          echo "VITE_GEMINI_LIVE_API_KEY=${{ secrets.GEMINI_LIVE_API_KEY }}" >> .env
-          echo "VITE_YOUTUBE_API_KEY=${{ secrets.YOUTUBE_API_KEY }}" >> .env
-          echo "VITE_OAUTH_CLIENT_ID=${{ secrets.GOOGLE_OAUTH_CLIENT_ID }}" >> .env
-          echo "VITE_FIREBASE_API_KEY=${{ secrets.FIREBASE_API_KEY }}" >> .env
-          echo "VITE_FIREBASE_AUTH_DOMAIN=${{ secrets.FIREBASE_AUTH_DOMAIN }}" >> .env
           echo "VITE_FIREBASE_PROJECT_ID=${{ secrets.FIREBASE_PROJECT_ID }}" >> .env
-          echo "VITE_FIREBASE_STORAGE_BUCKET=${{ secrets.FIREBASE_STORAGE_BUCKET }}" >> .env
-          echo "VITE_FIREBASE_MESSAGING_SENDER_ID=${{ secrets.FIREBASE_MESSAGING_SENDER_ID }}" >> .env
-          echo "VITE_FIREBASE_APP_ID=${{ secrets.FIREBASE_APP_ID }}" >> .env
-          echo "VITE_FIREBASE_MEASUREMENT_ID=${{ secrets.FIREBASE_MEASUREMENT_ID }}" >> .env
+          # ... add other VITE variables as needed
 
       - name: Set up Node.js
         uses: actions/setup-node@v3
@@ -34,10 +26,20 @@ jobs:
           npm install
           cd ..
 
-      - name: Deploy Function to Firebase
+      - name: Authenticate to Google Cloud
+        id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_SIGNETAI }}'
+
+      - name: Set Secret and Deploy Function to Firebase
         run: |
           npm install -g firebase-tools
-          firebase deploy --only functions --project ${{ secrets.FIREBASE_PROJECT_ID }} --set-secrets=GEMINI_API_KEY --non-interactive --token "${{ secrets.FIREBASE_TOKEN }}"
+          # 1. Set the secret in Google Secret Manager for the PR environment
+          echo ${{ secrets.GEMINI_API_KEY }} | firebase functions:secrets:set GEMINI_API_KEY --data-file=- --project ${{ secrets.FIREBASE_PROJECT_ID }} --non-interactive
+
+          # 2. Deploy the function, attaching the secret
+          firebase deploy --only functions --project ${{ secrets.FIREBASE_PROJECT_ID }} --set-secrets=GEMINI_API_KEY --non-interactive
 
       - name: Deploy Hosting Preview to Firebase
         uses: FirebaseExtended/action-hosting-deploy@v0
