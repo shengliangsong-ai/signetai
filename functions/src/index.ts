@@ -28,7 +28,6 @@ export const api = onRequest(
         return;
       }
 
-      // The API Key is a runtime environment variable on the cloud function, not a build-time secret.
       if (!GEMINI_API_KEY) {
         logger.error("GEMINI_API_KEY is not set in the function's environment variables.");
         res.status(500).send({ error: "API Key not configured on server" });
@@ -37,24 +36,41 @@ export const api = onRequest(
 
       const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${GEMINI_API_KEY}`;
 
+      const requestToGemini = {
+        contents: [{ role: "user", parts: [{ text: contents }] }],
+        systemInstruction: {
+          role: "system",
+          parts: [{ text: "Signet-Alpha AI Support. Spec v0.4.0. Authority: signetai.io:ssl." }]
+        }
+      };
+
       const geminiResponse = await axios.post(
         geminiUrl,
-        {
-          contents: [{ role: "user", parts: [{ text: contents }] }],
-          systemInstruction: {
-            role: "system",
-            parts: [{ text: "Signet-Alpha AI Support. Spec v0.4.0. Authority: signetai.io:ssl." }]
-          }
-        },
+        requestToGemini,
         { headers: { "Content-Type": "application/json" } }
       );
 
       const responseText = geminiResponse.data?.candidates?.[0]?.content?.parts?.[0]?.text || "Neural link timeout.";
 
-      res.status(200).send({ text: responseText });
+      // Create a debug object to send back to the client
+      const debugInfo = {
+        note: "This is the data sent to and received from the Gemini API via the Firebase Cloud Function proxy.",
+        requestToGemini: requestToGemini,
+        responseFromGemini: geminiResponse.data
+      };
+
+      // Send both the response text and the debug information
+      res.status(200).send({ text: responseText, debug: debugInfo });
 
     } catch (error: any) {
       logger.error("Chat Function Error:", error.response ? error.response.data : error.message);
-      res.status(500).send({ error: "Failed to communicate with the Gemini API" });
+      const errorResponse = error.response ? error.response.data : { message: error.message };
+      res.status(500).send({ 
+        error: "Failed to communicate with the Gemini API", 
+        debug: { 
+          note: "An error occurred in the Firebase Cloud Function.",
+          error: errorResponse
+        }
+      });
     }
   });
