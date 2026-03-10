@@ -1,10 +1,9 @@
-// v0.5.3 - Restored full debug output and corrected routing
+// v0.5.5 - Restored comprehensive health check; kept API key in function scope.
 import { onRequest } from "firebase-functions/v2/https";
 import * as logger from "firebase-functions/logger";
 import axios from "axios";
 
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-const API_VERSION = "0.5.3"; // Version of the API
+const API_VERSION = "0.5.5"; // Version of the API
 const DEPLOYMENT_TIME = new Date().toISOString(); // Records the time of initialization
 
 // Pricing for gemini-1.5-flash-latest in USD as of June 2024
@@ -47,7 +46,9 @@ const getEnvironmentVariableHealth = () => {
 export const chat = onRequest(
   { cors: true, secrets: ["GEMINI_API_KEY"] },
   async (req, res) => {
-
+    
+    // API Key is now accessed here, within the function's runtime scope
+    const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
     const path = req.path;
     const method = req.method;
 
@@ -82,11 +83,11 @@ export const chat = onRequest(
           }
 
           if (!GEMINI_API_KEY) {
-            logger.error("CRITICAL: GEMINI_API_KEY is not set.");
+            logger.error("CRITICAL: GEMINI_API_KEY is not set in the function's environment.");
             res.status(500).send({ 
               error: "API Key not configured on server",
               debug: { 
-                note: "The backend function could not find the GEMINI_API_KEY in its environment.",
+                note: "The backend function could not find the GEMINI_API_KEY in its environment. This key should be injected as a secret.",
                 keyFound: false,
                 environmentVariableHealth: getEnvironmentVariableHealth()
               }
