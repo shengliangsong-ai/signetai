@@ -18,7 +18,7 @@ jobs:
       - name: Create .env file for Frontend Build
         run: |
           echo "VITE_GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}" >> .env
-          echo "VITE_FIREBASE_PROJECT_ID=${{ secrets.FIREBASE_PROJECT_ID }}" >> .env
+          echo "VITE_FIREBASE_PROJECT_ID=signetai" >> .env
 
       - name: Install Dependencies and Build
         run: |
@@ -37,7 +37,7 @@ jobs:
       - name: Set Secret, Wait, and Deploy to Firebase
         run: |
           npm install -g firebase-tools
-          echo ${{ secrets.GEMINI_API_KEY }} | firebase functions:secrets:set GEMINI_API_KEY --data-file=- --project ${{ secrets.FIREBASE_PROJECT_ID }} --non-interactive
+          echo ${{ secrets.GEMINI_API_KEY }} | firebase functions:secrets:set GEMINI_API_KEY --data-file=- --project signetai --non-interactive
           echo "Waiting 15 seconds for secret to propagate..."
           sleep 15
-          firebase deploy --only functions,hosting --project ${{ secrets.FIREBASE_PROJECT_ID }} --non-interactive
+          firebase deploy --only functions,hosting --project signetai --non-interactive
