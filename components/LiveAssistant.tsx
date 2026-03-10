@@ -649,11 +649,16 @@ export const LiveAssistant: React.FC = () => {
       });
       addDebugMessage(`Received HTTP response with status: ${response.status}`);
 
+      // --- START MODIFICATION ---
+      const responseTextClone = await response.text(); // Clone and read the response body as text
+      addDebugMessage(`Raw response body:\n${responseTextClone}`);
+      // --- END MODIFICATION ---
+
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status} ${response.statusText}`);
       }
 
-      const data = await response.json();
+      const data = JSON.parse(responseTextClone); // Parse the cloned text
       addDebugMessage(`Text response from backend successfully parsed.`);
       if (data.debug) {
         // Pretty-print the JSON debug info
