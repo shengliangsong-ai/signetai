@@ -1,14 +1,26 @@
 {
-  "name": "signet-backend",
-  "version": "1.0.0",
-  "private": true,
-  "main": "server.js",
+  "name": "signet-functions",
+  "description": "Cloud Functions for Signet AI",
+  "main": "lib/index.js",
   "dependencies": {
-    "express": "^4.19.2",
-    "firebase-admin": "^12.0.0",
-    "firebase-functions": "^5.0.0"
+    "axios": "^1.7.2",
+    "firebase-functions": "^5.0.1",
+    "firebase-admin": "^12.1.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.5",
+    "firebase-functions-test": "^3.3.0"
+  },
+  "scripts": {
+    "build": "tsc",
+    "serve": "npm run build && firebase emulators:start --only functions",
+    "shell": "npm run build && firebase functions:shell",
+    "start": "npm run shell",
+    "deploy": "firebase deploy --only functions",
+    "logs": "firebase functions:log"
   },
   "engines": {
     "node": "20"
-  }
+  },
+  "private": true
 }

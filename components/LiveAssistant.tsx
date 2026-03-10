@@ -569,7 +569,10 @@ export const LiveAssistant: React.FC = () => {
     setIsLoading(true);
 
     try {
-      const response = await fetch('/api/chat', {
+      // This is a placeholder and will be replaced by the actual URL after deployment
+      const functionUrl = 'https://us-central1-your-project-id.cloudfunctions.net/chat';
+      
+      const response = await fetch(functionUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
