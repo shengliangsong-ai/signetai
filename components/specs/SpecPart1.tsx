@@ -43,7 +43,7 @@ export const PART_1 = [
   {
     category: "NARRATIVE STRATEGY",
     title: "2. Protocol Architecture (4 Layers)",
-    text: "The Signet Pipeline consists of four distinct verification layers:\n\nL1: Vision Substrate (The DNA)\nCryptographic binding of the initial prompt and intent ingredients.\n\nL2: Neural Lens (The PRG)\nJUMBF encapsulation of the Public Reasoning Graph. This is the claimed logic path.\n\nL3: Reality Check (Drift Audit & Threat Model)\nDeterministic probing of the output against the PRG.\n\nL4: Human Seal (Accountability)\nFinal Ed25519 signature. The Curator must select an attestation mode:\n1. Intent Seal: 'I intended this result.'\n2. Review Seal: 'I reviewed this result.'\n3. Authority Seal: 'I take liability for this.'",
+    text: "The Signet Pipeline consists of four distinct verification layers:\n\nL1: Vision Substrate (The DNA)\nCryptographic binding of the initial prompt and intent ingredients.\n\nL2: Neural Lens (The PRG)\nJUMBF encapsulation of the Public Reasoning Graph. This is the claimed logic path.\n\nL3: Reality Check (Drift Audit & Threat Model)\nDeterministic probing of the output against the PRG.\n\nL4: Human Seal (Accountability)\nFinal Ed25519 signature. The Curator must select an attestation mode:\n1. Intent Seal: 'I intended this result.'\n2. Review Seal: 'I reviewed this result.'\n3. Authority Seal: 'I take liability for this.''',",
     content: (
       <div className="space-y-8 animate-in fade-in duration-500">
         <h2 className="text-[var(--text-header)] font-serif text-2xl font-bold mb-6 italic">2. Protocol Architecture</h2>
@@ -67,7 +67,7 @@ export const PART_1 = [
         </div>
         
         <div className="mt-8">
-           <h5 className="font-mono text-[10px] uppercase font-bold text-[var(--text-header)] mb-4">ISO/NIST Threat Model (v0.4.0)</h5>
+           <h5 className="font-mono text-[10px] uppercase font-bold text-[var(--text-header)] mb-4">ISO/NIST Threat Model (v0.4.1)</h5>
            <div className="border border-[var(--border-light)] rounded overflow-hidden">
              <table className="w-full text-[10px] text-left">
                <thead className="bg-[var(--table-header)] border-b border-[var(--border-light)]">
@@ -189,12 +189,12 @@ export const PART_1 = [
   {
     category: "TECHNICAL AUDIT",
     title: "4. Executive Summary & Abstract",
-    text: "The Signet Protocol (v0.4.0) defines a decentralized framework for the cryptographic attestation of AI-generated reasoning paths (VPR). \n\nUnlike traditional watermarking which focuses on asset attribution, Signet verifies the 'Reasoning DAG'—the logical chain of thought used to generate the output.",
+    text: "The Signet Protocol (v0.4.1) defines a decentralized framework for the cryptographic attestation of AI-generated reasoning paths (VPR). \n\nUnlike traditional watermarking which focuses on asset attribution, Signet verifies the 'Reasoning DAG'—the logical chain of thought used to generate the output.",
     content: (
       <div className="space-y-8 animate-in fade-in duration-500">
         <h2 className="text-[var(--text-header)] font-serif text-2xl font-bold mb-6 italic underline underline-offset-8 decoration-1 decoration-neutral-500/30">4. Executive Summary</h2>
         <p className="indent-12 opacity-80 leading-loose text-justify">
-          The Signet Protocol (v0.4.0) defines a decentralized framework for the cryptographic attestation of AI-generated reasoning paths (VPR). 
+          The Signet Protocol (v0.4.1) defines a decentralized framework for the cryptographic attestation of AI-generated reasoning paths (VPR). 
           Unlike traditional watermarking which focuses on asset attribution, Signet verifies the <strong>"Public Reasoning Graph"</strong>—the logical chain of thought used to generate the output.
         </p>
       </div>

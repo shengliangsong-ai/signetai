@@ -59,10 +59,20 @@ Additionally, synchronizing visual frames with the audio stream over the Live AP
 
 We gained a profound understanding of the complexities of real-time multimodal AI. Moving from traditional "text-in/text-out" LLM interactions to continuous, stateful WebSocket connections completely changed our mental model of application architecture. We also learned how powerful the combination of Google's GenAI SDK and Firebase can be for rapidly prototyping and deploying scalable, serverless applications.
 
-## What's next for Signet AI
+## Future Roadmap
 
-Our vision is to make SignetAI the standard protocol for restoring accountability to the AI era. 
+Our vision is to make SignetAI the standard protocol for restoring accountability to the AI era. Here are some potential avenues for expanding its capabilities:
 
-*   **Cross-Application Workflows:** We plan to expand the agent's capabilities to act as a UI Navigator, allowing it to observe a user's screen and automatically verify content across different platforms (e.g., verifying a news article directly on a publisher's website).
-*   **Decentralized Anchoring:** While we currently use Firestore for speed and reliability, we plan to periodically anchor our cryptographic proofs to a public blockchain for ultimate immutability.
-*   **Enterprise Integrations:** Developing APIs so organizations can embed the Signet Live Notary directly into their existing document management systems.
+### Front-End (User Experience)
+
+*   **Secure Key Export/Import:** Allow users to download an encrypted backup of their key vault, enabling them to restore their identity on other devices.
+*   **Enhanced Live Assistant UI:** Add a real-time transcription window and a microphone audio visualizer to improve user interaction and feedback.
+*   **Interactive Onboarding Tutorial:** A step-by-step guided tour for new users to explain key creation, signing, and verification, improving usability.
+*   **Offline-First Signing:** Utilize service workers to enable asset signing and verification even without an internet connection, syncing with the backend when connectivity is restored.
+
+### Back-End (Core Power)
+
+*   **Web of Trust Implementation:** Build the backend logic allowing users to vouch for other public keys, creating a queryable trust graph to assess signature reliability.
+*   **Expand Trident Engine Analysis:** Add new analysis modules for detecting audio deepfakes or document tampering (e.g., hidden metadata in PDFs).
+*   **Public API for Third Parties:** Create secure API endpoints with key management and rate-limiting to allow external developers to integrate Signet verification.
+*   **Automated Notification System:** Implement a service to notify users via email or other channels when their signed assets are verified or when their trust network changes.

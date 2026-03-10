@@ -1,0 +1,86 @@
+<svg width="1200" height="1050" xmlns="http://www.w3.org/2000/svg" font-family="sans-serif" font-size="14">
+    <defs>
+        <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="#333" />
+        </marker>
+    </defs>
+    <style>
+        .title { font-size: 20px; font-weight: bold; text-anchor: middle; }
+        .box { stroke: #333; stroke-width: 1.5; fill: #fff; rx: 5; ry: 5; }
+        .box-title { font-weight: bold; text-anchor: middle; }
+        .box-desc { font-size: 12px; text-anchor: middle; fill: #555; }
+        .flow-line { stroke: #333; stroke-width: 1.5; marker-end: url(#arrow); fill: none; }
+        .flow-label { font-size: 12px; text-anchor: middle; fill: #333; }
+    </style>
+    <!-- Groups -->
+    <rect stroke="#ccc" stroke-dasharray="5 5" fill="#f9f9f9" x="10" y="10" width="380" height="1030" />
+    <text class="title" x="200" y="40">Front-End (Client)</text>
+    <rect stroke="#ccc" stroke-dasharray="5 5" fill="#f9f9f9" x="410" y="10" width="780" height="1030" />
+    <text class="title" x="800" y="40">Back-End (Server and Cloud)</text>
+    <!-- Client Boxes -->
+    <g>
+        <rect class="box" x="50" y="70" width="300" height="100" />
+        <text class="box-title" x="200" y="95">1. Key Vault and Signer</text>
+        <text class="box-desc" x="200" y="120">Generates Mnemonic and Ed25519 key pair.</text>
+    </g>
+    <g>
+        <rect class="box" x="50" y="190" width="300" height="90" style="fill:#fff9e6; stroke:#ffc107;"/>
+        <text class="box-title" x="200" y="220">Browser Storage (IndexedDB)</text>
+        <text class="box-desc" x="200" y="245" style="font-weight:bold; fill:#b38600;">Stores Private Key and Mnemonic</text>
+        <text class="box-desc" x="200" y="260">(Never leaves the device)</text>
+    </g>
+    <g>
+        <rect class="box" x="50" y="310" width="300" height="120" />
+        <text class="box-title" x="200" y="335">SVG Attestation Logic</text>
+        <text class="box-desc" x="200" y="360">
+            <tspan x="200" dy="1.2em">Injects a signed manifest into a</tspan>
+            <tspan x="200" dy="1.2em">'metadata' block in the SVG source.</tspan>
+            <tspan x="200" dy="1.2em">(XML-DSig Hybrid Approach)</tspan>
+        </text>
+    </g>
+    <g>
+        <rect class="box" x="50" y="460" width="300" height="80" />
+        <text class="box-title" x="200" y="490">Live Assistant UI</text>
+        <text class="box-desc" x="200" y="515">(React SPA)</text>
+    </g>
+    <!-- Backend Boxes -->
+    <g>
+        <rect class="box" x="450" y="460" width="200" height="80" />
+        <text class="box-title" x="550" y="490">Firebase Hosting</text>
+        <text class="box-desc" x="550" y="515">(Static Assets)</text>
+    </g>
+    <g>
+        <rect class="box" x="450" y="570" width="280" height="240" />
+        <text class="box-title" x="590" y="600">Cloud Functions</text>
+        <rect class="box" x="460" y="620" width="260" height="180" style="fill:#f0f8ff; stroke-width:1;"/>
+        <text x="590" y="645" style="font-size:14px; text-anchor:middle; font-weight:bold;">Trident Engine</text>
+        <text class="box-desc" x="590" y="670">Image Comparator</text>
+        <text class="box-desc" x="590" y="690">Video Diff Engine</text>
+        <text class="box-desc" x="590" y="710">Live Demo Orchestration</text>
+    </g>
+    <g>
+        <rect class="box" x="450" y="840" width="280" height="120" style="fill:#e6f9ff; stroke:#00b8d4;"/>
+        <text class="box-title" x="590" y="870">Firestore Database</text>
+        <text class="box-desc" x="590" y="895" style="font-weight:bold; fill:#006778;">Public Key Registry</text>
+        <text class="box-desc" x="590" y="915">Provenance Manifests and Hashes</text>
+    </g>
+    <g>
+        <rect class="box" x="800" y="630" width="240" height="80" />
+        <text class="box-title" x="920" y="660">Vertex AI (Gemini)</text>
+        <text class="box-desc" x="920" y="685">For Perceptual and Semantic Analysis</text>
+    </g>
+    <!-- Arrows -->
+    <path class="flow-line" d="M200,170 V 190" />
+    <text class="flow-label" x="230" y="185">Stores Locally</text>
+    <path class="flow-line" d="M350,150 C 450,150 450,850 450,850" />
+    <text class="flow-label" x="400" y="500">Publishes Public Key</text>
+    <path class="flow-line" d="M350,490 H 450" />
+    <text class="flow-label" x="400" y="480">Serves SPA (HTTPS)</text>
+    <path class="flow-line" d="M200,540 V 620 C 200,620 450,620 450,620" />
+    <text class="flow-label" x="325" y="610">Analysis Request</text>
+    <path class="flow-line" d="M730,670 H 800" />
+    <text class="flow-label" x="765" y="660">AI Analysis</text>
+    <path class="flow-line" d="M590,810 V 840" />
+    <text class="flow-label" x="630" y="825">Reads and Writes Manifests</text>
+</svg>
+

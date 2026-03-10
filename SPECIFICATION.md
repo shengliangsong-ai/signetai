@@ -1,5 +1,5 @@
 
-# Signet Protocol Specification (v0.4.0)
+# Signet Protocol Specification (v0.4.1)
 **Neural-Lens-03.2**
 
 ## 1. Introduction
@@ -52,8 +52,42 @@ This ensures the original binary substrate is cryptographically intact, even tho
 ## 5. The X-Signet-VPR Header
 All Signet-compliant API responses MUST include the `X-Signet-VPR` header.
 
+## 6. Architecture
+
+### 6.1. SVG Diagram
+
+![Architecture Diagram](architecture.svg)
+
+### 6.2. Mermaid Diagram
+
+```mermaid
+graph TD
+    subgraph Client (User Browser)
+        A[React SPA] -->|Served by| B(Firebase Hosting)
+        C[VerificationBadge.tsx] -->|Verifies| A
+        D[LiveAssistant.tsx] -->|Handles audio stream & UI| A
+        E[SVGAttestation.tsx] -->|Client-side hashing| A
+    end
+
+    subgraph Firebase Platform
+        B -->|Serves SPA| A
+        F[Cloud Functions] -->|Backend logic, API endpoints| G[Firestore]
+        F -->|Backend logic, API endpoints| H[Cloud Storage]
+        I[Master Signatory] -->|Signs assets| F
+    end
+
+    subgraph Google Cloud (External)
+        J[Vertex AI (Gemini Live API)]
+    end
+
+    A -->|HTTPS| F
+    D -->|WebSocket (Audio Stream)| J
+    F -->|Manages Session| J
+    E -->|HTTPS (SVG Attestation API)| F
+```
+
 ---
-**Official Master Signatory (v0.4.0):**
+**Official Master Signatory (v0.4.1):**
 **Anchor:** `signetai.io:ssl`
 **Organization:** [signetai-io](https://github.com/signetai-io)
 **Public Key:** `ed25519:signet_v3.1_sovereign_5b9878a8583b7b38d719c7c8498f8981adc17bec0c311d76269e1275e4a8bdf9`
