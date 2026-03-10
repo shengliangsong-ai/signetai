@@ -2,14 +2,14 @@ import { onRequest } from "firebase-functions/v2/https";
 import * as logger from "firebase-functions/logger";
 import axios from "axios";
 
-// Get the Gemini API key from environment variables. 
+// Get the Gemini API key from environment variables.
 // This is set in the GCP environment, not via .env files for security.
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
 export const api = onRequest(
   { cors: true }, // Automatically handle CORS for all responses
   async (req, res) => {
-    // The path will include the /api prefix, so we check for /api/chat
+    // The path from the firebase rewrite will be `/api/chat`, not `/chat`.
     if (req.path !== "/api/chat") {
         res.status(404).send("Not Found");
         return;
