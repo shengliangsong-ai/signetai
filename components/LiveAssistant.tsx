@@ -131,7 +131,7 @@ export const LiveAssistant: React.FC = () => {
       } else if (status === 'CONNECTED' && sessionRef.current) {
         try {
           const demoPrompt = "I just started the demo notebook manually. Please provide a 1-minute introduction summarizing the key of the project, addressing the hackathon requirements (Live Agent, Gemini Live API, Google Cloud). Then, explain Stage 1: Sovereign Identity Initialization. Do NOT explain the other stages yet. I will prompt you when the UI advances to the next stage.";
-          addDebugMessage(`Sending demo prompt: "${demoPrompt}"`);
+          addDebugMessage(`Sending demo prompt: \"${demoPrompt}\".`);
           sessionRef.current.sendClientContent({ turns: [{ role: 'user', parts: [{ text: demoPrompt }] }], turnComplete: true });
         } catch (err) {
           addDebugMessage(`Failed to send demo prompt: ${err}`);
@@ -147,9 +147,9 @@ export const LiveAssistant: React.FC = () => {
         try {
           let prompt = `The demo has automatically advanced to stage ${step}. Please explain this stage briefly to the user. Do NOT explain any subsequent stages. I will prompt you again when the UI advances.`;
           if (step === 2) {
-            prompt = `The demo has automatically advanced to stage 2: Universal Media Signing (C2PA+). Please explain how we inject a C2PA-compliant manifest directly into the asset\\'s JUMBF boxes, and point out the \\'org.signetai.vpr\\' assertion where our proprietary Visual Provenance Record is stored. Aim for about 30 seconds of speaking. Do NOT explain any subsequent stages. I will prompt you again when the UI advances.`;
+            prompt = `The demo has automatically advanced to stage 2: Universal Media Signing (C2PA+). Please explain how we inject a C2PA-compliant manifest directly into the asset's JUMBF boxes, and point out the 'org.signetai.vpr' assertion where our proprietary Visual Provenance Record is stored. Aim for about 30 seconds of speaking. Do NOT explain any subsequent stages. I will prompt you again when the UI advances.`;
           } else if (step === 3) {
-            prompt = `The demo has automatically advanced to stage 3: Public Ledger Verification. Please explain how we verify the signature against our distributed ledger to ensure the asset hasn\\'t been backdated or re-signed, acting as a Proof of Existence. Aim for about 30 seconds of speaking. Do NOT explain any subsequent stages. I will prompt you again when the UI advances.`;
+            prompt = `The demo has automatically advanced to stage 3: Public Ledger Verification. Please explain how we verify the signature against our distributed ledger to ensure the asset hasn't been backdated or re-signed, acting as a Proof of Existence. Aim for about 30 seconds of speaking. Do NOT explain any subsequent stages. I will prompt you again when the UI advances.`;
           } else if (step === 4) {
             prompt = `The demo has automatically advanced to stage 4: Image Forensic Diff Analysis. Please provide a detailed explanation of how the Trident Engine performs deterministic pixel-perfect diffs for static images to detect deepfakes or synthetic alterations. Explain the SSIM map and the score composition. Aim for about 45 seconds of speaking. Do NOT explain any subsequent stages. I will prompt you again when the UI advances.`;
           } else if (step === 5) {
@@ -157,7 +157,7 @@ export const LiveAssistant: React.FC = () => {
           } else if (step === 6) {
             prompt = `The demo has automatically advanced to stage 6: Conclusion & Future Outlook. Please wrap up the demo. Emphasize that Signet is ready for integration today, bringing transparency back to the digital world. Thank the audience for their time. Aim for about 30 seconds of speaking.`;
           }
-          addDebugMessage(`Sending narration prompt for step ${step}: "${prompt}"`);
+          addDebugMessage(`Sending narration prompt for step ${step}: \"${prompt}\".`);
           sessionRef.current.sendClientContent({ turns: [{ role: 'user', parts: [{ text: prompt }] }], turnComplete: true });
         } catch (err) {
           addDebugMessage(`Failed to send step prompt: ${err}`);
@@ -403,7 +403,7 @@ export const LiveAssistant: React.FC = () => {
               const fullOutput = currentOutputTranscription.current;
               
               if (fullInput || fullOutput) {
-                 addDebugMessage(`Turn complete. Input: "${fullInput}", Output: "${fullOutput}"`);
+                 addDebugMessage(`Turn complete. Input: \"${fullInput}\", Output: \"${fullOutput}\".`);
                 setMessages(prev => {
                   const next = [...prev];
                   if (fullInput) next.push({ role: 'user', text: fullInput });
@@ -478,9 +478,9 @@ export const LiveAssistant: React.FC = () => {
                   let result = "";
                   addDebugMessage(`Received function call: ${call.name} with args: ${JSON.stringify(call.args)}`);
                   
-                  if (call.name === "triggerUniversalSigner") {
-                    setMessages(prev => [...prev, { role: 'assistant', text: `⚙️ **Action:** Triggering Universal Signer for ${call.args?.fileName || 'document'}...` }]);
-                    result = "Universal Signer triggered successfully. Waiting for user to confirm.";
+                  if (call.name === "triggerUniversalSignet") {
+                    setMessages(prev => [...prev, { role: 'assistant', text: `⚙️ **Action:** Triggering Universal Signet for ${call.args?.fileName || 'document'}...` }]);
+                    result = "Universal Signet triggered successfully. Waiting for user to confirm.";
                   } else if (call.name === "runDiffEngine") {
                     setMessages(prev => [...prev, { role: 'assistant', text: `⚙️ **Action:** Running ${call.args?.mediaType || 'media'} Diff Engine...` }]);
                     result = "Diff Engine analysis complete. No tampering detected. Media is authentic.";
@@ -499,7 +499,7 @@ export const LiveAssistant: React.FC = () => {
                   }
 
                   if (result && sessionRef.current) {
-                     addDebugMessage(`Sending tool response for ${call.name}: "${result}"`);
+                     addDebugMessage(`Sending tool response for ${call.name}: \"${result}\".`);
                     sessionRef.current.sendToolResponse({
                       functionResponses: [{
                         name: call.name,
@@ -567,7 +567,7 @@ export const LiveAssistant: React.FC = () => {
           tools: [{
             functionDeclarations: [
               {
-                name: "triggerUniversalSigner",
+                name: "triggerUniversalSignet",
                 description: "Trigger the Universal Media Signing process for a document or media file.",
                 parameters: {
                   type: Type.OBJECT,
@@ -626,7 +626,7 @@ export const LiveAssistant: React.FC = () => {
     }
     setMessages(prev => [...prev, { role: 'user', text: textToSend }]);
     setIsLoading(true);
-    addDebugMessage(`Sending text message: "${textToSend}"`);
+    addDebugMessage(`Sending text message: \"${textToSend}\".`);
 
     try {
       const response = await fetch('/api/chat', {
@@ -642,7 +642,7 @@ export const LiveAssistant: React.FC = () => {
       }
 
       const data = await response.json();
-      addDebugMessage(`Received text response: "${data.text}"`);
+      addDebugMessage(`Received text response: \"${data.text}\".`);
       if (data.debug) {
         addDebugMessage(`Backend debug info: ${JSON.stringify(data.debug, null, 2)}`);
       }
@@ -745,7 +745,7 @@ export const LiveAssistant: React.FC = () => {
               <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-[var(--code-bg)]">
                 {messages.map((m, i) => (
                   <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                    <div className={`max-w-[90%] p-4 rounded-lg text-sm shadow-sm ${m.role === 'user' ? 'bg-[var(--trust-blue)] text-white shadow-blue-500/20' : 'bg-white border border-[var(--border-light)]'}`}>\
+                    <div className={`max-w-[90%] p-4 rounded-lg text-sm shadow-sm ${m.role === 'user' ? 'bg-[var(--trust-blue)] text-white shadow-blue-500/20' : 'bg-white border border-[var(--border-light)]'}`}>
                       <div className="prose-signet">
                         <ReactMarkdown>{m.text}</ReactMarkdown>
                       </div>
@@ -794,31 +794,31 @@ export const LiveAssistant: React.FC = () => {
               </div>
               
               {status !== 'OFFLINE' && (
-                <div className={`px-4 py-2 border-t flex justify-between items-center ${status === 'CONNECTED' ? 'bg-blue-50 border-blue-100' : 'bg-amber-50 border-amber-100'}`}>\
-                   <p className={`font-mono text-[8px] uppercase tracking-widest font-bold flex items-center gap-2 ${status === 'CONNECTED' ? 'text-blue-600' : 'text-amber-600'}`}>\
+                <div className={`px-4 py-2 border-t flex justify-between items-center ${status === 'CONNECTED' ? 'bg-blue-50 border-blue-100' : 'bg-amber-50 border-amber-100'}`}>
+                   <p className={`font-mono text-[8px] uppercase tracking-widest font-bold flex items-center gap-2 ${status === 'CONNECTED' ? 'text-blue-600' : 'text-amber-600'}`}>
                      <span className={`w-1.5 h-1.5 rounded-full animate-pulse ${status === 'CONNECTED' ? 'bg-blue-500' : 'bg-amber-500'}`}></span>
-                     {status === 'CONNECTED' ? 'Neural Link: Deterministic' : 'Establishing Handshake...'}\
-                   </p>\
-                   <span className="font-mono text-[7px] opacity-40 uppercase tracking-widest font-bold\">HEARTBEAT_SYNC</span>\
-                </div>\
+                     {status === 'CONNECTED' ? 'Neural Link: Deterministic' : 'Establishing Handshake...'}
+                   </p>
+                   <span className="font-mono text-[7px] opacity-40 uppercase tracking-widest font-bold">HEARTBEAT_SYNC</span>
+                </div>
               )}
 
-              {isDebugVisible && (\
-                <div className=\"h-48 bg-black/80 backdrop-blur-sm text-white font-mono text-xs p-4 overflow-y-auto border-t-2 border-amber-500\">\
-                    <p className='text-amber-400 font-bold text-sm mb-2'>DEBUG CONSOLE</p>\
-                    {debugMessages.map((m, i) => (\
-                        <div key={i} className=\"flex items-start gap-2 text-white/70 hover:text-white hover:bg-white/10 -ml-2 -mr-2 px-2 py-0.5 transition-colors\">\
-                            <span className='opacity-50 select-none flex-shrink-0 w-8'>{i+1}</span>\
-                            <p className='whitespace-pre-wrap break-all'>{m.text}</p>\
-                        </div>\
-                    ))}\
-                    <div ref={debugEndRef} />\
-                </div>\
-              )}\
-            </>\
-          )}\
-        </div>\
-      )}\
-    </div>\
-  );\
-};\
+              {isDebugVisible && (
+                <div className="h-48 bg-black/80 backdrop-blur-sm text-white font-mono text-xs p-4 overflow-y-auto border-t-2 border-amber-500">
+                    <p className='text-amber-400 font-bold text-sm mb-2'>DEBUG CONSOLE</p>
+                    {debugMessages.map((m, i) => (
+                        <div key={i} className="flex items-start gap-2 text-white/70 hover:text-white hover:bg-white/10 -ml-2 -mr-2 px-2 py-0.5 transition-colors">
+                            <span className='opacity-50 select-none flex-shrink-0 w-8'>{i+1}</span>
+                            <p className='whitespace-pre-wrap break-all'>{m.text}</p>
+                        </div>
+                    ))}
+                    <div ref={debugEndRef} />
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
