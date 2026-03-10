@@ -1,5 +1,5 @@
-
 // Triggering a fresh deployment to resolve potential live environment issues.
+// This comment is added to trigger a new GitHub Actions workflow run.
 import { onRequest } from "firebase-functions/v2/https";
 import * as logger from "firebase-functions/logger";
 import axios from "axios";
