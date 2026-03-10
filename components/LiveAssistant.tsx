@@ -462,12 +462,20 @@ export const LiveAssistant: React.FC = () => {
           },
           onerror: (e: any) => {
             console.error('Signet Live Error:', e);
+            const errorMessage = e.message || 'Logic drift detected. Link dropped.';
+
+            // Send the text input via the reliable proxy as a fallback
+            if (input.trim()) {
+                handleSendMessage(input);
+            } else {
+                 setMessages(prev => [...prev, { role: 'assistant', text: `⚠️ **Sync Error:** ${errorMessage}` }]);
+            }
+
             if (e.message?.includes('Requested entity was not found')) {
               setMessages(prev => [...prev, { role: 'assistant', text: "⚠️ **Auth Fault:** API Key requires re-verification. Please re-select via the mic button." }]);
               (window as any).aistudio?.openSelectKey();
-            } else {
-              setMessages(prev => [...prev, { role: 'assistant', text: `⚠️ **Sync Error:** ${e.message || 'Logic drift detected'}` }]);
             }
+            
             cleanupAudio();
           },
           onclose: () => cleanupAudio()
@@ -518,7 +526,7 @@ export const LiveAssistant: React.FC = () => {
                 parameters: {
                   type: Type.OBJECT,
                   properties: {
-                    mediaType: { type: Type.STRING, description: "Type of media: 'image' or 'video'" }
+                    mediaType: { type: Type.STRING, description: "'image' or 'video'" }
                   },
                   required: ["mediaType"]
                 }
@@ -550,12 +558,14 @@ export const LiveAssistant: React.FC = () => {
     }
   };
 
-  const handleSendMessage = async () => {
-    if (!input.trim() || isLoading) return;
+  const handleSendMessage = async (text?: string) => {
+    const textToSend = text || input;
+    if (!textToSend.trim() || isLoading) return;
 
-    const userText = input;
-    setInput('');
-    setMessages(prev => [...prev, { role: 'user', text: userText }]);
+    if (!text) {
+      setInput('');
+    }
+    setMessages(prev => [...prev, { role: 'user', text: textToSend }]);
     setIsLoading(true);
 
     try {
@@ -564,7 +574,7 @@ export const LiveAssistant: React.FC = () => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ contents: userText }),
+        body: JSON.stringify({ contents: textToSend }),
       });
 
       if (!response.ok) {
@@ -701,7 +711,7 @@ export const LiveAssistant: React.FC = () => {
                   disabled={status !== 'OFFLINE'}
                 />
                 <button 
-                  onClick={handleSendMessage} 
+                  onClick={() => handleSendMessage()} 
                   disabled={status !== 'OFFLINE' || isLoading}
                   className={`p-2 transition-all ${status !== 'OFFLINE' || isLoading ? 'opacity-20' : 'text-[var(--trust-blue)] hover:scale-110'}`}
                 >
