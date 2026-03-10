@@ -1,54 +1,19 @@
-// v0.5.5 - Restored comprehensive health check; kept API key in function scope.
+// v0.6.0 - Simplified error logging and added second secret for diagnostics.
 import { onRequest } from "firebase-functions/v2/https";
 import * as logger from "firebase-functions/logger";
 import axios from "axios";
 
-const API_VERSION = "0.5.5"; // Version of the API
-const DEPLOYMENT_TIME = new Date().toISOString(); // Records the time of initialization
-
-// Pricing for gemini-1.5-flash-latest in USD as of June 2024
-const INPUT_PRICE_PER_MILLION_TOKENS = 0.35;
-const OUTPUT_PRICE_PER_MILLION_TOKENS = 1.05;
-
-// --- Comprehensive Environment Variable Health Check ---
-const getEnvironmentVariableHealth = () => {
-    const envVarsToCheck = [
-        'API_KEY',
-        'FIREBASE_API_KEY',
-        'FIREBASE_APP_ID',
-        'FIREBASE_AUTH_DOMAIN',
-        'FIREBASE_MEASUREMENT_ID',
-        'FIREBASE_MESSAGING_SENDER_ID',
-        'FIREBASE_PROJECT_ID',
-        'FIREBASE_SERVICE_ACCOUNT_SIGNETAI',
-        'FIREBASE_STORAGE_BUCKET',
-        'GEMINI_API_KEY',
-        'GEMINI_LIVE_API_KEY',
-        'GOOGLE_GEMINI_KEY',
-        'GOOGLE_OAUTH_CLIENT_ID',
-        'VITE_GOOGLE_CLIENT_ID',
-        'VITE_GOOGLE_GEMINI_KEY',
-        'YOUTUBE_API_KEY'
-    ];
-
-    const health: { [key: string]: { found: boolean; value: string; } } = {};
-    for (const key of envVarsToCheck) {
-        const value = process.env[key];
-        health[key] = {
-            found: !!value,
-            value: value ? `...${value.slice(-4)}` : "Not Set"
-        };
-    }
-    return health;
-};
-
+const API_VERSION = "0.6.0";
+const DEPLOYMENT_TIME = new Date().toISOString();
 
 export const chat = onRequest(
-  { cors: true, secrets: ["GEMINI_API_KEY"] },
+  // Request two secrets. This helps diagnose if the issue is with all secrets or just one.
+  { cors: true, secrets: ["GEMINI_API_KEY", "FIREBASE_PROJECT_ID"] },
   async (req, res) => {
     
-    // API Key is now accessed here, within the function's runtime scope
+    // Access secrets from the environment.
     const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+    const FIREBASE_PROJECT_ID = process.env.FIREBASE_PROJECT_ID;
     const path = req.path;
     const method = req.method;
 
@@ -82,14 +47,15 @@ export const chat = onRequest(
             return;
           }
 
+          // --- Simplified Secret Check ---
           if (!GEMINI_API_KEY) {
-            logger.error("CRITICAL: GEMINI_API_KEY is not set in the function's environment.");
+            logger.error("CRITICAL: GEMINI_API_KEY secret is not set in the function's environment.");
             res.status(500).send({ 
               error: "API Key not configured on server",
               debug: { 
-                note: "The backend function could not find the GEMINI_API_KEY in its environment. This key should be injected as a secret.",
-                keyFound: false,
-                environmentVariableHealth: getEnvironmentVariableHealth()
+                note: "The backend function could not find the required secrets in its environment.",
+                GEMINI_API_KEY_found: !!GEMINI_API_KEY,
+                FIREBASE_PROJECT_ID_found: !!FIREBASE_PROJECT_ID
               }
             });
             return;
@@ -98,35 +64,19 @@ export const chat = onRequest(
           const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${GEMINI_API_KEY}`;
           const requestToGemini = { contents: [{ role: "user", parts: [{ text: contents }] }] };
           const geminiResponse = await axios.post(geminiUrl, requestToGemini, { headers: { "Content-Type": "application/json" } });
-          const responseText = geminiResponse.data?.candidates?.[0]?.content?.parts?.[0]?.text || "Neural link timeout.";
-          const usageMetadata = geminiResponse.data?.usageMetadata || {};
-          const inputTokens = usageMetadata.promptTokenCount || 0;
-          const outputTokens = usageMetadata.candidatesTokenCount || 0;
-          const totalTokens = usageMetadata.totalTokenCount || 0;
-          const calculateCost = (input: number, output: number) => ((input / 1_000_000) * INPUT_PRICE_PER_MILLION_TOKENS) + ((output / 1_000_000) * OUTPUT_PRICE_PER_MILLION_TOKENS);
-          const estimatedCost = calculateCost(inputTokens, outputTokens);
-
-          const debugInfo = {
-              note: "This is a transparent, end-to-end trace of the data sent to and received from the Gemini API via the Firebase Cloud Function proxy.",
-              serverEnvironment: { firebaseFunction: "chat", region: process.env.FUNCTION_REGION || "us-central1", serverApiKeyUsed: `...${GEMINI_API_KEY.slice(-5)}`, version: API_VERSION, deploymentTime: DEPLOYMENT_TIME },
-              environmentVariableHealth: getEnvironmentVariableHealth(),
-              requestToGemini: { url: `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent`, parameters: requestToGemini, },
-              responseFromGemini: geminiResponse.data,
-              usageAndCost: { inputTokens, outputTokens, totalTokens, estimatedCostUSD: `$${estimatedCost.toFixed(8)}`, pricingModel: { model: "gemini-1.5-flash-latest", inputCostPerMillionTokens: `$${INPUT_PRICE_PER_MILLION_TOKENS}`, outputCostPerMillionTokens: `$${OUTPUT_PRICE_PER_MILLION_TOKENS}`, } }
-          };
-
-          res.status(200).send({ text: responseText, debug: debugInfo });
+          const responseText = geminiResponse.data?.candidates?.[0]?.content?.parts?.[0]?.text || "No response from model.";
+          
+          res.status(200).send({ text: responseText });
 
         } catch (error: any) {
           logger.error("Chat Function Error:", error.response ? error.response.data : error.message);
-          const errorResponse = error.response ? error.response.data : { message: error.message };
           res.status(500).send({ 
             error: "Failed to communicate with the Gemini API", 
             debug: { 
-              note: "An error occurred within the Firebase Cloud Function while trying to contact the Gemini API.",
-              serverApiKeyUsed: `...${GEMINI_API_KEY ? GEMINI_API_KEY.slice(-5) : 'NONE'}`,
-              environmentVariableHealth: getEnvironmentVariableHealth(),
-              errorDetails: errorResponse
+              note: "An error occurred within the Firebase Cloud Function.",
+              GEMINI_API_KEY_found: !!GEMINI_API_KEY,
+              FIREBASE_PROJECT_ID_found: !!FIREBASE_PROJECT_ID,
+              errorDetails: error.response ? error.response.data : { message: error.message }
             }
           });
         }
