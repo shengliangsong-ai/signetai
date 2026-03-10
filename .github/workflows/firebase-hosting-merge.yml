@@ -41,7 +41,7 @@ jobs:
           echo ${{ secrets.GEMINI_API_KEY }} | firebase functions:secrets:set GEMINI_API_KEY --data-file=- --project ${{ secrets.FIREBASE_PROJECT_ID }} --non-interactive
 
           # 2. Deploy functions, attaching the secret
-          firebase deploy --only functions --project ${{ secrets.FIREBASE_PROJECT_ID }} --set-secrets=GEMINI_API_KEY --non-interactive
+          firebase deploy --only functions --project ${{ secrets.FIREBASE_PROJECT_ID }} --non-interactive
 
           # 3. Deploy hosting
           firebase deploy --only hosting --project ${{ secrets.FIREBASE_PROJECT_ID }} --non-interactive
