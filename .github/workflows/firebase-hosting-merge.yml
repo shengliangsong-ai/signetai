@@ -30,15 +30,14 @@ jobs:
       
       - name: Authenticate to Google Cloud
         id: auth
-        uses: google-github-actions/auth@v2
+        uses: 'google-github-actions/auth@v2'
         with:
           credentials_json: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_SIGNETAI }}'
 
-      - name: Set Secrets, Wait, and Deploy to Firebase
+      - name: Set Secret, Wait, and Deploy to Firebase
         run: |
           npm install -g firebase-tools
           echo ${{ secrets.GEMINI_API_KEY }} | firebase functions:secrets:set GEMINI_API_KEY --data-file=- --project ${{ secrets.FIREBASE_PROJECT_ID }} --non-interactive
-          echo ${{ secrets.FIREBASE_PROJECT_ID }} | firebase functions:secrets:set FIREBASE_PROJECT_ID --data-file=- --project ${{ secrets.FIREBASE_PROJECT_ID }} --non-interactive
-          echo "Waiting 15 seconds for secrets to propagate..."
+          echo "Waiting 15 seconds for secret to propagate..."
           sleep 15
           firebase deploy --only functions,hosting --project ${{ secrets.FIREBASE_PROJECT_ID }} --non-interactive
