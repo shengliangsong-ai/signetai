@@ -1,0 +1,38 @@
+graph TD
+    subgraph "Front-End (Client-Side)"
+        A["<b>1. Key Vault & Signer</b><br>Generates BIP39 Mnemonic<br>to derive Ed25519 key pair."]
+        B["<b>2. Browser Storage (IndexedDB)</b><br><b style='color:red;'>Stores: Private Key & Mnemonic</b><br><i>Data never leaves the user's device.</i>"]
+        C["<b>3. SVG Attestation Logic</b><br>Client-side hashing (SHA-256) for C2PA hard-binding.<br>Injects signed JSON-LD manifest into SVG metadata.<br>Applies Seal Modes: <i>Intent, Review, Authority</i>."]
+        D["<b>4. Live Assistant UI (React SPA)</b><br>Orchestrates user interaction and displays<br>live verification results."]
+    end
+
+    subgraph "Back-End (Firebase & Google Cloud)"
+        E["<b>Firebase Hosting</b><br>Serves the static React SPA<br>to the user's browser."]
+        F["<b>Cloud Functions (Trident Engine)</b><br>The core backend for analysis and orchestration."]
+        G["<b>Firestore Database</b><br><b style='color:blue;'>Stores: Public Key Registry</b><br>Also stores Provenance Manifests & Hashes.<br><i>Registry is backed by a Web of Trust.</i>"]
+        H["<b>Vertex AI (Gemini)</b><br>Provides advanced semantic and<br>perceptual analysis for the Trident Engine."]
+    end
+
+    subgraph "Trident Engine Components"
+        direction LR
+        F_1["Image Comparator<br>(SSIM, pHash, Semantic)"]
+        F_2["Video Diff Engine<br>(Keyframe Sampling)"]
+        F_3["Live Demo Orchestration<br>(Manages session with UI)"]
+        F --- F_1 & F_2 & F_3
+    end
+
+    %% --- Data Flows ---
+
+    %% Client-Side Flows
+    A -- "Stores Private Key Locally" --> B
+    A -- "Publishes Public Key" --> G
+    C -- "Signs and Injects Metadata" --> D
+
+    %% Client <--> Backend Flows
+    E -- "Serves SPA via HTTPS" --> D
+    D -- "Sends Analysis Request" --> F
+    F -- "Streams Live Results" --> D
+
+    %% Backend Internal Flows
+    F -- "Reads/Writes Manifests and Keys" --> G
+    F -- "Sends AI Analysis Request" --> H
