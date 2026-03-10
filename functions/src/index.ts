@@ -5,6 +5,8 @@ import * as logger from "firebase-functions/logger";
 import axios from "axios";
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+const API_VERSION = "0.5.0"; // Version of the API
+const DEPLOYMENT_TIME = new Date().toISOString(); // Records the time of initialization
 
 // Pricing for gemini-1.5-flash-latest in USD as of June 2024
 const INPUT_PRICE_PER_MILLION_TOKENS = 0.35;
@@ -13,21 +15,33 @@ const OUTPUT_PRICE_PER_MILLION_TOKENS = 1.05;
 export const api = onRequest(
   { cors: true },
   async (req, res) => {
-    // Path check for both local dev proxy and deployed function
+
+    // --- Health & Version Check Endpoint ---
+    if (req.path === "/health" || req.path === "/api/health") {
+      res.status(200).send({
+        status: "ok",
+        version: API_VERSION,
+        deploymentTime: DEPLOYMENT_TIME,
+        note: "Signet API is running and healthy."
+      });
+      return;
+    }
+
+    // --- Chat Endpoint ---
     if (req.path !== "/chat" && req.path !== "/api/chat") {
         res.status(404).send({ 
           error: "Not Found",
           debug: { 
-            note: "The requested path did not match the expected endpoints.",
+            note: "The requested path did not match any of the available endpoints.",
             requestedPath: req.path,
-            expectedPaths: ["/chat", "/api/chat"]
+            availableEndpoints: ["/api/chat", "/api/health"]
           }
         });
         return;
     }
 
     if (req.method !== "POST") {
-      res.status(405).send({ error: "Method Not Allowed" });
+      res.status(405).send({ error: "Method Not Allowed for this endpoint." });
       return;
     }
     
@@ -121,7 +135,9 @@ export const api = onRequest(
           requestPath: req.path,
           firebaseFunction: "api",
           region: process.env.FUNCTION_REGION || "us-central1",
-          serverApiKeyUsed: `...${GEMINI_API_KEY.slice(-5)}`
+          serverApiKeyUsed: `...${GEMINI_API_KEY.slice(-5)}`,
+          version: API_VERSION,
+          deploymentTime: DEPLOYMENT_TIME
         },
         environmentVariableHealth: environmentVariableHealth,
         requestToGemini: {
