@@ -45,7 +45,7 @@ const getEnvironmentVariableHealth = () => {
 
 
 export const chat = onRequest(
-  { cors: true },
+  { cors: true, secrets: ["GEMINI_API_KEY"] },
   async (req, res) => {
 
     const path = req.path;
