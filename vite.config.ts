@@ -1,3 +1,4 @@
+
 import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
 import fs from 'node:fs/promises';
@@ -7,6 +8,12 @@ import { spawnSync } from 'node:child_process';
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, (process as any).cwd(), '');
+  
+  // !! IMPORTANT !!
+  // Replace this with your actual Firebase Project ID.
+  // You can find it in your Firebase project console's settings.
+  const FIREBASE_PROJECT_ID = env.FIREBASE_PROJECT_ID || 'signet-hackathon';
+
   return {
     plugins: [
       react(),
@@ -36,7 +43,16 @@ export default defineConfig(({ mode }) => {
     },
     server: {
       port: 3000,
-      open: true
+      open: true,
+      proxy: {
+        // Proxy API requests to the Firebase emulator
+        // to avoid CORS issues and mimic hosting rewrites.
+        '/api': {
+          target: `http://127.0.0.1:5001/${FIREBASE_PROJECT_ID}/us-central1/api`,
+          changeOrigin: true,
+          rewrite: (path) => path.replace(/^\/api/, ''),
+        },
+      },
     },
     build: {
       outDir: 'dist',

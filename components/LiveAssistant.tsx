@@ -61,7 +61,7 @@ export const LiveAssistant: React.FC = () => {
     { role: 'assistant', text: "Systems online. I am **Signet-Alpha**, your Live Digital Notary.\\n\\nI can help you verify media using our Image and Video Diff Engines, or guide you through Universal Media Signing using your registered keys. How can I help you today?" }
   ]);
   const [debugMessages, setDebugMessages] = useState<Message[]>([]);
-  const [isDebugVisible, setIsDebugVisible] = useState(false);
+  const [isDebugVisible, setIsDebugVisible] = useState(true); // Default to true for judge
   const [streamingInput, setStreamingInput] = useState('');
   const [streamingOutput, setStreamingOutput] = useState('');
   const [input, setInput] = useState('');
@@ -97,7 +97,7 @@ export const LiveAssistant: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    addDebugMessage("LiveAssistant component initialized.");
+    addDebugMessage("LiveAssistant component initialized. Debug window is open by default for transparency.");
   }, [addDebugMessage]);
 
 
@@ -173,43 +173,42 @@ export const LiveAssistant: React.FC = () => {
     };
   }, [status, addDebugMessage]);
 
-  // Robust Key Retrieval
-  const getApiKey = () => {
-    addDebugMessage("Attempting to retrieve API key...");
-    try {
-      const viteLiveKey = import.meta.env.VITE_GEMINI_LIVE_API_KEY;
-      if (viteLiveKey && !viteLiveKey.includes('UNUSED')) {
-        addDebugMessage("Found key in import.meta.env.VITE_GEMINI_LIVE_API_KEY.");
-        return viteLiveKey;
+  // Enhanced Robust Key Retrieval with radical transparency
+  const getApiKey = (keyType: 'LIVE' | 'STANDARD') => {
+    addDebugMessage(`--- Starting API Key Retrieval (Type: ${keyType}) ---`);
+    const keySources = {
+      VITE_GEMINI_LIVE_API_KEY: import.meta.env.VITE_GEMINI_LIVE_API_KEY,
+      GEMINI_API_KEY: import.meta.env.GEMINI_API_KEY,
+      API_KEY: import.meta.env.API_KEY,
+      GOOGLE_GEMINI_LIVE_KEY: GOOGLE_GEMINI_LIVE_KEY,
+      GOOGLE_GEMINI_KEY: GOOGLE_GEMINI_KEY,
+    };
+
+    const checkAndUseKey = (keyName: keyof typeof keySources, key: any) => {
+      if (key && typeof key === 'string' && !key.includes('UNUSED')) {
+        const truncatedKey = key.slice(-5);
+        addDebugMessage(`SUCCESS: Found valid key in [${keyName}]. Using key ending in ...${truncatedKey}.`);
+        return key;
       }
-      const liveKey = process.env.VITE_GEMINI_LIVE_API_KEY;
-      if (liveKey && !liveKey.includes('UNUSED')) {
-        addDebugMessage("Found key in process.env.VITE_GEMINI_LIVE_API_KEY.");
-        return liveKey;
-      }
-      const userKey = process.env.API_KEY;
-      if (userKey && !userKey.includes('UNUSED')) {
-         addDebugMessage("Found key in process.env.API_KEY.");
-        return userKey;
-      }
-      const envKey = process.env.GEMINI_API_KEY;
-      if (envKey && !envKey.includes('UNUSED')) {
-         addDebugMessage("Found key in process.env.GEMINI_API_KEY.");
-        return envKey;
-      }
-    } catch (e) {
-      addDebugMessage(`Error during standard key retrieval: ${e}`);
+      addDebugMessage(`INFO: Checked [${keyName}], but it was empty, invalid, or marked as UNUSED.`);
+      return null;
+    };
+
+    if (keyType === 'LIVE') {
+      let key = checkAndUseKey('VITE_GEMINI_LIVE_API_KEY', keySources.VITE_GEMINI_LIVE_API_KEY);
+      if (key) return key;
+      key = checkAndUseKey('GOOGLE_GEMINI_LIVE_KEY', keySources.GOOGLE_GEMINI_LIVE_KEY);
+      if (key) return key;
+    } else {
+      let key = checkAndUseKey('GEMINI_API_KEY', keySources.GEMINI_API_KEY);
+      if (key) return key;
+      key = checkAndUseKey('API_KEY', keySources.API_KEY);
+      if (key) return key;
+      key = checkAndUseKey('GOOGLE_GEMINI_KEY', keySources.GOOGLE_GEMINI_KEY);
+      if (key) return key;
     }
-    if (GOOGLE_GEMINI_LIVE_KEY && !GOOGLE_GEMINI_LIVE_KEY.includes('UNUSED')) {
-      addDebugMessage("Found key in config/env.ts (GOOGLE_GEMINI_LIVE_KEY).");
-      return GOOGLE_GEMINI_LIVE_KEY;
-    }
-    if (GOOGLE_GEMINI_KEY && !GOOGLE_GEMINI_KEY.includes('UNUSED')) {
-      addDebugMessage("Found key in config/env.ts (GOOGLE_GEMINI_KEY).");
-      return GOOGLE_GEMINI_KEY;
-    }
-    addDebugMessage("No valid API Key found.");
-    console.warn("LiveAssistant: No valid API Key found.");
+
+    addDebugMessage(`--- Key Retrieval Complete: No valid ${keyType} key found. ---`);
     return '';
   };
 
@@ -218,15 +217,21 @@ export const LiveAssistant: React.FC = () => {
     if (videoIntervalRef.current) {
       window.clearInterval(videoIntervalRef.current);
       videoIntervalRef.current = null;
+      addDebugMessage("- Video interval cleared.");
     }
     if (sessionRef.current) {
-      try { sessionRef.current.close?.(); addDebugMessage("Session closed."); } catch(e) {addDebugMessage(`Error closing session: ${e}`);}
+      try { 
+        sessionRef.current.close?.(); 
+        addDebugMessage("- Live session closed.");
+      } catch(e) {
+        addDebugMessage(`- Error closing session: ${e}`);
+      }
       sessionRef.current = null;
     }
     if (streamRef.current) {
       streamRef.current.getTracks().forEach(track => track.stop());
       streamRef.current = null;
-       addDebugMessage("Media stream stopped.");
+       addDebugMessage("- Media stream stopped.");
     }
     if (videoRef.current) {
       videoRef.current.srcObject = null;
@@ -234,7 +239,7 @@ export const LiveAssistant: React.FC = () => {
     if (inputAudioContextRef.current) {
       inputAudioContextRef.current.close().catch(() => {});
       inputAudioContextRef.current = null;
-      addDebugMessage("Input audio context closed.");
+      addDebugMessage("- Input audio context closed.");
     }
     if (outputAudioContextRef.current) {
       for (const source of audioSourcesRef.current) {
@@ -243,7 +248,7 @@ export const LiveAssistant: React.FC = () => {
       audioSourcesRef.current.clear();
       outputAudioContextRef.current.close().catch(() => {});
       outputAudioContextRef.current = null;
-      addDebugMessage("Output audio context closed.");
+      addDebugMessage("- Output audio context closed.");
     }
     if (speakingTimeoutRef.current) {
       window.clearTimeout(speakingTimeoutRef.current);
@@ -257,6 +262,7 @@ export const LiveAssistant: React.FC = () => {
   };
 
   const initVoiceChat = async () => {
+    addDebugMessage("----- initVoiceChat sequence started -----");
     if (status !== 'OFFLINE') {
       addDebugMessage("Voice chat already active. Cleaning up before re-initializing.");
       cleanupAudio();
@@ -264,31 +270,33 @@ export const LiveAssistant: React.FC = () => {
     }
 
     setStatus('CONNECTING');
-    addDebugMessage("Initializing voice chat. Status: CONNECTING");
+    addDebugMessage("Status set to CONNECTING.");
 
-    addDebugMessage("Setting up audio contexts.");
+    addDebugMessage("Setting up audio contexts (Input: 16kHz, Output: 24kHz).");
     inputAudioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 16000 });
     outputAudioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
     inputAudioContextRef.current.resume();
     outputAudioContextRef.current.resume();
+    addDebugMessage("Audio contexts resumed.");
     
-    addDebugMessage("Checking for pre-selected API key.");
+    addDebugMessage("Checking for pre-selected API key in AI Studio.");
     const hasKey = await (window as any).aistudio?.hasSelectedApiKey();
     if (!hasKey) {
-      addDebugMessage("No pre-selected key found. Opening AI Studio key selection.");
+      addDebugMessage("No pre-selected key found. Opening AI Studio key selection dialog.");
       (window as any).aistudio?.openSelectKey();
     }
 
-    const apiKey = getApiKey();
+    const apiKey = getApiKey('LIVE');
     if (!apiKey) {
-      const errorMsg = "⚠️ **Config Error:** No valid API Key found. Please check .env or environment variables for VITE_GEMINI_LIVE_API_KEY or GEMINI_API_KEY.";
-      addDebugMessage("API key is missing. Aborting voice chat initialization.");
+      const errorMsg = "⚠️ **Config Error:** No valid Live API Key found. Please check your .env file for VITE_GEMINI_LIVE_API_KEY or the AI Studio environment variables.";
+      addDebugMessage("CRITICAL: Live API key is missing. Aborting voice chat initialization.");
       setMessages(prev => [...prev, { role: 'assistant', text: errorMsg }]);
       setStatus('ERROR');
+      addDebugMessage("Status set to ERROR.");
       return;
     }
 
-    addDebugMessage("Creating new GoogleGenAI instance.");
+    addDebugMessage("Creating new GoogleGenAI instance for Live connection.");
     const ai = new GoogleGenAI({ apiKey });
 
     try {
@@ -298,13 +306,14 @@ export const LiveAssistant: React.FC = () => {
           audio: true, 
           video: isVideoEnabled ? { facingMode: 'user' } : false 
         });
-        addDebugMessage("User media acquired.");
+        addDebugMessage("User media acquired successfully.");
         
         if (isVideoEnabled && videoRef.current) {
           videoRef.current.srcObject = streamRef.current;
+          addDebugMessage("Video stream attached to video element.");
         }
       } catch (mediaErr) {
-        addDebugMessage(`Microphone access denied or unavailable: ${mediaErr}`);
+        addDebugMessage(`ERROR: Microphone access denied or unavailable: ${mediaErr}`);
         setMessages(prev => [...prev, { role: 'assistant', text: "⚠️ **Microphone Error:** Access denied or unavailable. I cannot hear you. If you are in the preview, try opening the app in a new tab." }]);
       }
       
@@ -314,10 +323,10 @@ export const LiveAssistant: React.FC = () => {
         callbacks: {
           onopen: () => {
             setStatus('CONNECTED');
-            addDebugMessage("Connection opened. Status: CONNECTED");
+            addDebugMessage("SUCCESS: Connection opened. Status set to CONNECTED.");
             
             if (streamRef.current) {
-              addDebugMessage("Setting up microphone input processing.");
+              addDebugMessage("Setting up microphone input processing pipeline.");
               const source = inputAudioContextRef.current!.createMediaStreamSource(streamRef.current!);
               const scriptProcessor = inputAudioContextRef.current!.createScriptProcessor(4096, 1, 1);
               
@@ -340,24 +349,25 @@ export const LiveAssistant: React.FC = () => {
                 
                 sessionPromise.then(session => {
                   session.sendRealtimeInput({ media: pcmBlob });
-                }).catch((err) => addDebugMessage(`Failed to send real-time audio input: ${err}`));
+                }).catch((err) => addDebugMessage(`ERROR: Failed to send real-time audio input: ${err}`));
               };
               
               source.connect(scriptProcessor);
               scriptProcessor.connect(inputAudioContextRef.current!.destination);
+              addDebugMessage("Microphone pipeline connected.");
             } else if (!pendingDemoNarrate.current) {
-              addDebugMessage("No microphone stream. Sending fallback message.");
+              addDebugMessage("WARNING: No microphone stream available. Sending fallback message to agent.");
               try {
                 sessionPromise.then(session => {
                   session.sendClientContent({ turns: [{ role: 'user', parts: [{ text: "Hello. Please tell the user that you are connected, but you cannot hear them because microphone access was denied. Ask them to open the app in a new tab if they want to use voice chat." }] }], turnComplete: true });
                 });
               } catch (err) {
-                addDebugMessage(`Failed to send fallback prompt: ${err}`);
+                addDebugMessage(`ERROR: Failed to send fallback prompt: ${err}`);
               }
             }
 
             if (isVideoEnabled && streamRef.current) {
-              addDebugMessage("Starting video stream capture.");
+              addDebugMessage("Starting video stream capture (1 FPS).");
               videoIntervalRef.current = window.setInterval(() => {
                 if (!videoRef.current || !canvasRef.current) return;
                 const video = videoRef.current;
@@ -374,21 +384,19 @@ export const LiveAssistant: React.FC = () => {
                 
                 sessionPromise.then(session => {
                   session.sendRealtimeInput({ media: { data: base64Data, mimeType: 'image/jpeg' } });
-                }).catch((err) => addDebugMessage(`Failed to send real-time video input: ${err}`));
+                }).catch((err) => addDebugMessage(`ERROR: Failed to send real-time video input: ${err}`));
               }, 1000); // 1 frame per second
             }
 
             if (pendingDemoNarrate.current) {
-              addDebugMessage("Pending demo narration found. Sending initial prompt.");
+              addDebugMessage("Pending demo narration found. Sending initial prompt to agent.");
               pendingDemoNarrate.current = false;
               sessionPromise.then(session => {
                 session.sendClientContent({ turns: [{ role: 'user', parts: [{ text: "I just started the demo notebook manually. Please provide a 1-minute introduction summarizing the key of the project, addressing the hackathon requirements (Live Agent, Gemini Live API, Google Cloud). Then, explain Stage 1: Sovereign Identity Initialization. Do NOT explain the other stages yet. I will prompt you when the UI advances to the next stage." }] }], turnComplete: true });
-              }).catch((err) => addDebugMessage(`Failed to send demo narration prompt: ${err}`));
+              }).catch((err) => addDebugMessage(`ERROR: Failed to send demo narration prompt: ${err}`));
             }
           },
           onmessage: async (message: LiveServerMessage) => {
-             // For brevity in this turn, we'll skip adding debug logs for every single message event.
-             // This can be added later if needed for deep debugging of the message stream.
 
             if (message.serverContent?.outputTranscription) {
               currentOutputTranscription.current += message.serverContent.outputTranscription.text;
@@ -403,7 +411,7 @@ export const LiveAssistant: React.FC = () => {
               const fullOutput = currentOutputTranscription.current;
               
               if (fullInput || fullOutput) {
-                 addDebugMessage(`Turn complete. Input: \"${fullInput}\", Output: \"${fullOutput}\".`);
+                 addDebugMessage(`Turn complete. Final Input: \"${fullInput}\". Final Output: \"${fullOutput}\".`);
                 setMessages(prev => {
                   const next = [...prev];
                   if (fullInput) next.push({ role: 'user', text: fullInput });
@@ -425,7 +433,6 @@ export const LiveAssistant: React.FC = () => {
                   window.dispatchEvent(new CustomEvent('signet:speaking-status', { detail: { isSpeaking: true } }));
                   if (speakingTimeoutRef.current) {
                     window.clearTimeout(speakingTimeoutRef.current);
-                    speakingTimeoutRef.current = null;
                   }
 
                   try {
@@ -454,7 +461,7 @@ export const LiveAssistant: React.FC = () => {
                     nextStartTimeRef.current += audioBuffer.duration;
                     audioSourcesRef.current.add(source);
                   } catch (audioErr) {
-                    addDebugMessage(`Failed to decode or play audio chunk: ${audioErr}`);
+                    addDebugMessage(`ERROR: Failed to decode or play audio chunk: ${audioErr}`);
                   }
                 }
               }
@@ -476,7 +483,7 @@ export const LiveAssistant: React.FC = () => {
                 if (part.functionCall) {
                   const call = part.functionCall;
                   let result = "";
-                  addDebugMessage(`Received function call: ${call.name} with args: ${JSON.stringify(call.args)}`);
+                  addDebugMessage(`Received function call from agent: [${call.name}] with args: ${JSON.stringify(call.args)}`);
                   
                   if (call.name === "triggerUniversalSignet") {
                     setMessages(prev => [...prev, { role: 'assistant', text: `⚙️ **Action:** Triggering Universal Signet for ${call.args?.fileName || 'document'}...` }]);
@@ -499,7 +506,7 @@ export const LiveAssistant: React.FC = () => {
                   }
 
                   if (result && sessionRef.current) {
-                     addDebugMessage(`Sending tool response for ${call.name}: \"${result}\".`);
+                     addDebugMessage(`Sending tool response for [${call.name}]: \"${result}\".`);
                     sessionRef.current.sendToolResponse({
                       functionResponses: [{
                         name: call.name,
@@ -514,18 +521,18 @@ export const LiveAssistant: React.FC = () => {
           },
           onerror: (e: any) => {
             const errorMessage = e.message || 'Logic drift detected. Link dropped.';
-            addDebugMessage(`Signet Live Error: ${errorMessage}`);
+            addDebugMessage(`CRITICAL: Signet Live Error: ${errorMessage}`);
             console.error('Signet Live Error:', e);
 
             if (input.trim()) {
-                addDebugMessage("Voice connection failed. Falling back to text chat.");
+                addDebugMessage("Voice connection failed. Falling back to text chat for the current message.");
                 handleSendMessage(input);
             } else {
                  setMessages(prev => [...prev, { role: 'assistant', text: `⚠️ **Sync Error:** ${errorMessage}` }]);
             }
 
             if (e.message?.includes('Requested entity was not found')) {
-              addDebugMessage("API Key auth fault. Prompting user to re-select key.");
+              addDebugMessage("API Key auth fault. The key is likely invalid or missing required permissions. Prompting user to re-select key.");
               setMessages(prev => [...prev, { role: 'assistant', text: "⚠️ **Auth Fault:** API Key requires re-verification. Please re-select via the mic button." }]);
               (window as any).aistudio?.openSelectKey();
             }
@@ -533,7 +540,7 @@ export const LiveAssistant: React.FC = () => {
             cleanupAudio();
           },
           onclose: () => {
-            addDebugMessage("Connection closed by server.");
+            addDebugMessage("Connection closed by server. Cleaning up resources.");
             cleanupAudio();
           }
         },
@@ -608,9 +615,9 @@ export const LiveAssistant: React.FC = () => {
         }
       });
       sessionRef.current = await sessionPromise;
-      addDebugMessage("Session promise resolved.");
+      addDebugMessage("Live session promise resolved successfully.");
     } catch (err: any) {
-      addDebugMessage(`Session failed to initialize: ${err}`);
+      addDebugMessage(`CRITICAL: Session failed to initialize: ${err}`);
       console.error('Session failed:', err);
       setMessages(prev => [...prev, { role: 'assistant', text: "⚠️ **System Offline:** Handshake failed." }]);
       cleanupAudio();
@@ -619,14 +626,18 @@ export const LiveAssistant: React.FC = () => {
 
   const handleSendMessage = async (text?: string) => {
     const textToSend = text || input;
-    if (!textToSend.trim() || isLoading) return;
+    if (!textToSend.trim() || isLoading) {
+      addDebugMessage("handleSendMessage called but message was empty or another message is loading. Aborted.");
+      return;
+    }
 
+    addDebugMessage("----- handleSendMessage sequence started -----");
     if (!text) {
       setInput('');
     }
     setMessages(prev => [...prev, { role: 'user', text: textToSend }]);
     setIsLoading(true);
-    addDebugMessage(`Sending text message: \"${textToSend}\".`);
+    addDebugMessage(`Sending text message to /api/chat: \"${textToSend}\".`);
 
     try {
       const response = await fetch('/api/chat', {
@@ -636,24 +647,30 @@ export const LiveAssistant: React.FC = () => {
         },
         body: JSON.stringify({ contents: textToSend }),
       });
+      addDebugMessage(`Received HTTP response with status: ${response.status}`);
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        throw new Error(`HTTP error! status: ${response.status} ${response.statusText}`);
       }
 
       const data = await response.json();
-      addDebugMessage(`Received text response: \"${data.text}\".`);
+      addDebugMessage(`Text response from backend successfully parsed.`);
       if (data.debug) {
-        addDebugMessage(`Backend debug info: ${JSON.stringify(data.debug, null, 2)}`);
+        // Pretty-print the JSON debug info
+        const formattedDebug = JSON.stringify(data.debug, null, 2);
+        addDebugMessage(`Backend debug info:\n${formattedDebug}`);
       }
-      setMessages(prev => [...prev, { role: 'assistant', text: data.text || "Neural link timeout." }]);
+      const responseText = data.text || "Neural link timeout. The backend did not provide a text response.";
+      setMessages(prev => [...prev, { role: 'assistant', text: responseText }]);
+      addDebugMessage(`Rendered assistant response: \"${responseText}\".`);
 
     } catch (error: any) {
-      addDebugMessage(`Text chat error: ${error.message}`);
+      addDebugMessage(`CRITICAL: Text chat error: ${error.message}`);
       console.error("Chat Error:", error);
       setMessages(prev => [...prev, { role: 'assistant', text: `Logic drift detected. Link dropped. Error: ${error.message}` }]);
     } finally {
       setIsLoading(false);
+      addDebugMessage("----- handleSendMessage sequence finished -----");
     }
   };
 
