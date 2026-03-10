@@ -149,5 +149,40 @@ Users reported a "Logic drift detected" error when using the text chat. Audio ch
 - **CI/CD Fix**: Corrected an initial oversight by committing the updated `package-lock.json` to ensure the new `axios` dependency is included in the GitHub Actions build pipeline.
 - **Outcome**: Text chat is now stable and operates through a secure server-side proxy, resolving the error.
 
+## Entry 24: Dual-Path Input Processing in Live Assistant
+**Date:** March 19, 2026
+**Task Goal:** Document the distinct handling of text and audio inputs in the `LiveAssistant` component.
+**Reasoning Path:** The Live Assistant uses two fundamentally different methods for communication. This is a key architectural decision that clarifies the system's design for future development and technical reviews.
+
+### Path 1: Text Input (Stateless HTTP Request)
+This is a standard, stateless HTTP request-response cycle, designed for simplicity and reliability.
+1.  **Trigger**: The user types a message and activates the `handleSendMessage` function.
+2.  **Request**: The function makes a `fetch` call to the local `/api/chat` endpoint. The body is a simple JSON object: `{ "contents": "user message" }`.
+3.  **Proxy**: The Vite development server proxies this request to the standard Gemini API, attaching the necessary API key securely on the server-side.
+4.  **Response**: The Gemini API returns a complete text response, which is proxied back to the browser.
+5.  **UI Update**: The React component appends the response to the `messages` state, triggering a re-render.
+
+### Path 2: Audio Input (Stateful WebSocket Stream)
+This path is complex and stateful, designed for low-latency, real-time, bidirectional conversation.
+1.  **Initialization**: The `initVoiceChat` function is triggered. It sets up two `AudioContext` objects (16kHz for input, 24kHz for output) and uses the `@google/genai` library to establish a persistent WebSocket connection to the Gemini Live API.
+2.  **Real-Time Capture**: Once connected, an `onaudioprocess` event listener is attached to the microphone's audio stream.
+3.  **Encoding & Sending**: This event fires continuously, taking small chunks of raw audio. Each chunk is converted to 16-bit PCM, Base64-encoded, and sent immediately over the WebSocket via `session.sendRealtimeInput`.
+4.  **Bidirectional Flow**: While the user's audio is being sent, the component simultaneously listens for `onmessage` events from the Gemini API on the same WebSocket. These messages can contain:
+    *   **Input Transcriptions**: Real-time text of what the user is saying.
+    *   **Audio Output**: Base64-encoded audio chunks of the AI's voice, which are decoded and played back.
+    *   **Control Signals**: Messages indicating the end of a turn or interruptions.
+
+### Comparison Summary
+
+| Feature        | Text Input (Stateless)             | Audio Input (Stateful)                      |
+| :------------- | :--------------------------------- | :------------------------------------------ |
+| **Connection** | Standard HTTP Request              | Persistent WebSocket                        |
+| **Latency**    | High (One request per message)     | Very Low (Continuous stream)                |
+| **Data Flow**  | Unidirectional (Request -> Response) | Bidirectional (Simultaneous send & receive) |
+| **Data Format**  | JSON                               | Base64 Encoded PCM Audio Chunks             |
+| **API Used**   | Standard Gemini REST API (proxied) | Gemini Live Streaming API                   |
+| **State Mgmt** | Stateless                          | Stateful (manages connection, audio context)|
+
+
 ---
 *Signed: Master Curator, signetai.io:ssl*
