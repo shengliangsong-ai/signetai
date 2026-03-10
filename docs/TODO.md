@@ -1,7 +1,7 @@
 
 # Signet AI Project Status & Roadmap
 
-**Current Version:** 0.3.3_UTW  
+**Current Version:** 0.4.1
 **Protocol Spec:** v0.4.0
 
 ## Phase 1: Core Architecture (Foundation)
@@ -50,6 +50,7 @@
     - [x] Gemini Real-time Audio API Integration
     - [x] Specification-aware System Instructions
     - [x] Audio-in / Audio-out conversation loop
+    - [x] Text-based chat functionality restored via server-side proxy.
 
 ## Phase 3: Public Verification & Ecosystem (Next)
 *Focus: Interoperability and Security*
@@ -84,6 +85,7 @@
 ## Known Issues / Optimization
 - **PDF Incremental Updates**: Post-EOF injection is valid, but multiple signs need a formal xref table update to be "Adobe Compliant" (currently "Signet Compliant").
 - **YouTube Browser Frame Limits**: The `/verify` browser flow remains thumbnail-anchor based for YouTube sources (soft-binding), not arbitrary decoded frame extraction.
+- **Live Assistant**: Text chat now relies on a server-side proxy, which creates a dependency for the client.
 
 ---
-*Last Updated: Feb 22, 2026 (Batch MP4 Report + Universal Handoff + YouTube Publish Integrated)*
+*Last Updated: March 19, 2026 (Live Assistant text chat restored)*
