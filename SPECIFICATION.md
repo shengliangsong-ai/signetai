@@ -56,7 +56,7 @@ All Signet-compliant API responses MUST include the `X-Signet-VPR` header.
 
 ### 6.1. SVG Diagram
 
-![Architecture Diagram](architecture.svg)
+![Architecture Diagram](https://www.signetai.io/architecture.svg)
 
 ### 6.2. Mermaid Diagram
 
