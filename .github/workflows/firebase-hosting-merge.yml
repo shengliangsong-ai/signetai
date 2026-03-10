@@ -37,4 +37,5 @@ jobs:
       - name: Set Secret and Deploy to Firebase
         run: |
           npm install -g firebase-tools
-          firebase deploy --only functions,hosting --project ${{ secrets.FIREBASE_PROJECT_ID }} --non-interactive --set-secrets="GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}"
+          echo ${{ secrets.GEMINI_API_KEY }} | firebase functions:secrets:set GEMINI_API_KEY --data-file=- --project ${{ secrets.FIREBASE_PROJECT_ID }} --non-interactive
+          firebase deploy --only functions,hosting --project ${{ secrets.FIREBASE_PROJECT_ID }} --non-interactive
