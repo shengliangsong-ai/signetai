@@ -9,9 +9,8 @@ const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 export const api = onRequest(
   { cors: true }, // Automatically handle CORS for all responses
   async (req, res) => {
-    // We can add more routing logic here in the future if we have more endpoints
-    // For now, we assume any POST request to this function is for the chat
-    if (req.path !== "/chat") {
+    // The path will include the /api prefix, so we check for /api/chat
+    if (req.path !== "/api/chat") {
         res.status(404).send("Not Found");
         return;
     }
