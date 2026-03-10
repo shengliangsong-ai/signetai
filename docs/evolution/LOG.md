@@ -137,5 +137,17 @@ The "Sign vs. Verify" dichotomy is artificial. The system should detect if a fil
 - **Logic**: The app now scans the last 10KB of any selected file for `%SIGNET_VPR_START`. If found, it bypasses the signing flow and triggers immediate streaming verification.
 - **Outcome**: "Any Size. Zero RAM." UX is now fully realized for both Signing AND Verification.
 
+## Entry 23: Live Assistant Resilience
+**Date:** March 19, 2026
+**Task Goal:** Fix text-based chat failures in the Live Assistant.
+
+**Reasoning Path:**
+Users reported a "Logic drift detected" error when using the text chat. Audio chat was unaffected.
+- **Diagnosis**: The client-side was making a direct API call to Gemini. The development server, not having a route for it, was serving `index.html` instead of a JSON response, causing a parsing failure.
+- **Solution**: Implemented a server-side proxy. Created a new `/api/chat` endpoint in `vite.config.ts` that securely forwards requests to the Gemini API.
+- **Refinement**: Modified `LiveAssistant.tsx` to use this new local endpoint, preventing the client from making direct, insecure API calls.
+- **CI/CD Fix**: Corrected an initial oversight by committing the updated `package-lock.json` to ensure the new `axios` dependency is included in the GitHub Actions build pipeline.
+- **Outcome**: Text chat is now stable and operates through a secure server-side proxy, resolving the error.
+
 ---
 *Signed: Master Curator, signetai.io:ssl*
