@@ -1,26 +1,34 @@
 # Full-Stack Deployment Guide for Signet API
 
-This guide provides the correct two-step process to deploy both the frontend website and the backend API function. The previous instructions were incorrect and caused the "Not Found" errors.
+This guide provides the correct two-step process to deploy both the frontend website and the backend API function.
 
-**DO THIS ONLY ONCE:**
+**DO THIS ONLY ONCE (per secret):**
 
-### Step 1: Set the Backend API Key in Google Cloud
+### Step 1: Set Runtime Secrets in Google Cloud
 
-Your backend needs the Gemini API key to function. A local `.env` file is not used by the live server. You must set this secret directly in Google Cloud.
+Your backend needs API keys and configuration to function. A local `.env` file is not used by the live server. You must set these secrets directly in Google Cloud using the `gcloud` CLI.
 
-Run this command in your terminal to set the `GEMINI_API_KEY`. Replace `your_actual_gemini_api_key_here` with your real key.
+**1. Set the `GEMINI_API_KEY`:**
+
+Run this command in your terminal, replacing `[YOUR_GEMINI_API_KEY]` with your real key.
 
 ```bash
-firebase functions:secrets:set GEMINI_API_KEY
+echo -n "[YOUR_GEMINI_API_KEY]" | gcloud secrets create GEMINI_API_KEY --replication-policy="automatic" --data-file=- --project=signetai
 ```
 
-When prompted, paste your key. This is a one-time setup. You do not need to do this again unless you change your key.
+**2. Set the `SIGNET_PROJECT_ID`:**
+
+```bash
+echo -n "signetai" | gcloud secrets create SIGNET_PROJECT_ID --replication-policy="automatic" --data-file=- --project=signetai
+```
+
+These are typically one-time setup steps. You do not need to do them again unless your keys or project ID change.
 
 **DO THIS EVERY TIME YOU DEPLOY:**
 
 ### Step 2: Deploy Both Frontend and Backend
 
-The previous command `firebase deploy --only hosting` was wrong. It only deployed the website and ignored the backend function.
+The command `firebase deploy --only hosting` is incomplete as it only deploys the website and ignores the backend function.
 
 To deploy everything correctly, use this command:
 
@@ -37,5 +45,5 @@ This command will:
 ---
 
 **Summary:**
-1.  Run `firebase functions:secrets:set GEMINI_API_KEY` once to store your key.
-2.  Run `firebase deploy` every time you want to update your live website.
+1.  Run the `gcloud secrets create` commands once to store your secrets.
+2.  Run `firebase deploy` every time you want to update your live application.

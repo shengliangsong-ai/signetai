@@ -1,7 +1,7 @@
 
 import React, { useState, useRef } from 'react';
-import { Admonition } from './Admonition';
-import { PersistenceService } from '../services/PersistenceService';
+import { Admonition } from '@/components/Admonition';
+import { PersistenceService } from '@/services/PersistenceService';
 
 interface FileResult {
   name: string;

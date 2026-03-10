@@ -1,19 +1,19 @@
-// v0.6.0 - Simplified error logging and added second secret for diagnostics.
+// v0.8.0 - Refactor FIREBASE_PROJECT_ID to SIGNET_PROJECT_ID for clarity.
 import { onRequest } from "firebase-functions/v2/https";
 import * as logger from "firebase-functions/logger";
 import axios from "axios";
 
-const API_VERSION = "0.6.0";
+const API_VERSION = "0.8.0";
 const DEPLOYMENT_TIME = new Date().toISOString();
 
 export const chat = onRequest(
-  // Request two secrets. This helps diagnose if the issue is with all secrets or just one.
-  { cors: true, secrets: ["GEMINI_API_KEY", "FIREBASE_PROJECT_ID"] },
+  // Explicitly request the secrets the function needs.
+  { cors: true, secrets: ["GEMINI_API_KEY", "SIGNET_PROJECT_ID"] },
   async (req, res) => {
     
-    // Access secrets from the environment.
+    // Access secrets from environment variables.
     const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-    const FIREBASE_PROJECT_ID = process.env.FIREBASE_PROJECT_ID;
+    const SIGNET_PROJECT_ID = process.env.SIGNET_PROJECT_ID; // Correctly named variable.
     const path = req.path;
     const method = req.method;
 
@@ -26,6 +26,7 @@ export const chat = onRequest(
           status: "ok",
           version: API_VERSION,
           deploymentTime: DEPLOYMENT_TIME,
+          projectId: SIGNET_PROJECT_ID, // Also show project ID on health check
           note: "Signet API is running and healthy."
         });
       } else {
@@ -47,15 +48,15 @@ export const chat = onRequest(
             return;
           }
 
-          // --- Simplified Secret Check ---
-          if (!GEMINI_API_KEY) {
-            logger.error("CRITICAL: GEMINI_API_KEY secret is not set in the function's environment.");
+          // --- Improved Secret Check ---
+          if (!GEMINI_API_KEY || !SIGNET_PROJECT_ID) {
+            logger.error("CRITICAL: Required secrets are not set in the function's environment.");
             res.status(500).send({ 
-              error: "API Key not configured on server",
+              error: "API Key or Project ID not configured on server",
               debug: { 
                 note: "The backend function could not find the required secrets in its environment.",
                 GEMINI_API_KEY_found: !!GEMINI_API_KEY,
-                FIREBASE_PROJECT_ID_found: !!FIREBASE_PROJECT_ID
+                SIGNET_PROJECT_ID_found: !!SIGNET_PROJECT_ID
               }
             });
             return;
@@ -75,7 +76,7 @@ export const chat = onRequest(
             debug: { 
               note: "An error occurred within the Firebase Cloud Function.",
               GEMINI_API_KEY_found: !!GEMINI_API_KEY,
-              FIREBASE_PROJECT_ID_found: !!FIREBASE_PROJECT_ID,
+              SIGNET_PROJECT_ID_found: !!SIGNET_PROJECT_ID,
               errorDetails: error.response ? error.response.data : { message: error.message }
             }
           });

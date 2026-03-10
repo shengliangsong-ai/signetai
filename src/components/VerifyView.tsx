@@ -1,8 +1,8 @@
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { Admonition } from './Admonition';
-import { NutritionLabel } from './NutritionLabel';
-import { GOOGLE_GEMINI_KEY, YOUTUBE_API_KEY } from '../src/config/env';
+import { Admonition } from '@/components/Admonition';
+import { NutritionLabel } from '@/components/NutritionLabel';
+import { GOOGLE_GEMINI_KEY, YOUTUBE_API_KEY } from '@/config/env';
 import { 
   generateDualHash, 
   computePairwiseFrameAuditScore,
@@ -15,9 +15,9 @@ import {
   FrameCandidate, 
   ReferenceFrame,
   SignedVideoManifest
-} from './scoring';
+} from '@/components/scoring';
 
-import { FrameAnalysisTable } from './FrameAnalysisTable';
+import { FrameAnalysisTable } from '@/components/FrameAnalysisTable';
 
 export interface VerifyViewProps {
   defaultUrlInput?: string;

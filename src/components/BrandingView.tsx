@@ -1,5 +1,5 @@
 import React from 'react';
-import { Admonition } from './Admonition';
+import { Admonition } from '@/components/Admonition';
 
 export const BrandingView: React.FC = () => {
   return (

@@ -14,8 +14,8 @@ interface C2PATestFile {
 
 const PUBLIC_TEST_FILES: C2PATestFile[] = [
   {
-    name: "ca.jpg",
-    type: "image/jpeg",
+    name: "signetai_banner.png",
+    type: "image/png",
     assertions: 4,
     ingredients: ["Self-contained"],
     signature: "Adobe Content Authenticity",
@@ -24,8 +24,8 @@ const PUBLIC_TEST_FILES: C2PATestFile[] = [
     description: "Standard C2PA 1.0 signed image from the CAI test suite."
   },
   {
-    name: "vpr_enhanced_model.png",
-    type: "image/png",
+    name: "architecture.svg",
+    type: "image/svg+xml",
     assertions: 12,
     ingredients: ["gemini-3-pro", "signet-sdk-v2"],
     signature: "Signet TKS (Master)",
@@ -34,18 +34,8 @@ const PUBLIC_TEST_FILES: C2PATestFile[] = [
     description: "Signet-native asset with nested VPR logic DAG assertions."
   },
   {
-    name: "adobe_video_test.mp4",
-    type: "video/mp4",
-    assertions: 8,
-    ingredients: ["Premiere Pro", "Stock Footage"],
-    signature: "Adobe Video CA",
-    status: "valid",
-    format: "video",
-    description: "Verified video manifest showing multiple editing ingredients and frame-level hashing."
-  },
-  {
-    name: "signet_audio_brief.wav",
-    type: "audio/wav",
+    name: "silent.mp3",
+    type: "audio/mpeg",
     assertions: 6,
     ingredients: ["ElevenLabs", "Signet-TTS-V2"],
     signature: "Signet Audio Lab",

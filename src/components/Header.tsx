@@ -1,7 +1,7 @@
 
 import React from 'react';
-import SignetLogo from './SignetLogo';
-import { Theme } from '../App';
+import SignetLogo from '@/components/SignetLogo';
+import { Theme } from '@/App';
 
 const Header: React.FC<{ 
   onToggleSidebar: () => void; 

@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Admonition } from './Admonition';
+import { Admonition } from '@/components/Admonition';
 
 // Source code is split to prevent template literal nesting errors
 const CLI_HEADER = `#!/usr/bin/env node

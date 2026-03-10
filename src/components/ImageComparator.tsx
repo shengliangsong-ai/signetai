@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { TridentEngine, TridentScore, TridentConfig, ProgressCallback } from '../src/lib/trident-engine';
-import { ScoreCompositionTable } from './ScoreCompositionTable';
+import { TridentEngine, TridentScore, TridentConfig, ProgressCallback } from '@/lib/trident-engine';
+import { ScoreCompositionTable } from '@/components/ScoreCompositionTable';
 
 // Component state for audit and performance
 type AuditResult = { 

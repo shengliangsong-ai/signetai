@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { AuditResult, FrameCandidate } from './scoring';
 import { GoogleGenAI } from "@google/genai";
-import { GOOGLE_GEMINI_KEY } from '../src/config/env';
+import { GOOGLE_GEMINI_KEY } from '@/config/env';
 
 interface FrameAnalysisTableProps {
   auditResult: AuditResult;

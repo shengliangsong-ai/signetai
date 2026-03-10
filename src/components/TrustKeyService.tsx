@@ -14,9 +14,9 @@ import {
   linkWithCredential
 } from 'firebase/auth';
 import type { ConfirmationResult, User, AuthCredential } from 'firebase/auth';
-import { firebaseConfig } from '../src/config/env';
-import { PersistenceService, VaultRecord } from '../services/PersistenceService';
-import { BIP39_WORDS } from '../constants/Bip39Words';
+import { firebaseConfig } from '@/config/env';
+import { PersistenceService, VaultRecord } from '@/services/PersistenceService';
+import { BIP39_WORDS } from '@/constants/Bip39Words';
 
 const initSignetFirebase = () => {
   try {

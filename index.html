@@ -16,7 +16,7 @@
     <link rel="manifest" href="/manifest.json">
     
     <!-- Favicon Strategy: Multi-Layer Fallback -->
-    <link rel="icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAABmJLR0QA/wD/AP+gvaeTAAAAeElEQVRYhe3WMQqDQBSE4f986S186S186S1SuAiKiIVrs00hF0h8bAJZ16TMrElW984cAAAAAElFTkSuQmCC" sizes="any">
+    <link rel="icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAABmJLR0QA/wD/AP+gvaeTAAAAeElFTkSuQmCC" sizes="any">
     <link rel="icon" type="image/png" href="/192.png">
     <link rel="apple-touch-icon" href="/192.png">
     
@@ -31,123 +31,10 @@
       window.process = { env: {} };
     </script>
 
-    <style>
-      :root {
-        /* C2PA Industrial Palette (Standard Light) */
-        --bg-standard: #FFFFFF;
-        --bg-sidebar: #F8F9FA;
-        --text-header: #000000;
-        --text-body: #222222;
-        --trust-blue: #0055FF;
-        --border-light: #E1E4E8;
-        --admonition-bg: rgba(0, 85, 255, 0.03);
-        --code-bg: #F6F8FA;
-        --table-header: #F8F9FA;
-      }
-
-      [data-theme='midnight'] {
-        /* Obsidian High-Contrast Palette */
-        --bg-standard: #000000;
-        --bg-sidebar: #050505;
-        --text-header: #FFFFFF;
-        --text-body: #E5E7EB;
-        --trust-blue: #3B82F6;
-        --border-light: #222222;
-        --admonition-bg: rgba(59, 130, 246, 0.1);
-        --code-bg: #0A0A0A;
-        --table-header: #0D0D0D;
-      }
-
-      html { scroll-behavior: smooth; }
-      body {
-        background-color: var(--bg-standard);
-        color: var(--text-body);
-        font-family: 'Inter', -apple-system, sans-serif;
-        line-height: 1.6;
-        transition: background-color 0.2s ease, color 0.2s ease;
-      }
-
-      h1, h2, h3, h4, h5 {
-        color: var(--text-header);
-        font-weight: 700;
-        letter-spacing: -0.02em;
-      }
-
-      .font-mono { font-family: 'JetBrains Mono', monospace; }
-      
-      .content-column {
-        max-width: 900px;
-        margin: 0 auto;
-        padding: 4rem 2rem;
-      }
-
-      .sidebar-link {
-        color: var(--text-body);
-        font-size: 0.875rem;
-        padding: 0.6rem 1rem;
-        display: block;
-        border-left: 2px solid transparent;
-        transition: all 0.2s;
-      }
-      .sidebar-link:hover {
-        background-color: rgba(255, 255, 255, 0.05);
-        color: var(--trust-blue);
-      }
-      .sidebar-link.active {
-        color: var(--trust-blue);
-        border-left-color: var(--trust-blue);
-        background-color: var(--admonition-bg);
-        font-weight: 600;
-      }
-
-      .admonition {
-        border-left: 4px solid var(--trust-blue);
-        background-color: var(--admonition-bg);
-        padding: 1.5rem;
-        margin: 2rem 0;
-      }
-
-      .hr-chapter {
-        border: 0;
-        border-top: 1px solid var(--border-light);
-        margin: 4rem 0;
-      }
-
-      .cr-badge {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        width: 24px;
-        height: 24px;
-        border-radius: 50%;
-        border: 1.5px solid currentColor;
-        font-weight: 800;
-        font-size: 10px;
-        text-transform: lowercase;
-      }
-
-      /* High-contrast table styles */
-      table { width: 100%; border-collapse: collapse; }
-      th { background-color: var(--table-header); color: var(--text-header); font-weight: 700; border-bottom: 2px solid var(--border-light); }
-      td { border-bottom: 1px solid var(--border-light); }
-      
-      pre { border: 1px solid var(--border-light); border-radius: 4px; background-color: var(--code-bg); color: var(--text-body); }
-      code { color: inherit; }
-
-      /* Assistant Prose Styles */
-      .prose-signet { font-size: 14px; line-height: 1.5; }
-      .prose-signet p { margin-bottom: 0.75rem; }
-      .prose-signet p:last-child { margin-bottom: 0; }
-      .prose-signet ul, .prose-signet ol { margin-bottom: 0.75rem; padding-left: 1.25rem; }
-      .prose-signet li { margin-bottom: 0.25rem; list-style-type: disc; }
-      .prose-signet strong { font-weight: 700; color: var(--text-header); }
-      .prose-signet code { font-family: 'JetBrains Mono', monospace; font-size: 12px; background: rgba(0,0,0,0.05); padding: 2px 4px; border-radius: 3px; }
-      [data-theme='midnight'] .prose-signet code { background: rgba(255,255,255,0.1); }
-    </style>
-</head>
+  </head>
   <body>
     <div id="root"></div>
-    <script type="module" src="/index.tsx"></script>
+    <script type="module" src="/src/index.tsx"></script>
     <script>
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {

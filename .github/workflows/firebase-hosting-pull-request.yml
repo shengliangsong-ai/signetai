@@ -1,21 +1,21 @@
-name: Deploy to Firebase Hosting on PR
-on: pull_request
+name: Deploy to Firebase on PR
+'on': pull_request
 jobs:
   build_and_preview:
-    if: '${{ github.event.pull_request.head.repo.full_name == github.repository }}'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Create .env file for Frontend Build
-        run: |
-          echo "VITE_GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}" >> .env
-          echo "VITE_FIREBASE_PROJECT_ID=${{ secrets.FIREBASE_PROJECT_ID }}" >> .env
+      - name: Checkout Repository
+        uses: actions/checkout@v4
 
       - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
           node-version: '20'
+
+      - name: Create .env file for Frontend Build
+        run: |
+          echo "VITE_GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}" >> .env
+          echo "VITE_SIGNET_PROJECT_ID=${{ secrets.SIGNET_PROJECT_ID }}" >> .env
 
       - name: Install Dependencies and Build
         run: |
@@ -24,22 +24,28 @@ jobs:
           npm install
           cd ..
           npm run build
-
+      
       - name: Authenticate to Google Cloud
         id: auth
         uses: google-github-actions/auth@v2
         with:
           credentials_json: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_SIGNETAI }}'
 
-      - name: Set Secret and Deploy Function to Firebase
+      - name: Set Function Secrets
         run: |
           npm install -g firebase-tools
-          echo ${{ secrets.GEMINI_API_KEY }} | firebase functions:secrets:set GEMINI_API_KEY --data-file=- --project ${{ secrets.FIREBASE_PROJECT_ID }} --non-interactive
-          firebase deploy --only functions --project ${{ secrets.FIREBASE_PROJECT_ID }} --non-interactive
+          echo ${{ secrets.GEMINI_API_KEY }} | firebase functions:secrets:set GEMINI_API_KEY --data-file=- --project ${{ secrets.SIGNET_PROJECT_ID }} --non-interactive
+          echo ${{ secrets.SIGNET_PROJECT_ID }} | firebase functions:secrets:set SIGNET_PROJECT_ID --data-file=- --project ${{ secrets.SIGNET_PROJECT_ID }} --non-interactive
 
-      - name: Deploy Hosting Preview to Firebase
+      - name: Wait for Secret Propagation
+        run: |
+          echo "Waiting 20 seconds for secret to propagate through Google Cloud..."
+          sleep 20
+
+      - name: Deploy to Firebase Preview Channel
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: '${{ secrets.GITHUB_TOKEN }}'
           firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_SIGNETAI }}'
-          projectId: ${{ secrets.FIREBASE_PROJECT_ID }}
+          projectId: '${{ secrets.SIGNET_PROJECT_ID }}'
+          channelId: live

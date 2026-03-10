@@ -2,7 +2,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { GoogleGenAI, LiveServerMessage, Modality, Type } from "@google/genai";
 import ReactMarkdown from 'react-markdown';
-import { GOOGLE_GEMINI_KEY, GOOGLE_GEMINI_LIVE_KEY } from '../src/config/env';
+import { GOOGLE_GEMINI_KEY, GOOGLE_GEMINI_LIVE_KEY } from '@/config/env';
 
 interface Message {
   role: 'user' | 'assistant' | 'debug';
