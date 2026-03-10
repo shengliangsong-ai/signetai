@@ -681,6 +681,91 @@ export const PART_3 = [
     )
   },
   {
+    category: "TECHNICAL AUDIT",
+    title: "12.8 API Architecture: Text vs. Voice",
+    text: "Clarification of the dual-API architecture for the Live Assistant, detailing the security model for both text-based and voice-based interactions.\n\n- Text Chat: Uses a server-side Cloud Function as a secure proxy to protect the standard Gemini API key. All communication is encrypted via HTTPS.\n- Voice Chat: Uses a client-side WebSocket connection directly to the Gemini Live API. This is by design, and all communication is encrypted via WebSocket Secure (WSS).",
+    content: (
+      <div className="space-y-8 animate-in fade-in duration-500">
+        <h2 className="text-[var(--text-header)] font-serif text-2xl font-bold mb-6 italic">12.8 API Architecture: Text vs. Voice</h2>
+
+        <p className="opacity-80 leading-loose mb-6">
+          The Live Assistant employs a hybrid, dual-API architecture to handle text and voice interactions. This design is intentional, aligning with security best practices for each type of communication.
+        </p>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+           <div className="p-6 bg-[var(--code-bg)] border border-[var(--border-light)] rounded-lg space-y-4">
+              <h4 className="font-mono text-lg font-bold text-amber-500 border-b-2 border-amber-500 pb-2">
+                Text Chat (HTTPS Proxy)
+              </h4>
+              <p className="text-xs opacity-80">
+                Text-based messages are handled by the standard Gemini REST API, which requires a server-side implementation for security.
+              </p>
+              <ul className="list-disc pl-4 text-xs space-y-2 opacity-80">
+                <li><strong>API Key:</strong> Uses the server-side <code>GEMINI_API_KEY</code>.</li>
+                <li><strong>Security:</strong> The key is stored securely in a Firebase Cloud Function, acting as a proxy. It is never exposed to the client browser, preventing theft.</li>
+                <li><strong>Encryption:</strong> Communication between the browser, the Cloud Function, and the Gemini API is fully encrypted using <strong>HTTPS</strong>.</li>
+              </ul>
+           </div>
+           <div className="p-6 bg-[var(--code-bg)] border border-[var(--border-light)] rounded-lg space-y-4">
+              <h4 className="font-mono text-lg font-bold text-[var(--trust-blue)] border-b-2 border-[var(--trust-blue)] pb-2">
+                Voice Chat (Direct WebSocket)
+              </h4>
+              <p className="text-xs opacity-80">
+                Real-time voice streaming uses the Gemini Live API, which is specifically designed for direct client-side connections.
+              </p>
+               <ul className="list-disc pl-4 text-xs space-y-2 opacity-80">
+                <li><strong>API Key:</strong> Uses the client-safe <code>VITE_GEMINI_LIVE_API_KEY</code>.</li>
+                <li><strong>Security:</strong> The API is designed for this model, and the key is safe to be used in the browser for this specific real-time purpose.</li>
+                <li><strong>Encryption:</strong> Communication is secured via <strong>WebSocket Secure (WSS)</strong>, which uses the same underlying TLS encryption as HTTPS.</li>
+              </ul>
+           </div>
+        </div>
+         <div className="p-4 border-l-4 border-[var(--trust-blue)] bg-[var(--admonition-bg)]">
+           <p className="text-xs font-serif italic opacity-80 leading-relaxed">
+             <strong>Rationale:</strong> This dual approach is not redundant; it is a deliberate security architecture. It uses a secure backend proxy for static text requests where API keys must be protected, while leveraging the purpose-built, real-time WebSocket API for direct, low-latency voice communication.
+           </p>
+        </div>
+      </div>
+    )
+  },
+  {
+    category: "TECHNICAL AUDIT",
+    title: "12.9 Backend Strategy: The Agent Factory",
+    text: "The backend, built on Cloud Functions, is architected as an 'Agent Factory.' This allows for the rapid development and deployment of independent, specialized AI agents to handle discrete tasks, enabling a scalable and auditable system of agentic workflows.",
+    content: (
+      <div className="space-y-8 animate-in fade-in duration-500">
+        <h2 className="text-[var(--text-header)] font-serif text-2xl font-bold mb-6 italic">12.9 Backend Strategy: The Agent Factory</h2>
+
+        <p className="opacity-80 leading-loose mb-6">
+          The Cloud Functions backend is not a monolith; it is intentionally designed as a scalable "factory" for producing and hosting specialized AI agents. This architectural pattern is central to the project's goal of creating auditable, agentic workflows.
+        </p>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+           <div className="p-6 bg-[var(--code-bg)] border border-[var(--border-light)] rounded-lg">
+              <h4 className="font-mono text-[10px] uppercase font-bold text-[var(--trust-blue)] mb-2">Current Agents</h4>
+              <ul className="list-disc pl-4 text-xs space-y-2 opacity-80">
+                <li><strong>Text Chat Agent:</strong> A simple agent (the <code>chat</code> function) that securely handles user queries.</li>
+                <li><strong>Trident Engine Agents:</strong> A suite of agents for media analysis (Image Comparison, Video Diffing).</li>
+              </ul>
+           </div>
+           <div className="p-6 bg-[var(--code-bg)] border border-[var(--border-light)] rounded-lg">
+              <h4 className="font-mono text-[10px] uppercase font-bold text-amber-500 mb-2">Future Agent Examples</h4>
+              <ul className="list-disc pl-4 text-xs space-y-2 opacity-80">
+                <li><strong>SB-53 Compliance Agent:</strong> Audits AI output for compliance with specific legal standards.</li>
+                <li><strong>PII Redaction Agent:</strong> Scans and removes sensitive personal information from data.</li>
+                <li><strong>Code Review Agent:</strong> Analyzes code commits for potential security vulnerabilities.</li>
+              </ul>
+           </div>
+        </div>
+         <div className="p-4 border-l-4 border-amber-500/80 bg-amber-500/5">
+           <p className="text-xs font-serif italic opacity-80 leading-relaxed">
+             <strong>Strategic Vision:</strong> This model allows the system to evolve by adding new, independent capabilities without altering the core architecture. Each agent can be versioned, audited, and deployed separately, fulfilling the project's mission to enable trustworthy, specialized AI systems.
+           </p>
+        </div>
+      </div>
+    )
+  },
+  {
     category: "FUTURE ROADMAP",
     title: "23. Future Roadmap",
     text: "Potential front-end and back-end features to expand the application's capabilities, focusing on user experience and core backend power.",
