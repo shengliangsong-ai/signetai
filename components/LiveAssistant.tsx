@@ -22,7 +22,7 @@ function encode(bytes: Uint8Array) {
 }
 
 function decode(base64: string) {
-  const cleanBase64 = base64.replace(/[^A-Za-z0-9+/]/g, '');
+  const cleanBase64 = base64.replace(/[^A-Za-z0-9+\/]/g, '');
   const paddedBase64 = cleanBase64.padEnd(cleanBase64.length + (4 - cleanBase64.length % 4) % 4, '=');
   const binaryString = atob(paddedBase64);
   const len = binaryString.length;
@@ -119,9 +119,9 @@ export const LiveAssistant: React.FC = () => {
         try {
           let prompt = `The demo has automatically advanced to stage ${step}. Please explain this stage briefly to the user. Do NOT explain any subsequent stages. I will prompt you again when the UI advances.`;
           if (step === 2) {
-            prompt = `The demo has automatically advanced to stage 2: Universal Media Signing (C2PA+). Please explain how we inject a C2PA-compliant manifest directly into the asset\'s JUMBF boxes, and point out the \'org.signetai.vpr\' assertion where our proprietary Visual Provenance Record is stored. Aim for about 30 seconds of speaking. Do NOT explain any subsequent stages. I will prompt you again when the UI advances.`;
+            prompt = `The demo has automatically advanced to stage 2: Universal Media Signing (C2PA+). Please explain how we inject a C2PA-compliant manifest directly into the asset\\'s JUMBF boxes, and point out the \\'org.signetai.vpr\\' assertion where our proprietary Visual Provenance Record is stored. Aim for about 30 seconds of speaking. Do NOT explain any subsequent stages. I will prompt you again when the UI advances.`;
           } else if (step === 3) {
-            prompt = `The demo has automatically advanced to stage 3: Public Ledger Verification. Please explain how we verify the signature against our distributed ledger to ensure the asset hasn\'t been backdated or re-signed, acting as a Proof of Existence. Aim for about 30 seconds of speaking. Do NOT explain any subsequent stages. I will prompt you again when the UI advances.`;
+            prompt = `The demo has automatically advanced to stage 3: Public Ledger Verification. Please explain how we verify the signature against our distributed ledger to ensure the asset hasn\\'t been backdated or re-signed, acting as a Proof of Existence. Aim for about 30 seconds of speaking. Do NOT explain any subsequent stages. I will prompt you again when the UI advances.`;
           } else if (step === 4) {
             prompt = `The demo has automatically advanced to stage 4: Image Forensic Diff Analysis. Please provide a detailed explanation of how the Trident Engine performs deterministic pixel-perfect diffs for static images to detect deepfakes or synthetic alterations. Explain the SSIM map and the score composition. Aim for about 45 seconds of speaking. Do NOT explain any subsequent stages. I will prompt you again when the UI advances.`;
           } else if (step === 5) {
@@ -569,10 +569,7 @@ export const LiveAssistant: React.FC = () => {
     setIsLoading(true);
 
     try {
-      // This is a placeholder and will be replaced by the actual URL after deployment
-      const functionUrl = 'https://us-central1-your-project-id.cloudfunctions.net/chat';
-      
-      const response = await fetch(functionUrl, {
+      const response = await fetch('/api/chat', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

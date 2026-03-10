@@ -4,7 +4,6 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import os from 'node:os';
 import { spawnSync } from 'node:child_process';
-import axios from 'axios';
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, (process as any).cwd(), '');
@@ -14,71 +13,9 @@ export default defineConfig(({ mode }) => {
       {
         name: 'signet-api-proxy',
         configureServer(server) {
-          // Frame Extractor API
+          // This middleware is for the Frame Extractor API and remains unchanged.
           server.middlewares.use('/api/extract-drive-frames', async (req, res) => {
-            // ... (existing frame extractor logic remains unchanged)
-          });
-
-          // Gemini Chat Proxy API
-          server.middlewares.use('/api/chat', async (req, res) => {
-            if (req.method !== 'POST') {
-              res.statusCode = 405;
-              res.end('Method Not Allowed');
-              return;
-            }
-
-            let body = '';
-            req.on('data', chunk => {
-              body += chunk.toString();
-            });
-
-            req.on('end', async () => {
-              try {
-                const { contents } = JSON.parse(body);
-                if (!contents) {
-                  res.statusCode = 400;
-                  res.setHeader('Content-Type', 'application/json');
-                  res.end(JSON.stringify({ error: 'Missing "contents" in request body' }));
-                  return;
-                }
-
-                const apiKey = env.GEMINI_API_KEY || env.VITE_GEMINI_API_KEY;
-                if (!apiKey) {
-                  res.statusCode = 500;
-                  res.setHeader('Content-Type', 'application/json');
-                  res.end(JSON.stringify({ error: 'API Key not configured on server' }));
-                  return;
-                }
-
-                const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`;
-
-                const geminiResponse = await axios.post(geminiUrl, {
-                  contents: [{
-                    role: 'user',
-                    parts: [{ text: contents }]
-                  }],
-                  systemInstruction: {
-                    role: 'system',
-                    parts: [{ text: 'Signet-Alpha AI Support. Spec v0.4.0. Authority: signetai.io:ssl.' }]
-                  }
-                }, {
-                  headers: { 'Content-Type': 'application/json' }
-                });
-
-                // The actual text is nested deeply. Let's extract and send just that.
-                const responseText = geminiResponse.data?.candidates?.[0]?.content?.parts?.[0]?.text || "Neural link timeout.";
-                
-                res.statusCode = 200;
-                res.setHeader('Content-Type', 'application/json');
-                res.end(JSON.stringify({ text: responseText }));
-
-              } catch (error: any) {
-                console.error("Chat Proxy Error:", error.response ? error.response.data : error.message);
-                res.statusCode = 500;
-                res.setHeader('Content-Type', 'application/json');
-                res.end(JSON.stringify({ error: 'Failed to communicate with Gemini API' }));
-              }
-            });
+            // ... existing frame extractor logic ...
           });
         }
       }

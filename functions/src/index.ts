@@ -2,12 +2,20 @@ import { onRequest } from "firebase-functions/v2/https";
 import * as logger from "firebase-functions/logger";
 import axios from "axios";
 
-// Get the Gemini API key from environment variables
+// Get the Gemini API key from environment variables. 
+// This is set in the GCP environment, not via .env files for security.
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
-export const chat = onRequest(
-  { cors: true }, // Automatically handle CORS
+export const api = onRequest(
+  { cors: true }, // Automatically handle CORS for all responses
   async (req, res) => {
+    // We can add more routing logic here in the future if we have more endpoints
+    // For now, we assume any POST request to this function is for the chat
+    if (req.path !== "/chat") {
+        res.status(404).send("Not Found");
+        return;
+    }
+
     if (req.method !== "POST") {
       res.status(405).send("Method Not Allowed");
       return;
@@ -21,8 +29,9 @@ export const chat = onRequest(
         return;
       }
 
+      // The API Key is a runtime environment variable on the cloud function, not a build-time secret.
       if (!GEMINI_API_KEY) {
-        logger.error("GEMINI_API_KEY is not set in environment variables.");
+        logger.error("GEMINI_API_KEY is not set in the function's environment variables.");
         res.status(500).send({ error: "API Key not configured on server" });
         return;
       }
@@ -46,7 +55,7 @@ export const chat = onRequest(
       res.status(200).send({ text: responseText });
 
     } catch (error: any) {
-      logger.error("Chat Proxy Error:", error.response ? error.response.data : error.message);
-      res.status(500).send({ error: "Failed to communicate with Gemini API" });
+      logger.error("Chat Function Error:", error.response ? error.response.data : error.message);
+      res.status(500).send({ error: "Failed to communicate with the Gemini API" });
     }
   });
