@@ -183,6 +183,20 @@ This path is complex and stateful, designed for low-latency, real-time, bidirect
 | **API Used**   | Standard Gemini REST API (proxied) | Gemini Live Streaming API                   |
 | **State Mgmt** | Stateless                          | Stateful (manages connection, audio context)|
 
+## Entry 25: Backend Service Migration & Deployment Fix
+**Date:** March 19, 2026
+**Task Goal:** Resolve persistent Firebase deployment failures and establish a stable, modern backend architecture.
+
+**Reasoning Path:**
+Deployment via GitHub Actions began failing with TypeScript errors like `Cannot find module 'firebase-functions/v2/https'` and exit code 2.
+- **Problem Diagnosis**: The root cause was the decommissioning of the Node.js 18 runtime by Firebase. The previous architecture, which relied on a server-side proxy within the Vite development server, was not compatible with the updated Node.js 20 environment in production.
+- **Architectural Solution**: The monolithic structure was refactored into a separate client and server. The Express-based API was migrated into its own dedicated Cloud Function, located in the `functions/` directory.
+- **Implementation Steps**:
+    1.  **Backend Creation**: A new `functions/src/index.ts` file was created to wrap the API logic using the `firebase-functions/v2/https` SDK.
+    2.  **Dependency Isolation**: A separate `functions/package.json` was created to manage backend-specific dependencies (`firebase-functions`, `express`, etc.).
+    3.  **Firebase Configuration**: `firebase.json` was updated to define the `functions` source directory, explicitly set the runtime to `nodejs20`, and create a rewrite rule to direct all `/api/**` traffic to the new cloud function.
+    4.  **CI/CD Correction**: The GitHub Actions workflow (`.github/workflows/firebase-hosting-merge.yml`) was critically updated. A new step was added to explicitly run `npm install` inside the `./functions` directory, ensuring the backend dependencies were installed before any build or deployment could occur. This was the final step that resolved the CI/CD pipeline errors.
+- **Outcome**: The project is now successfully deployed with a robust, dual-service architecture. The frontend (Vite) and backend (Cloud Function) are cleanly separated, improving maintainability, scalability, and alignment with modern cloud deployment best practices.
 
 ---
 *Signed: Master Curator, signetai.io:ssl*
