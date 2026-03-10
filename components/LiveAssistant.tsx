@@ -119,9 +119,9 @@ export const LiveAssistant: React.FC = () => {
         try {
           let prompt = `The demo has automatically advanced to stage ${step}. Please explain this stage briefly to the user. Do NOT explain any subsequent stages. I will prompt you again when the UI advances.`;
           if (step === 2) {
-            prompt = `The demo has automatically advanced to stage 2: Universal Media Signing (C2PA+). Please explain how we inject a C2PA-compliant manifest directly into the asset's JUMBF boxes, and point out the 'org.signetai.vpr' assertion where our proprietary Visual Provenance Record is stored. Aim for about 30 seconds of speaking. Do NOT explain any subsequent stages. I will prompt you again when the UI advances.`;
+            prompt = `The demo has automatically advanced to stage 2: Universal Media Signing (C2PA+). Please explain how we inject a C2PA-compliant manifest directly into the asset\'s JUMBF boxes, and point out the \'org.signetai.vpr\' assertion where our proprietary Visual Provenance Record is stored. Aim for about 30 seconds of speaking. Do NOT explain any subsequent stages. I will prompt you again when the UI advances.`;
           } else if (step === 3) {
-            prompt = `The demo has automatically advanced to stage 3: Public Ledger Verification. Please explain how we verify the signature against our distributed ledger to ensure the asset hasn't been backdated or re-signed, acting as a Proof of Existence. Aim for about 30 seconds of speaking. Do NOT explain any subsequent stages. I will prompt you again when the UI advances.`;
+            prompt = `The demo has automatically advanced to stage 3: Public Ledger Verification. Please explain how we verify the signature against our distributed ledger to ensure the asset hasn\'t been backdated or re-signed, acting as a Proof of Existence. Aim for about 30 seconds of speaking. Do NOT explain any subsequent stages. I will prompt you again when the UI advances.`;
           } else if (step === 4) {
             prompt = `The demo has automatically advanced to stage 4: Image Forensic Diff Analysis. Please provide a detailed explanation of how the Trident Engine performs deterministic pixel-perfect diffs for static images to detect deepfakes or synthetic alterations. Explain the SSIM map and the score composition. Aim for about 45 seconds of speaking. Do NOT explain any subsequent stages. I will prompt you again when the UI advances.`;
           } else if (step === 5) {
@@ -552,12 +552,6 @@ export const LiveAssistant: React.FC = () => {
 
   const handleSendMessage = async () => {
     if (!input.trim() || isLoading) return;
-    
-    const apiKey = getApiKey();
-    if (!apiKey) {
-      setMessages(prev => [...prev, { role: 'assistant', text: "⚠️ **Auth Error:** Missing API Key." }]);
-      return;
-    }
 
     const userText = input;
     setInput('');
@@ -565,15 +559,21 @@ export const LiveAssistant: React.FC = () => {
     setIsLoading(true);
 
     try {
-      const ai = new GoogleGenAI({ apiKey });
-      const response = await ai.models.generateContent({
-        model: 'gemini-3-flash-preview',
-        contents: userText,
-        config: {
-          systemInstruction: `Signet-Alpha AI Support. Spec v0.4.0. Authority: signetai.io:ssl.`,
-        }
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ contents: userText }),
       });
-      setMessages(prev => [...prev, { role: 'assistant', text: response.text || "Neural link timeout." }]);
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      setMessages(prev => [...prev, { role: 'assistant', text: data.text || "Neural link timeout." }]);
+
     } catch (error: any) {
       console.error("Chat Error:", error);
       setMessages(prev => [...prev, { role: 'assistant', text: `Logic drift detected. Link dropped. Error: ${error.message}` }]);
@@ -581,6 +581,7 @@ export const LiveAssistant: React.FC = () => {
       setIsLoading(false);
     }
   };
+
 
   return (
     <div className="fixed bottom-8 left-8 z-[150] font-sans">
