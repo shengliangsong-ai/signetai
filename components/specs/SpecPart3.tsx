@@ -516,7 +516,7 @@ export const PART_3 = [
                             width="100%" 
                             height="100%" 
                             src="https://www.youtube.com/embed/UatpGRr-wA0" 
-                            title="Signet Protocol v0.4.0 Deep Dive (English)" 
+                            title="Signet Protocol v0.4.1 Deep Dive (English)" 
                             frameBorder="0" 
                             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
                             allowFullScreen
@@ -533,7 +533,7 @@ export const PART_3 = [
                             width="100%" 
                             height="100%" 
                             src="https://www.youtube.com/embed/5F_6YDhA2A0" 
-                            title="Signet Protocol v0.4.0 Deep Dive (Chinese)" 
+                            title="Signet Protocol v0.4.1 Deep Dive (Chinese)" 
                             frameBorder="0" 
                             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
                             allowFullScreen
@@ -603,7 +603,7 @@ export const PART_3 = [
   {
     category: "STRATEGIC COMM",
     title: "Appendix B: ISO Submission",
-    text: "Draft submission letter for ISO/TC 290. Formally requests consideration of Signet Protocol v0.4.0 as a candidate contribution for digital trust and reputation systems.\n\nDear Members of ISO/TC 290,\n\nWe respectfully submit the Signet Protocol (v0.4.0) for consideration as a candidate contribution to ongoing work in online reputation, digital trust, and content authenticity.\n\nThe Signet Protocol addresses a growing gap in existing provenance standards: while current systems effectively attribute origin, they do not capture asserted reasoning, human intent, or accountable authorization behind AI-assisted content.\n\nKey characteristics of the proposal include:\n- A four-layer verification model separating intent, reasoning representation, drift analysis, and human accountability.\n- A local-first cryptographic architecture that preserves user sovereignty and privacy.\n- A scalable provenance compression mechanism enabling long-lived reputation without asset bloat.\n- Explicit differentiation between generation, review, and authority through sealed attestations.\n\nThe protocol is designed to complement, not replace, existing standards such as C2PA, and intentionally avoids claims about factual correctness or internal AI cognition.\n\nWe believe this work aligns with ISO/TC 290’s mission to support trustworthy digital reputation systems in an era of large-scale synthetic media, and we welcome technical review, critique, and collaborative refinement.\n\nThank you for your consideration.\n\nRespectfully submitted,\nSignet Protocol Project\nWorking Group: Signet Protocol Group",
+    text: "Draft submission letter for ISO/TC 290. Formally requests consideration of Signet Protocol v0.4.1 as a candidate contribution for digital trust and reputation systems.\n\nDear Members of ISO/TC 290,\n\nWe respectfully submit the Signet Protocol (v0.4.1) for consideration as a candidate contribution to ongoing work in online reputation, digital trust, and content authenticity.\n\nThe Signet Protocol addresses a growing gap in existing provenance standards: while current systems effectively attribute origin, they do not capture asserted reasoning, human intent, or accountable authorization behind AI-assisted content.\n\nKey characteristics of the proposal include:\n- A four-layer verification model separating intent, reasoning representation, drift analysis, and human accountability.\n- A local-first cryptographic architecture that preserves user sovereignty and privacy.\n- A scalable provenance compression mechanism enabling long-lived reputation without asset bloat.\n- Explicit differentiation between generation, review, and authority through sealed attestations.\n\nThe protocol is designed to complement, not replace, existing standards such as C2PA, and intentionally avoids claims about factual correctness or internal AI cognition.\n\nWe believe this work aligns with ISO/TC 290’s mission to support trustworthy digital reputation systems in an era of large-scale synthetic media, and we welcome technical review, critique, and collaborative refinement.\n\nThank you for your consideration.\n\nRespectfully submitted,\nSignet Protocol Project\nWorking Group: Signet Protocol Group",
     content: (
       <div className="space-y-8 animate-in fade-in duration-500">
         <h2 className="text-[var(--text-header)] font-serif text-2xl font-bold mb-6 italic">Appendix B: ISO/TC Submission Draft</h2>
@@ -611,7 +611,7 @@ export const PART_3 = [
         <div className="p-8 md:p-12 bg-white border border-[var(--border-light)] shadow-sm font-serif text-sm leading-relaxed text-black max-w-3xl mx-auto">
            <div className="mb-8 font-mono text-xs opacity-60">
              <p>To: Members of ISO/TC 290</p>
-             <p>Subject: Submission for Consideration — Signet Protocol v0.4.0</p>
+             <p>Subject: Submission for Consideration — Signet Protocol v0.4.1</p>
              <p>Date: {new Date().toLocaleDateString()}</p>
            </div>
 
@@ -619,7 +619,7 @@ export const PART_3 = [
              <p>Dear Members of ISO/TC 290,</p>
              
              <p>
-               We respectfully submit the <strong>Signet Protocol (v0.4.0)</strong> for consideration as a candidate contribution to ongoing work in online reputation, digital trust, and content authenticity.
+               We respectfully submit the <strong>Signet Protocol (v0.4.1)</strong> for consideration as a candidate contribution to ongoing work in online reputation, digital trust, and content authenticity.
              </p>
              
              <p>
@@ -651,6 +651,95 @@ export const PART_3 = [
                <p className="text-xs font-mono opacity-60">Working Group: Signet Protocol Group</p>
              </div>
            </div>
+        </div>
+      </div>
+    )
+  },
+  {
+    category: "TECHNICAL AUDIT",
+    title: "12.7 Full-Stack Architecture (Evolution)",
+    text: "12.7.1 Initial Architecture (SPA)\nThe application was initially developed as a single-page web application using Google AI Studio. This approach was sufficient for the initial proof-of-concept, but it had limitations in terms of scalability and features.\n\n12.7.2 Full-Stack Architecture\nTo address the limitations of the SPA architecture, the application was migrated to a full-stack architecture using Firebase. This new architecture consists of a front-end and a back-end, which are hosted on Firebase Hosting and Cloud Functions for Firebase, respectively. This change has enabled the development of more advanced features, such as the Live Assistant, and has improved the scalability and reliability of the application.",
+    content: (
+      <div className="space-y-8 animate-in fade-in duration-500">
+        <h2 className="text-[var(--text-header)] font-serif text-2xl font-bold mb-6 italic">12.7 Full-Stack Architecture (Evolution)</h2>
+
+        <p className="opacity-80 leading-loose mb-6">
+          The application has evolved from a single-page application to a full-stack architecture to support a richer feature set and improve scalability.
+        </p>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+           <div className="p-6 bg-[var(--code-bg)] border border-[var(--border-light)] rounded-lg">
+              <h4 className="font-mono text-[10px] uppercase font-bold text-[var(--trust-blue)] mb-2">1. Initial Architecture (SPA)</h4>
+              <p className="text-xs opacity-80">The initial version of the application was a single-page application built with Google AI Studio. This was a great starting point, but it had limitations in terms of scalability and the types of features that could be implemented.</p>
+           </div>
+           <div className="p-6 bg-[var(--code-bg)] border border-[var(--border-light)] rounded-lg">
+              <h4 className="font-mono text-[10px] uppercase font-bold text-amber-500 mb-2">2. Full-Stack Architecture</h4>
+              <p className="text-xs opacity-80">The application was migrated to a full-stack architecture using Firebase. The front-end is hosted on Firebase Hosting, and the back-end is powered by Cloud Functions for Firebase. This has enabled the development of more advanced features, such as the Live Assistant, and has improved the scalability and reliability of the application.</p>
+           </div>
+        </div>
+      </div>
+    )
+  },
+  {
+    category: "FUTURE ROADMAP",
+    title: "23. Future Roadmap",
+    text: "Potential front-end and back-end features to expand the application's capabilities, focusing on user experience and core backend power.",
+    content: (
+      <div className="space-y-8 animate-in fade-in duration-500">
+        <h2 className="text-[var(--text-header)] font-serif text-2xl font-bold mb-6 italic">23. Future Roadmap</h2>
+        <p className="opacity-80 leading-loose mb-8">
+          The following are potential avenues for expanding the Signet Protocol's capabilities, divided between enhancing the client-side user experience and scaling the backend's analytical power.
+        </p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          {/* Front-End Section */}
+          <div className="space-y-6">
+            <h3 className="font-mono text-lg font-bold text-[var(--trust-blue)] border-b-2 border-[var(--trust-blue)] pb-2">
+              Front-End (User Experience)
+            </h3>
+            <ul className="list-disc pl-5 space-y-4 text-sm">
+              <li>
+                <strong className="block text-[var(--text-header)]">Secure Key Export/Import</strong>
+                <p className="opacity-80">Allow users to download an encrypted backup of their key vault, enabling them to restore their identity on other devices.</p>
+              </li>
+              <li>
+                <strong className="block text-[var(--text-header)]">Enhanced Live Assistant UI</strong>
+                <p className="opacity-80">Add a real-time transcription window and a microphone audio visualizer to improve user interaction and feedback.</p>
+              </li>
+              <li>
+                <strong className="block text-[var(--text-header)]">Interactive Onboarding Tutorial</strong>
+                <p className="opacity-80">A step-by-step guided tour for new users to explain key creation, signing, and verification, improving usability.</p>
+              </li>
+              <li>
+                <strong className="block text-[var(--text-header)]">Offline-First Signing</strong>
+                <p className="opacity-80">Utilize service workers to enable asset signing and verification even without an internet connection, syncing with the backend when connectivity is restored.</p>
+              </li>
+            </ul>
+          </div>
+
+          {/* Back-End Section */}
+          <div className="space-y-6">
+            <h3 className="font-mono text-lg font-bold text-amber-500 border-b-2 border-amber-500 pb-2">
+              Back-End (Core Power)
+            </h3>
+            <ul className="list-disc pl-5 space-y-4 text-sm">
+              <li>
+                <strong className="block text-[var(--text-header)]">Web of Trust Implementation</strong>
+                <p className="opacity-80">Build the backend logic allowing users to vouch for other public keys, creating a queryable trust graph to assess signature reliability.</p>
+              </li>
+              <li>
+                <strong className="block text-[var(--text-header)]">Expand Trident Engine Analysis</strong>
+                <p className="opacity-80">Add new analysis modules for detecting audio deepfakes or document tampering (e.g., hidden metadata in PDFs).</p>
+              </li>
+              <li>
+                <strong className="block text-[var(--text-header)]">Public API for Third Parties</strong>
+                <p className="opacity-80">Create secure API endpoints with key management and rate-limiting to allow external developers to integrate Signet verification.</p>
+              </li>
+              <li>
+                <strong className="block text-[var(--text-header)]">Automated Notification System</strong>
+                <p className="opacity-80">Implement a service to notify users via email or other channels when their signed assets are verified or when their trust network changes.</p>
+              </li>
+            </ul>
+          </div>
         </div>
       </div>
     )
