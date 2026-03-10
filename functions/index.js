@@ -3,6 +3,7 @@ const fs = require("node:fs/promises");
 const path = require("node:path");
 const os = require("node:os");
 const { spawnSync } = require("node:child_process");
+const ffmpeg = require("ffmpeg-static");
 
 exports.extractDriveFrames = functions.runWith({
   timeoutSeconds: 60,
@@ -60,7 +61,7 @@ exports.extractDriveFrames = functions.runWith({
         }
         const out = path.join(tmpRoot, `frame_${ts}.jpg`);
         const cmd = spawnSync(
-          'ffmpeg',
+          ffmpeg,
           ['-hide_banner', '-loglevel', 'error', '-nostdin', '-y', '-ss', String(ts), '-i', inputUrl, '-frames:v', '1', '-q:v', '3', out],
           { encoding: 'utf8', timeout: 3500, maxBuffer: 1024 * 1024 * 2 }
         );
