@@ -61,7 +61,7 @@ export const chat = onRequest(
             return;
           }
 
-          const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${GEMINI_API_KEY}`;
+          const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
           const requestToGemini = { contents: [{ role: "user", parts: [{ text: contents }] }] };
           const geminiResponse = await axios.post(geminiUrl, requestToGemini, { headers: { "Content-Type": "application/json" } });
           const responseText = geminiResponse.data?.candidates?.[0]?.content?.parts?.[0]?.text || "No response from model.";
