@@ -6,9 +6,9 @@
 * **Mandatory Tech:** Gemini Live API (`gemini-2.5-flash-native-audio-preview`)
 * **Google Cloud:** Firebase Hosting, Firestore Database, Firebase Storage
 * **Text Description:** Provided below in this document.
-* **Public Code Repository:** [GitHub Repository Link] (Includes spin-up instructions in `README.md`)
-* **Proof of Google Cloud Deployment:** See `.github/workflows` for automated Firebase deployment, and `src/config/env.ts` for Firebase initialization.
-* **Architecture Diagram:** Available in the "Introduction" section of the app.
+* **Public Code Repository:** [shengliangsong-ai/signetai](https://github.com/shengliangsong-ai/signetai) (Includes spin-up instructions in `README.md`)
+* **Proof of Google Cloud Deployment:** See [`.github/workflows`](https://github.com/shengliangsong-ai/signetai/tree/main/.github/workflows) for automated Firebase deployment, and [`src/config/env.ts`](https://github.com/shengliangsong-ai/signetai/blob/main/src/config/env.ts) for Firebase initialization.
+* **Architecture Diagram:** [signet_technical_architecture.svg](https://raw.githubusercontent.com/shengliangsong-ai/signetai/refs/heads/main/public/signet_technical_architecture.svg) (Also available in the "Introduction" section of the app).
 * **Demonstration Video:** Available via the "Run Demo" button in the top menu (4-minute interactive Live Agent narration).
 * **Bonus - Automated Cloud Deployment:** CI/CD pipeline implemented via GitHub Actions (`.github/workflows/firebase-hosting-merge.yml`).
 

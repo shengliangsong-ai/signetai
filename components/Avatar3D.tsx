@@ -92,11 +92,15 @@ export const Avatar3D: React.FC<Avatar3DProps> = ({ isSpeaking, voiceName }) => 
           <path d="M 35 60 L 35 100 L 65 100 L 65 60 Z" fill="url(#skin)" filter="url(#shadow)" />
           
           {/* Head Base */}
-          <ellipse cx="50" cy="45" rx="28" ry="36" fill="url(#skin)" filter="url(#shadow)" />
+          {isFemale ? (
+            <path d="M 22 45 C 22 15, 78 15, 78 45 C 78 72, 65 84, 50 84 C 35 84, 22 72, 22 45 Z" fill="url(#skin)" filter="url(#shadow)" />
+          ) : (
+            <ellipse cx="50" cy="45" rx="28" ry="36" fill="url(#skin)" filter="url(#shadow)" />
+          )}
 
           {/* Hair Back */}
           {isFemale && (
-            <path d="M 20 40 C 10 70, 25 100, 50 100 C 75 100, 90 70, 80 40 Z" fill={hairColor} filter="url(#shadow)" />
+            <path d="M 18 40 C 5 65, 10 105, 30 110 C 50 115, 70 115, 85 105 C 100 90, 95 65, 82 40 Z" fill={hairColor} filter="url(#shadow)" />
           )}
 
           {/* Ears */}
@@ -105,12 +109,17 @@ export const Avatar3D: React.FC<Avatar3DProps> = ({ isSpeaking, voiceName }) => 
 
           {/* Hair Front */}
           {isFemale ? (
-            <path d="M 22 45 C 22 20, 78 20, 78 45 C 78 25, 50 10, 22 45 Z" fill={hairColor} filter="url(#shadow)" />
+            <g>
+              <path d="M 16 55 C 16 20, 40 5, 55 15 C 70 5, 84 20, 84 55 C 80 30, 65 18, 50 22 C 35 18, 20 30, 16 55 Z" fill={hairColor} filter="url(#shadow)" />
+              <path d="M 25 25 C 35 15, 45 18, 50 22" fill="none" stroke="#4a4e69" strokeWidth="1.5" strokeLinecap="round" opacity="0.4" />
+              <path d="M 75 25 C 65 15, 55 18, 50 22" fill="none" stroke="#4a4e69" strokeWidth="1.5" strokeLinecap="round" opacity="0.4" />
+            </g>
           ) : (
-            <path d="M 22 35 C 22 10, 78 10, 78 35 C 78 20, 50 15, 22 35 Z" fill={hairColor} filter="url(#shadow)" />
+            <>
+              <path d="M 22 35 C 22 10, 78 10, 78 35 C 78 20, 50 15, 22 35 Z" fill={hairColor} filter="url(#shadow)" />
+              <path d="M 22 35 C 30 15, 70 15, 78 35 C 70 25, 30 25, 22 35 Z" fill={hairColor} opacity="0.8" />
+            </>
           )}
-          {/* Extra hair volume */}
-          <path d="M 22 35 C 30 15, 70 15, 78 35 C 70 25, 30 25, 22 35 Z" fill={hairColor} opacity="0.8" />
 
           {/* Eyes Group */}
           <g className="transition-transform duration-75" style={{ transformOrigin: '50px 42px', transform: blink ? 'scaleY(0.05)' : 'scaleY(1)' }}>
@@ -118,16 +127,31 @@ export const Avatar3D: React.FC<Avatar3DProps> = ({ isSpeaking, voiceName }) => 
             <ellipse cx="38" cy="42" rx="6" ry="4" fill="url(#eyeWhite)" filter="url(#inner-shadow)" />
             <circle cx="38" cy="42" r="2.5" fill="url(#iris)" />
             <circle cx="37" cy="41" r="0.8" fill="#ffffff" />
+            {isFemale && (
+              <path d="M 31 41 Q 38 36 45 41" fill="none" stroke={hairColor} strokeWidth="1.5" strokeLinecap="round" />
+            )}
             
             {/* Right Eye */}
             <ellipse cx="62" cy="42" rx="6" ry="4" fill="url(#eyeWhite)" filter="url(#inner-shadow)" />
             <circle cx="62" cy="42" r="2.5" fill="url(#iris)" />
             <circle cx="61" cy="41" r="0.8" fill="#ffffff" />
+            {isFemale && (
+              <path d="M 55 41 Q 62 36 69 41" fill="none" stroke={hairColor} strokeWidth="1.5" strokeLinecap="round" />
+            )}
           </g>
 
           {/* Eyebrows */}
-          <path d="M 30 35 Q 38 33 44 36" fill="none" stroke={hairColor} strokeWidth="2.5" strokeLinecap="round" />
-          <path d="M 70 35 Q 62 33 56 36" fill="none" stroke={hairColor} strokeWidth="2.5" strokeLinecap="round" />
+          {isFemale ? (
+            <>
+              <path d="M 28 35 Q 38 31 45 35" fill="none" stroke={hairColor} strokeWidth="1.5" strokeLinecap="round" />
+              <path d="M 72 35 Q 62 31 55 35" fill="none" stroke={hairColor} strokeWidth="1.5" strokeLinecap="round" />
+            </>
+          ) : (
+            <>
+              <path d="M 30 35 Q 38 33 44 36" fill="none" stroke={hairColor} strokeWidth="2.5" strokeLinecap="round" />
+              <path d="M 70 35 Q 62 33 56 36" fill="none" stroke={hairColor} strokeWidth="2.5" strokeLinecap="round" />
+            </>
+          )}
 
           {/* Nose */}
           <path d="M 50 42 L 47 54 C 47 56, 53 56, 53 54 Z" fill="#c27a62" opacity="0.4" />
@@ -136,8 +160,8 @@ export const Avatar3D: React.FC<Avatar3DProps> = ({ isSpeaking, voiceName }) => 
           {/* Cheeks */}
           {isFemale && (
             <>
-              <ellipse cx="32" cy="52" rx="5" ry="3" fill="#ff8fa3" opacity="0.3" filter="blur(2px)" />
-              <ellipse cx="68" cy="52" rx="5" ry="3" fill="#ff8fa3" opacity="0.3" filter="blur(2px)" />
+              <ellipse cx="32" cy="50" rx="6" ry="3.5" fill="#ff8fa3" opacity="0.4" filter="blur(2px)" />
+              <ellipse cx="68" cy="50" rx="6" ry="3.5" fill="#ff8fa3" opacity="0.4" filter="blur(2px)" />
             </>
           )}
 
@@ -161,18 +185,18 @@ export const Avatar3D: React.FC<Avatar3DProps> = ({ isSpeaking, voiceName }) => 
             )}
             {/* Lips */}
             <path 
-              d={`M 42 64 Q 50 ${64 - mouthOpen - 2} 58 64`} 
+              d={`M 41 64 Q 50 ${64 - mouthOpen - (isFemale ? 3 : 2)} 59 64`} 
               fill="none" 
               stroke={isFemale ? "#e5383b" : "#b56555"} 
-              strokeWidth="1.5" 
+              strokeWidth={isFemale ? "2.5" : "1.5"} 
               strokeLinecap="round" 
               className="transition-all duration-75"
             />
             <path 
-              d={`M 42 64 Q 50 ${64 + mouthOpen + 2} 58 64`} 
+              d={`M 41 64 Q 50 ${64 + mouthOpen + (isFemale ? 4 : 2)} 59 64`} 
               fill="none" 
               stroke={isFemale ? "#ba1826" : "#9c4a3c"} 
-              strokeWidth="2" 
+              strokeWidth={isFemale ? "3" : "2"} 
               strokeLinecap="round" 
               className="transition-all duration-75"
             />
