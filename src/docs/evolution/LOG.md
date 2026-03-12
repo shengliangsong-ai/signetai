@@ -208,5 +208,15 @@ Developers observed that running `npm run build` locally would result in a large
 - **Solution**: A comprehensive `.gitignore` file was created, based on standard Node.js and Vite project conventions. This file explicitly ignores directories like `node_modules`, `dist`, and `functions/lib`, as well as log files and local environment (`.env`) files.
 - **Outcome**: The repository is now clean. `git status` only shows meaningful changes to the source code, and developers are no longer at risk of accidentally committing build artifacts. This improves the overall health and maintainability of the codebase.
 
+## Entry 27: Firebase Runtime Correction
+**Date:** March 20, 2026
+**Task Goal:** Correct the Node.js runtime in the Firebase configuration.
+**Reasoning Path:**
+During a deployment fix, the `firebase.json` configuration was updated. The `runtime` for the Cloud Function was initially set to `nodejs24`.
+- **Problem Diagnosis**: The deployment failed because `nodejs24` is not a valid or supported runtime for Google Cloud Functions at this time. The latest supported Long-Term Support (LTS) version is `nodejs20`.
+- **Solution**: The `runtime` in `firebase.json` was corrected to `nodejs20`.
+- **Consistency**: This change also aligns the production runtime environment with the Node.js version (v20) used in the GitHub Actions build workflow, preventing potential compatibility issues between the build and deployment environments.
+- **Outcome**: The Firebase configuration now uses a valid and supported Node.js runtime, ensuring that deployments can proceed without runtime-related errors. This change was a prerequisite for the successful `predeploy` hook implementation.
+
 ---
 *Signed: Master Curator, signetai.io:ssl*
