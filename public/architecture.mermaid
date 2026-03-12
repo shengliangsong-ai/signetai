@@ -1,0 +1,30 @@
+graph TD
+    subgraph L1 [Layer 1: Vision Substrate]
+        A[Initial Intent & Prompt] --> B[C2PA Ingredient Binding]
+        B --> C[Truth Anchor]
+    end
+
+    subgraph L2 [Layer 2: Neural Lens]
+        C --> D[Reasoning Graph Extraction]
+        D --> E[Public Reasoning Graph PRG]
+        E --> F[JUMBF Encapsulation]
+    end
+
+    subgraph L3 [Layer 3: Reality Check]
+        F --> G[Deterministic Probing]
+        G --> H[Drift Audit]
+        H --> I[Binding Check]
+    end
+
+    subgraph L4 [Layer 4: Human Seal]
+        I --> J[Curator Review]
+        J --> K{Attestation Mode}
+        K -->|Intent| L[Ed25519 Signature]
+        K -->|Review| L
+        K -->|Authority| L
+    end
+
+    L --> M[Final Verified Asset]
+
+    classDef layer fill:#0055ff1a,stroke:#0055ff,stroke-width:2px,color:#fff;
+    class L1,L2,L3,L4 layer;

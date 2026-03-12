@@ -15,7 +15,10 @@ As AI moves from "Chat" to "Reasoning," current watermarking standards (C2PA) ar
 - **2.3. Universal Tail-Wrap (UTW)**: A Zero-Copy injection method for arbitrary binary formats (Video/Audio/PDF).
 - **2.4. Signet-Alpha Live Assistant**: A real-time, voice-first AI notary featuring a dynamic 3D animated avatar with lip-sync, eye movement, and voice-responsive gender switching.
 
-## 3. CLI & Developer Tools (New in v0.4.0)
+## 3. Architecture
+![Architecture Diagram](./architecture.svg)
+
+## 4. CLI & Developer Tools (New in v0.4.0)
 The protocol now includes standalone Node.js tools and a Web Batch Processor.
 
 ### 3.1 Batch Processor (Web)

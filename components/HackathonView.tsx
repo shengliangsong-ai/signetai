@@ -13,9 +13,29 @@ export const HackathonView: React.FC = () => {
         <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-[var(--text-header)] mb-6 font-sans">
           Hackathon Submission
         </h1>
-        <p className="text-lg text-[var(--text-body)] opacity-70 max-w-2xl leading-relaxed font-sans">
+        <p className="text-lg text-[var(--text-body)] opacity-70 max-w-2xl leading-relaxed font-sans mb-8">
           The official documentation and technical overview for the SignetAI project.
         </p>
+        
+        <div className="flex flex-col sm:flex-row gap-4">
+          <a href="#demo" className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-[var(--trust-blue)] text-white rounded-lg font-bold hover:scale-105 transition-transform shadow-lg shadow-blue-500/30">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M5 3l14 9-14 9V3z"/>
+            </svg>
+            Play Live Voice Presentation
+          </a>
+          <button 
+            onClick={() => {
+              // Trigger the Live Assistant orb if it's closed, or just alert the user
+              const orb = document.querySelector('.fixed.bottom-6.right-6 button');
+              if (orb) (orb as HTMLElement).click();
+            }}
+            className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-[var(--bg-sidebar)] border border-[var(--trust-blue)] text-[var(--trust-blue)] rounded-lg font-bold hover:bg-blue-500/10 transition-colors"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" x2="12" y1="19" y2="22"></line></svg>
+            Talk to Live Agent Now
+          </button>
+        </div>
       </header>
       
       <div className="flex flex-col lg:flex-row gap-16">

@@ -1,0 +1,49 @@
+graph TD
+    subgraph "User's Browser (Client-Side)"
+        A["<b>1. Key Vault & Signer</b><br>Generates BIP39 Mnemonic<br>to derive Ed25519 key pair."]
+        B["<b>2. Browser Storage (IndexedDB)</b><br><b style='color:red;'>Stores: Private Key & Mnemonic</b><br><i>Data never leaves the user's device.</i>"]
+        C["<b>3. SVG Attestation Logic</b><br>Client-side hashing (SHA-256) for C2PA hard-binding.<br>Injects signed JSON-LD manifest into SVG metadata."]
+        D["<b>4. Live Assistant UI (React SPA)</b><br>Handles user interaction for both<br>voice and text chat."]
+        G["<b>5. Trident Engine (Client-Side)</b><br>Core logic for analysis and orchestration."]
+        
+        subgraph "Trident Engine Components"
+            direction LR
+            G_1["Image Comparator<br>(SSIM, pHash, Semantic)"]
+            G_2["Video Diff Engine<br>(Keyframe Sampling)"]
+            G_3["Live Demo Orchestration"]
+            G --- G_1 & G_2 & G_3
+        end
+    end
+
+    subgraph "Back-End (Firebase & Google Cloud)"
+        E["<b>Firebase Hosting</b><br>Serves the static React SPA."]
+        F["<b>Cloud Function (Drive Extractor)</b><br>Extracts frames from Google Drive videos."]
+        H["<b>Firestore Database</b><br><b style='color:blue;'>Stores: Public Key Registry</b><br>Provenance Manifests & Hashes."]
+        I["<b>Gemini REST API</b><br>Provides standard text-based generation<br>and analysis for Trident Engine."]
+        J["<b>Gemini Live API (WebSockets)</b><br>Provides real-time, bidirectional<br>audio streaming for voice chat."]
+    end
+
+    %% --- Data Flows ---
+
+    %% Client-Side Flows
+    A -- "Stores Private Key Locally" --> B
+    A -- "Publishes Public Key" --> H
+    C -- "Signs and Injects Metadata" --> D
+
+    %% Client <--> Backend Flows
+    E -- "Serves SPA via HTTPS" --> D
+    
+    %% Video Processing Flow
+    G_2 -- "Requests Video Frames" --> F
+    F -- "Returns Extracted Frames" --> G_2
+
+    %% Text/Image Analysis Flow
+    G -- "Calls API w/ Secret Key (HTTPS)" --> I
+    I -- "Returns Analysis" --> G
+
+    %% Voice Chat Flow
+    D -- "Streams Audio (WSS)" --> J
+    J -- "Streams Response" --> D
+
+    %% Backend Internal Flows
+    G -- "Reads/Writes Manifests and Keys" --> H

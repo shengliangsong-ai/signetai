@@ -47,6 +47,11 @@ export const PART_1 = [
     content: (
       <div className="space-y-8 animate-in fade-in duration-500">
         <h2 className="text-[var(--text-header)] font-serif text-2xl font-bold mb-6 italic">2. Protocol Architecture</h2>
+        
+        <div className="mb-8 p-4 bg-white rounded-lg border border-[var(--border-light)] shadow-sm">
+          <img src="/architecture.svg" alt="Signet Protocol Architecture Diagram" className="w-full h-auto" />
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
            <div className="p-4 border border-[var(--border-light)] rounded bg-[var(--bg-standard)]">
              <h4 className="font-bold text-[var(--trust-blue)] mb-2">L1: Vision Substrate</h4>

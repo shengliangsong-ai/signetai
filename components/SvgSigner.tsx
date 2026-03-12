@@ -16,7 +16,7 @@ export const SvgSigner: React.FC = () => {
   const [isLoadingDemo, setIsLoadingDemo] = useState(false);
   const [activeTab, setActiveTab] = useState<'PREVIEW' | 'CODE' | 'DIFF'>('PREVIEW');
   const [verificationResult, setVerificationResult] = useState<any>(null);
-  const [fileName, setFileName] = useState<string>('signetai-solar-system.svg');
+  const [fileName, setFileName] = useState<string>('signet_technical_architecture.svg');
   const [showADR, setShowADR] = useState(false);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -25,14 +25,14 @@ export const SvgSigner: React.FC = () => {
     setIsLoadingDemo(true);
     try {
       // Fetch from public directory instead of hardcoding
-      const response = await fetch('/public/signetai-solar-system.svg');
+      const response = await fetch('/signet_technical_architecture.svg');
       if (!response.ok) throw new Error('Failed to load demo asset');
       
       const svgText = await response.text();
       setOriginalSvg(svgText);
       setSignedSvg('');
       setVerificationResult(null);
-      setFileName('signetai-solar-system.svg');
+      setFileName('signet_technical_architecture.svg');
     } catch (err) {
       console.error("Demo Load Error:", err);
       alert("Could not load demo file from /public directory.");

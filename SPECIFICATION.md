@@ -5,6 +5,11 @@
 ## 1. Introduction
 This document defines the Signet Protocol, a standard for attaching cryptographic proof of reasoning (VPR) to AI-generated content, aligned with **C2PA 2.3**.
 
+## 1.1 Architecture
+The following diagram illustrates the Signet Protocol architecture and data flows:
+
+![Architecture Diagram](./architecture.svg)
+
 ## 2. Global Identity Registry (TrustKey Service)
 To ensure the accountability of the 8 billion human curators, the protocol mandates a centralized settlement layer for Identity-to-Key binding.
 
