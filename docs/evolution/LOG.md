@@ -137,5 +137,14 @@ The "Sign vs. Verify" dichotomy is artificial. The system should detect if a fil
 - **Logic**: The app now scans the last 10KB of any selected file for `%SIGNET_VPR_START`. If found, it bypasses the signing flow and triggers immediate streaming verification.
 - **Outcome**: "Any Size. Zero RAM." UX is now fully realized for both Signing AND Verification.
 
+## Entry 23: Voice-First Interaction (LiveAssistant)
+**Date:** March 12, 2026
+**Task Goal:** Streamline the LiveAssistant UI by removing redundant text input.
+
+**Reasoning Path:**
+- **Observation**: The Gemini Live API provides robust, real-time bidirectional audio streaming. The text input option in the `LiveAssistant` component was redundant and cluttered the interface.
+- **Action**: Removed the text input field and send button from `LiveAssistant.tsx`.
+- **Outcome**: Enforced a true voice-first experience, aligning with the "Live Digital Notary" persona and simplifying the user interface.
+
 ---
 *Signed: Master Curator, signetai.io:ssl*

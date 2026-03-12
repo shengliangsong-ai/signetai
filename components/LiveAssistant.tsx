@@ -62,8 +62,6 @@ export const LiveAssistant: React.FC = () => {
   ]);
   const [streamingInput, setStreamingInput] = useState('');
   const [streamingOutput, setStreamingOutput] = useState('');
-  const [input, setInput] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
   const [isVideoEnabled, setIsVideoEnabled] = useState(false);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -550,38 +548,6 @@ export const LiveAssistant: React.FC = () => {
     }
   };
 
-  const handleSendMessage = async () => {
-    if (!input.trim() || isLoading) return;
-    
-    const apiKey = getApiKey();
-    if (!apiKey) {
-      setMessages(prev => [...prev, { role: 'assistant', text: "⚠️ **Auth Error:** Missing API Key." }]);
-      return;
-    }
-
-    const userText = input;
-    setInput('');
-    setMessages(prev => [...prev, { role: 'user', text: userText }]);
-    setIsLoading(true);
-
-    try {
-      const ai = new GoogleGenAI({ apiKey });
-      const response = await ai.models.generateContent({
-        model: 'gemini-3-flash-preview',
-        contents: userText,
-        config: {
-          systemInstruction: `Signet-Alpha AI Support. Spec v0.4.0. Authority: signetai.io:ssl.`,
-        }
-      });
-      setMessages(prev => [...prev, { role: 'assistant', text: response.text || "Neural link timeout." }]);
-    } catch (error: any) {
-      console.error("Chat Error:", error);
-      setMessages(prev => [...prev, { role: 'assistant', text: `Logic drift detected. Link dropped. Error: ${error.message}` }]);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   return (
     <div className="fixed bottom-8 left-8 z-[150] font-sans">
       {!isOpen ? (
@@ -689,23 +655,6 @@ export const LiveAssistant: React.FC = () => {
                 )}
                 
                 <div ref={messagesEndRef} />
-              </div>
-
-              <div className="p-4 border-t border-[var(--border-light)] bg-white flex gap-2">
-                <input 
-                  type="text" value={input} onChange={(e) => setInput(e.target.value)} 
-                  onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
-                  placeholder={status !== 'OFFLINE' ? "Mic active..." : "Ask about v0.4.0..."} 
-                  className="flex-1 text-sm bg-transparent outline-none py-2"
-                  disabled={status !== 'OFFLINE'}
-                />
-                <button 
-                  onClick={handleSendMessage} 
-                  disabled={status !== 'OFFLINE' || isLoading}
-                  className={`p-2 transition-all ${status !== 'OFFLINE' || isLoading ? 'opacity-20' : 'text-[var(--trust-blue)] hover:scale-110'}`}
-                >
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
-                </button>
               </div>
               
               {status !== 'OFFLINE' && (
