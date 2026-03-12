@@ -27,6 +27,7 @@ jobs:
           FIREBASE_MEASUREMENT_ID=${{ secrets.FIREBASE_MEASUREMENT_ID }}
           EOF
       - run: npm install && npm run build
+      - run: cd functions && npm install
         env:
           API_KEY: ${{ secrets.API_KEY }}
           VITE_GEMINI_LIVE_API_KEY: ${{ secrets.VITE_GEMINI_LIVE_API_KEY }}
