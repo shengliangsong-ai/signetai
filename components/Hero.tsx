@@ -2,9 +2,7 @@ import React from 'react';
 
 export const Hero: React.FC<{ onOpenPortal: () => void }> = ({ onOpenPortal }) => {
   const handleDemoClick = () => {
-    const origin = window.location.origin;
-    const demoUrl = `${origin}/public/signed_signetai-solar-system.svg`;
-    window.location.href = `#verify?url=${encodeURIComponent(demoUrl)}`;
+    window.location.href = '#demo';
   };
 
   return (

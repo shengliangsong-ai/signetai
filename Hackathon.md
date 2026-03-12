@@ -1,16 +1,16 @@
 > **SignetAI** is a multimodal, real-time AI agent that acts as a cryptographic notary and deepfake detector for digital assets. Operating as a robust multi-page application, it leverages the **Gemini Live API** to provide a seamless, voice-first experience.
 
-## 🏆 Hackathon Requirements Checklist
+## Hackathon Requirements Checklist
 
-✅ **Category:** Live Agents 🗣️ (Real-time Interaction with Audio/Vision)
-✅ **Mandatory Tech:** Gemini Live API (`gemini-2.5-flash-native-audio-preview`)
-✅ **Google Cloud:** Firebase Hosting, Firestore Database, Firebase Storage
-✅ **Text Description:** Provided below in this document.
-✅ **Public Code Repository:** [GitHub Repository Link] (Includes spin-up instructions in `README.md`)
-✅ **Proof of Google Cloud Deployment:** See `.github/workflows` for automated Firebase deployment, and `src/config/env.ts` for Firebase initialization.
-✅ **Architecture Diagram:** Available in the "Introduction" section of the app.
-✅ **Demonstration Video:** Available via the "▶ Run Demo" button in the top menu (4-minute interactive Live Agent narration).
-✅ **Bonus - Automated Cloud Deployment:** CI/CD pipeline implemented via GitHub Actions (`.github/workflows/firebase-hosting-merge.yml`).
+* **Category:** Live Agents (Real-time Interaction with Audio/Vision)
+* **Mandatory Tech:** Gemini Live API (`gemini-2.5-flash-native-audio-preview`)
+* **Google Cloud:** Firebase Hosting, Firestore Database, Firebase Storage
+* **Text Description:** Provided below in this document.
+* **Public Code Repository:** [GitHub Repository Link] (Includes spin-up instructions in `README.md`)
+* **Proof of Google Cloud Deployment:** See `.github/workflows` for automated Firebase deployment, and `src/config/env.ts` for Firebase initialization.
+* **Architecture Diagram:** Available in the "Introduction" section of the app.
+* **Demonstration Video:** Available via the "Run Demo" button in the top menu (4-minute interactive Live Agent narration).
+* **Bonus - Automated Cloud Deployment:** CI/CD pipeline implemented via GitHub Actions (`.github/workflows/firebase-hosting-merge.yml`).
 
 ## Inspiration
 

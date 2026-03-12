@@ -345,29 +345,45 @@ ${JSON.stringify(manifest, null, 2)}
       <div className="flex flex-col lg:flex-row gap-8 lg:gap-12">
         {/* Mobile TOC (Collapsible) */}
         <div className="lg:hidden w-full">
-          <details className="group bg-[var(--bg-sidebar)] border border-[var(--border-light)] rounded-lg overflow-hidden">
-            <summary className="p-4 font-mono text-xs uppercase font-bold text-[var(--text-header)] cursor-pointer flex justify-between items-center list-none">
-              <span>Table of Contents</span>
-              <span className="group-open:rotate-180 transition-transform">▼</span>
+          <details className="group bg-[var(--bg-standard)] border border-[var(--border-light)] rounded-xl shadow-sm overflow-hidden">
+            <summary className="p-4 font-sans text-sm font-bold text-[var(--text-header)] cursor-pointer flex justify-between items-center list-none">
+              <div className="flex items-center gap-2">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--trust-blue)]"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+                Table of Contents
+              </div>
+              <span className="group-open:rotate-180 transition-transform">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+              </span>
             </summary>
             <div className="p-4 pt-0 border-t border-[var(--border-light)] space-y-1 max-h-64 overflow-y-auto">
-              {SPEC_PAGES.map((page, i) => (
-                <button
-                  key={i}
-                  onClick={() => {
-                    setActivePage(i);
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                  }}
-                  className={`w-full text-left px-3 py-2 text-[11px] font-mono uppercase tracking-tight rounded transition-all ${activePage === i ? 'bg-[var(--trust-blue)] text-white font-bold' : 'text-[var(--text-body)] opacity-70 hover:opacity-100 hover:bg-[var(--bg-standard)]'}`}
-                >
-                  {page.title.includes('.') ? (
-                    <>
-                      <span className="font-bold opacity-50 mr-1">{page.title.split('.')[0]}.</span>
-                      {page.title.split('.').slice(1).join('.').trim()}
-                    </>
-                  ) : page.title}
-                </button>
-              ))}
+              {SPEC_PAGES.map((page, i) => {
+                const isMajorSection = page.title.match(/^[0-9]+\.\s/);
+                return (
+                  <button
+                    key={i}
+                    onClick={() => {
+                      setActivePage(i);
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
+                    className={`w-full text-left px-3 py-2 text-[13px] font-sans rounded-md transition-all flex items-start gap-2 ${
+                      activePage === i 
+                        ? 'bg-[var(--trust-blue)]/10 text-[var(--trust-blue)] font-semibold' 
+                        : 'text-[var(--text-body)] opacity-80 hover:opacity-100 hover:bg-[var(--bg-sidebar)]'
+                    } ${isMajorSection && i !== 0 ? 'mt-2' : ''}`}
+                  >
+                    {page.title.includes('.') ? (
+                      <>
+                        <span className={`font-mono text-[11px] mt-0.5 shrink-0 ${activePage === i ? 'text-[var(--trust-blue)]' : 'text-[var(--text-body)] opacity-50'}`}>
+                          {page.title.split('.')[0]}.
+                        </span>
+                        <span className="leading-tight">{page.title.split('.').slice(1).join('.').trim()}</span>
+                      </>
+                    ) : (
+                      <span className="leading-tight">{page.title}</span>
+                    )}
+                  </button>
+                );
+              })}
             </div>
           </details>
         </div>
@@ -375,34 +391,49 @@ ${JSON.stringify(manifest, null, 2)}
         {/* Desktop TOC (Sticky) */}
         <div className={`hidden lg:block shrink-0 transition-all duration-300 ease-in-out ${isTocOpen ? 'w-80 opacity-100' : 'w-0 opacity-0 overflow-hidden'}`}>
           <div className="w-80 sticky top-24 space-y-6">
-             <div className="p-6 border border-[var(--border-light)] bg-[var(--bg-standard)] rounded-lg shadow-sm">
-                <h3 className="font-mono text-[10px] uppercase font-bold text-[var(--trust-blue)] mb-4 tracking-widest">Table of Contents</h3>
+             <div className="p-6 border border-[var(--border-light)] bg-[var(--bg-standard)] rounded-xl shadow-sm">
+                <h3 className="font-sans text-sm font-bold text-[var(--text-header)] mb-4 flex items-center gap-2">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--trust-blue)]"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+                  Table of Contents
+                </h3>
                 <div className="space-y-1 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
-                   {SPEC_PAGES.map((page, i) => (
-                      <button
-                        key={i}
-                        onClick={() => {
-                          setActivePage(i);
-                          window.scrollTo({ top: 0, behavior: 'smooth' });
-                        }}
-                        className={`w-full text-left px-3 py-2 text-[10px] font-mono uppercase tracking-tight rounded transition-all ${activePage === i ? 'bg-[var(--trust-blue)] text-white font-bold shadow-sm' : 'text-[var(--text-body)] opacity-60 hover:opacity-100 hover:bg-[var(--bg-sidebar)]'}`}
-                      >
-                        {page.title.includes('.') ? (
-                          <>
-                            <span className="font-bold opacity-50 mr-1">{page.title.split('.')[0]}.</span>
-                            {page.title.split('.').slice(1).join('.').trim()}
-                          </>
-                        ) : page.title}
-                      </button>
-                   ))}
+                   {SPEC_PAGES.map((page, i) => {
+                      const isMajorSection = page.title.match(/^[0-9]+\.\s/);
+                      return (
+                        <button
+                          key={i}
+                          onClick={() => {
+                            setActivePage(i);
+                            window.scrollTo({ top: 0, behavior: 'smooth' });
+                          }}
+                          className={`w-full text-left px-3 py-2 text-[13px] font-sans rounded-md transition-all flex items-start gap-2 ${
+                            activePage === i 
+                              ? 'bg-[var(--trust-blue)]/10 text-[var(--trust-blue)] font-semibold shadow-sm ring-1 ring-[var(--trust-blue)]/20' 
+                              : 'text-[var(--text-body)] opacity-80 hover:opacity-100 hover:bg-[var(--bg-sidebar)] hover:translate-x-1'
+                          } ${isMajorSection && i !== 0 ? 'mt-3' : ''}`}
+                        >
+                          {page.title.includes('.') ? (
+                            <>
+                              <span className={`font-mono text-[11px] mt-0.5 shrink-0 ${activePage === i ? 'text-[var(--trust-blue)]' : 'text-[var(--text-body)] opacity-50'}`}>
+                                {page.title.split('.')[0]}.
+                              </span>
+                              <span className="leading-tight">{page.title.split('.').slice(1).join('.').trim()}</span>
+                            </>
+                          ) : (
+                            <span className="leading-tight">{page.title}</span>
+                          )}
+                        </button>
+                      );
+                   })}
                 </div>
              </div>
              
              <button 
                onClick={handleDownload}
-               className="w-full py-3 bg-[var(--text-header)] text-[var(--bg-standard)] font-mono text-[10px] uppercase font-bold tracking-widest rounded shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2"
+               className="w-full py-3 bg-[var(--text-header)] text-[var(--bg-standard)] font-sans text-sm font-semibold rounded-xl shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2"
              >
-               <span>⭳</span> Download PDF Spec
+               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+               Download PDF Spec
              </button>
           </div>
         </div>
@@ -413,9 +444,9 @@ ${JSON.stringify(manifest, null, 2)}
            <div className="hidden lg:flex mb-6">
              <button 
                onClick={() => setIsTocOpen(!isTocOpen)}
-               className="flex items-center gap-2 text-[10px] font-mono uppercase tracking-widest text-[var(--text-body)] opacity-50 hover:opacity-100 hover:text-[var(--trust-blue)] transition-colors"
+               className="flex items-center gap-2 text-xs font-sans font-medium text-[var(--text-body)] opacity-60 hover:opacity-100 hover:text-[var(--trust-blue)] transition-colors"
              >
-               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
                  <line x1="9" y1="3" x2="9" y2="21"></line>
                </svg>
