@@ -1,15 +1,15 @@
-name: Deploy to Firebase Hosting on merge
 
+name: Deploy to Firebase Hosting on merge
 on:
   push:
     branches:
       - main
-
 jobs:
   build_and_deploy:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+
       - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
@@ -20,17 +20,17 @@ jobs:
 
       - name: Install functions dependencies
         run: npm install --prefix functions
-
+      
       - name: Build client
         run: npm run build
 
       - name: Build functions
         run: npm run build --prefix functions
 
-      - name: Deploy to Firebase
-        uses: FirebaseExtended/action-hosting-deploy@v0
+      - name: Authenticate with Google Cloud
+        uses: google-github-actions/auth@v2
         with:
-          repoToken: '${{ secrets.GITHUB_TOKEN }}'
-          firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_SIGNETAI_E6C64 }}'
-          channelId: live
-          projectId: signetai-e6c64
+          credentials_json: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_SIGNETAI_E6C64 }}'
+
+      - name: Deploy to Firebase
+        run: npx firebase-tools deploy --only hosting,functions --project signetai-e6c64
