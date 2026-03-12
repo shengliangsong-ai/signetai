@@ -46,7 +46,53 @@ node signet-cli.js --dir ./assets --identity "your.name"
 3. **Adversarial Probing (L3)**: Logic Stress Test.
 4. **Human-in-the-Loop (L4)**: Final Curatorial Attestation.
 
-## Local Development & Compilation (MacBook/Linux)
+## 5. Automated Testing (Hackathon)
+
+For the duration of the hackathon, we have included `puppeteer` as a development dependency to enable rich, automated End-to-End (E2E) self-testing. 
+
+**Why we keep it:**
+- **Rapid Iteration:** It allows us to automatically verify that the UI renders correctly and no critical errors are thrown when making fast, complex changes (like updating the 3D Avatar or Live Assistant).
+- **Regression Prevention:** The test suite programmatically clicks through the app to catch invisible crashes.
+- **Temporary:** Since it's a `devDependency`, it does not affect the production build size. We can safely remove it after the hackathon if we want to reduce the repository size.
+
+**Running the tests:**
+Before running the tests, you must ensure your local development server is running in a separate terminal tab:
+```bash
+npm run dev
+```
+
+Then, in a new terminal tab, run the test suite:
+```bash
+npm run test
+```
+
+**Example Output:**
+```text
+> signet-offline@0.4.0 test
+> node tests/run-tests.js
+
+Starting automated self-tests...
+
+Test 1: Loading the main application...
+✅ Test 1 Passed: Application loaded successfully.
+
+Test 2: Checking for critical UI elements...
+✅ Test 2 Passed: Root element found.
+
+Test 3: Simulating Live Assistant interaction...
+✅ Test 3 Passed: Live Assistant button clicked successfully.
+
+Test 4: Verifying no unhandled page errors occurred...
+✅ Test 4 Passed: Zero console/page errors detected.
+
+🎉 All automated tests passed successfully!
+```
+
+**Troubleshooting:**
+- **`net::ERR_CONNECTION_REFUSED at http://localhost:3000`**: This means your development server is not running. Start it first with `npm run dev`.
+- **`Error [ERR_MODULE_NOT_FOUND]: Cannot find package 'puppeteer'`**: This means the testing dependencies haven't been downloaded to your local machine yet. Run `npm install` to fix this.
+
+## 6. Local Development & Compilation (MacBook/Linux)
 
 ### API Key Configuration
 
