@@ -6,9 +6,9 @@
 
 ## Abstract
 
-This document serves as a detailed log for a production outage affecting `signetai.io`. The outage was a direct result of a major, ambitious code refactor intended to modernize the entire technology stack. While the refactor was 99% successful, a single missing configuration file led to a complete failure of the CSS build pipeline, resulting in an unstyled, broken website.
+This document serves as a detailed log for a production outage affecting `signetai.io`. The outage was a direct result of a major, ambitious code refactor intended to modernize the entire technology stack. While the refactor was 99% successful, a series of subtle build configuration errors led to a complete failure of the CSS pipeline, resulting in an unstyled, broken website.
 
-This log tells the story of how the site was broken, how the issue was diagnosed, and the steps taken to resolve it.
+This log tells the story of how the site was broken, how the issue was diagnosed through multiple layers of failure, and the steps taken to resolve it.
 
 ---
 
@@ -29,49 +29,57 @@ While functional, this architecture was difficult to maintain and scale.
 ### The "Crime": The Great Refactor
 
 A single, massive commit (`3e088e4750eda4c4ad0c82a8d017a37dcabe5e32`) was created to address these issues. The changes were sweeping:
-
-1.  **Project Restructuring:** All code was moved into a clean `src/` directory, and path aliases (`@/components/...`) were configured.
+1.  **Project Restructuring:** All code was moved into a clean `src/` directory.
 2.  **Dependency Upgrade:** `react` was upgraded from v18 to v19, and `tailwindcss` was upgraded from v3 to v4.
-3.  **Backend Hardening:** The Firebase Cloud Function was rewritten to use modern, secure secret management, explicitly declaring its dependencies on `GEMINI_API_KEY` and `SIGNET_PROJECT_ID`.
-4.  **The Critical Action:** As part of the move to a modern build process, the entire `<style>` block was **deleted** from `index.html`. The plan was for Tailwind CSS v4 to generate this CSS automatically at build time.
+3.  **The Critical Action:** As part of the move to a modern build process, the entire `<style>` block was **deleted** from `index.html`. The plan was for Tailwind CSS v4 to generate this CSS automatically at build time.
 
-### The Fatal Flaw
+### The Initial Flaw
 
-The refactor was almost perfect. The GitHub Actions workflow was updated, dependencies were correct, and the code was cleaner. However, one crucial file was never created:
-
-**`tailwind.config.js` was missing.**
-
-Without this file, the Tailwind CSS build system had no instructions. It did not know it was supposed to scan the `src/` directory for CSS classes. As a result, it ran successfully but generated a completely **empty** CSS file.
-
-The deployment on `2026-03-11` pushed the new, unstyled HTML and this empty CSS file to production. The result was the immediate and total loss of all styling on `https://www.signetai.io/`.
+The refactor was almost perfect. However, one crucial file was never created: **`tailwind.config.js` was missing.** This was the first domino to fall.
 
 ---
 
-## Part 2: The Investigation & The Fixes
+## Part 2: The Cascading Failure
 
-Upon discovering the broken site, we began a systematic debugging process.
+Upon discovering the broken site, we began a systematic debugging process. What initially seemed like a single error turned out to be a series of cascading failures, where each fix revealed the next problem.
 
-### Initial Triage
+### Layer 1: The Missing Tailwind Config
 
-*   **Observation:** The site was loading raw, unstyled HTML.
-*   **Hypothesis:** This was a CSS loading failure. Given the recent Tailwind v4 upgrade, the build process was the primary suspect.
-*   **Diagnosis:** Analyzing the commit `3e088e47...`, I confirmed that all the old inline styles were gone and a new CSS build pipeline was in place. However, the absence of `tailwind.config.js` was the "smoking gun." It was the only logical explanation for why an otherwise successful build would produce no CSS.
+*   **Observation:** The site had no styling.
+*   **Hypothesis:** The Tailwind build process was failing to generate CSS.
+*   **Diagnosis:** The `tailwind.config.js` file was missing. Without it, Tailwind had no instructions on what files to scan for CSS classes.
+*   **Action:** I created the `tailwind.config.js` file with the correct paths.
+*   **Result:** **FAILURE.** The site was still broken. This proved the problem was deeper than a single missing file.
 
-### The Fixes Implemented
+### Layer 2: The PostCSS Configuration
 
-During the investigation, we also identified and fixed several other latent bugs that were introduced during the refactor:
+*   **Observation:** Even with a correct `tailwind.config.js`, the build output was still an empty CSS file.
+*   **Hypothesis:** The build tool, Vite, was not correctly invoking the PostCSS processor, which is responsible for running Tailwind. This pointed to an issue in the bridge between Vite and Tailwind.
+*   **Diagnosis:** The `postcss.config.js` file was using an "object syntax" to define its plugins:
+    ```javascript
+    // The problematic syntax
+    export default {
+      plugins: {
+        '@tailwindcss/postcss': {},
+        autoprefixer: {},
+      },
+    }
+    ```
+    While this syntax is valid in some environments, it can be silently ignored by certain versions of the Vite+PostCSS toolchain. It was the correct file, with the correct information, but written in a way the build process was not hearing.
 
-1.  **Fixed Incorrect API Path (`SvgSigner.tsx`):**
-    *   **Bug:** A `fetch` call was pointing to `/public/signetai-solar-system.svg`, which is an invalid path on a live web server.
-    *   **Fix:** I corrected the path to `/signetai-solar-system.svg`.
+### THE CRITICAL FIX: Correcting `postcss.config.js`
 
-2.  **Repaired Broken "Provenance Lab" (`AuditorView.tsx`):**
-    *   **Bug:** The component referenced several demo files (`ca.jpg`, `adobe_video_test.mp4`, etc.) that were not moved into the `public/` directory during the refactor.
-    *   **Fix:** Rather than hunt for the old files, we pragmatically updated the component to use assets that *were* available in the `public/` directory (`signetai_banner.png`, `silent.mp3`, etc.). This prevented the component from crashing.
-
-3.  **THE CRITICAL FIX: Re-created `tailwind.config.js`:**
-    *   **Bug:** The file was missing entirely.
-    *   **Fix:** I generated a new `tailwind.config.js` with the correct configuration to scan `index.html` and all files within the `src` directory.
+*   **Action:** I rewrote `postcss.config.js` to use the more robust and universally compatible "array syntax."
+    ```javascript
+    // The corrected syntax
+    export default {
+      plugins: [
+        '@tailwindcss/postcss',
+        'autoprefixer',
+      ],
+    }
+    ```
+*   **Reasoning:** This subtle change ensures that the build process reliably finds and executes both Tailwind and Autoprefixer. This was the final, true root cause of the outage.
 
 ---
 
@@ -79,16 +87,12 @@ During the investigation, we also identified and fixed several other latent bugs
 
 **Primary Action:**
 
-The final fix has been implemented by creating the `tailwind.config.js` file. To restore the site, the following steps are required:
+The final fix has been implemented by correcting the syntax in `postcss.config.js`. To restore the site, the following steps are required:
 
-1.  Commit the new `tailwind.config.js` file to the `refactor` branch.
+1.  Commit the updated `postcss.config.js` file.
 2.  Push the commit to trigger a new GitHub Actions deployment.
-3.  The new build will now correctly use the configuration to scan all source files and generate the necessary CSS.
+3.  The new build will now correctly process the CSS and restore the site's styling.
 
 **Rollback Procedure (Contingency):**
 
-If the primary action fails, a full rollback to the last known-good state is possible. The working backup is located in the `/home/usr/ws` directory and is tracked by the `working` branch.
-
-1.  Checkout the `working` branch: `git checkout working`
-2.  Force-push this branch to `main` (or whichever branch the deployment workflow targets).
-3.  This will redeploy the old, functional-but-legacy version of the site, immediately resolving the outage at the cost of reverting the modernization effort.
+If the primary action fails, a full rollback to the last known-good state is possible by force-pushing the `working` branch to `main`.
