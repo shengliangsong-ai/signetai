@@ -26,8 +26,8 @@ export const HackathonView: React.FC = () => {
           </a>
           <button 
             onClick={() => {
-              // Trigger the Live Assistant orb if it's closed, or just alert the user
-              const orb = document.querySelector('.fixed.bottom-6.right-6 button');
+              // Trigger the Live Assistant orb if it's closed
+              const orb = document.querySelector('.fixed.bottom-8.left-8 button');
               if (orb) (orb as HTMLElement).click();
             }}
             className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-[var(--bg-sidebar)] border border-[var(--trust-blue)] text-[var(--trust-blue)] rounded-lg font-bold hover:bg-blue-500/10 transition-colors"

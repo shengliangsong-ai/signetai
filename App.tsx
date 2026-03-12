@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Component, ErrorInfo, ReactNode } from 'react';
 import { Hero } from './components/Hero';
 import { Architecture } from './components/Architecture';
 import { SchemaDefinition } from './components/SchemaDefinition';
@@ -33,6 +33,35 @@ import { TermsOfServiceView } from './components/TermsOfServiceView';
 import { UserDataDeletionView } from './components/UserDataDeletionView';
 import { DemoNotebook } from './components/DemoNotebook';
 import { HackathonView } from './components/HackathonView';
+
+class ErrorBoundary extends Component<{children: ReactNode}, {hasError: boolean, error: Error | null}> {
+  constructor(props: {children: ReactNode}) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    console.error("Uncaught error:", error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="p-8 m-8 bg-red-50 border border-red-200 rounded-xl text-red-900 font-mono">
+          <h1 className="text-2xl font-bold mb-4">Something went wrong.</h1>
+          <pre className="whitespace-pre-wrap text-sm">{this.state.error?.toString()}</pre>
+          <pre className="whitespace-pre-wrap text-xs mt-4 opacity-70">{this.state.error?.stack}</pre>
+          <button onClick={() => window.location.reload()} className="mt-6 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700">Reload Page</button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 export type Theme = 'standard' | 'midnight';
 
@@ -339,81 +368,83 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[var(--bg-standard)] transition-colors duration-200">
-      <Sidebar currentView={view} isOpen={isSidebarOpen} />
-      <Header 
-        onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} 
-        theme={theme}
-        onToggleTheme={() => setTheme(theme === 'standard' ? 'midnight' : 'standard')}
-        onOpenPortal={() => setIsPortalOpen(true)}
-        installPrompt={installPrompt}
-        onInstall={handleInstall}
-      />
-      
-      <main className="lg:pl-72 pt-16">
-        <div className="content-column">
-          {view === 'home' && (
-            <>
-              <Hero onOpenPortal={() => setIsPortalOpen(true)} />
-              <Admonition type="note" title="Cognitive Assertion Layer">
-                Signet Protocol acts as a specialized subdirectory of C2PA, mapping neural logic states into standard JUMBF manifest boxes.
-              </Admonition>
-              <Architecture />
-              <hr className="hr-chapter" />
-              <PodcastDemo />
-              <hr className="hr-chapter" />
-              <SchemaDefinition />
-              <hr className="hr-chapter" />
-              <ContactHub />
-            </>
-          )}
-          {view === 'mission' && <MissionView />}
-          {view === 'identity' && <TrustKeyService />}
-          {view === 'auditor' && <ProvenanceLab />}
-          {view === 'spec' && <SpecView />}
-          {view === 'standards' && <StandardsView />}
-          {view === 'schema' && <SchemaView />}
-          {view === 'branding' && <BrandingView />}
-          {view === 'manual' && <ManualView />}
-          {view === 'compliance' && <ComplianceDashboard />}
-          {view === 'verify' && <VerifyView />}
-          {view === 'ecosystem' && <EcosystemView />}
-          {view === 'svg-lab' && <SvgSigner />}
-          {view === 'pdf-lab' && <PdfSigner />}
-          {view === 'universal-lab' && <UniversalSigner />}
-          {view === 'image-diff' && <ImageComparator defaultImageA="/signet_Gemini_Generated_Image_ABCD.png" defaultImageB="/signet_Gemini_Generated_Image_XYZZ.png" />}
-          {view === 'status' && <ProjectStatusView />}
-          {view === 'batch' && <BatchVerifier />}
-          {view === 'cli' && <CliDownload />}
-          {view === 'privacy' && <PrivacyView />}
-          {view === 'donate' && <DonationView />}
-          {view === 'terms' && <TermsOfServiceView />}
-          {view === 'data-deletion' && <UserDataDeletionView />}
-          {view === 'demo' && <DemoNotebook />}
-          {view === 'hackathon' && <HackathonView />}
+    <ErrorBoundary>
+      <div className="min-h-screen bg-[var(--bg-standard)] transition-colors duration-200">
+        <Sidebar currentView={view} isOpen={isSidebarOpen} />
+        <Header 
+          onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} 
+          theme={theme}
+          onToggleTheme={() => setTheme(theme === 'standard' ? 'midnight' : 'standard')}
+          onOpenPortal={() => setIsPortalOpen(true)}
+          installPrompt={installPrompt}
+          onInstall={handleInstall}
+        />
+        
+        <main className="lg:pl-72 pt-16">
+          <div className="content-column">
+            {view === 'home' && (
+              <>
+                <Hero onOpenPortal={() => setIsPortalOpen(true)} />
+                <Admonition type="note" title="Cognitive Assertion Layer">
+                  Signet Protocol acts as a specialized subdirectory of C2PA, mapping neural logic states into standard JUMBF manifest boxes.
+                </Admonition>
+                <Architecture />
+                <hr className="hr-chapter" />
+                <PodcastDemo />
+                <hr className="hr-chapter" />
+                <SchemaDefinition />
+                <hr className="hr-chapter" />
+                <ContactHub />
+              </>
+            )}
+            {view === 'mission' && <MissionView />}
+            {view === 'identity' && <TrustKeyService />}
+            {view === 'auditor' && <ProvenanceLab />}
+            {view === 'spec' && <SpecView />}
+            {view === 'standards' && <StandardsView />}
+            {view === 'schema' && <SchemaView />}
+            {view === 'branding' && <BrandingView />}
+            {view === 'manual' && <ManualView />}
+            {view === 'compliance' && <ComplianceDashboard />}
+            {view === 'verify' && <VerifyView />}
+            {view === 'ecosystem' && <EcosystemView />}
+            {view === 'svg-lab' && <SvgSigner />}
+            {view === 'pdf-lab' && <PdfSigner />}
+            {view === 'universal-lab' && <UniversalSigner />}
+            {view === 'image-diff' && <ImageComparator defaultImageA="/signet_Gemini_Generated_Image_ABCD.png" defaultImageB="/signet_Gemini_Generated_Image_XYZZ.png" />}
+            {view === 'status' && <ProjectStatusView />}
+            {view === 'batch' && <BatchVerifier />}
+            {view === 'cli' && <CliDownload />}
+            {view === 'privacy' && <PrivacyView />}
+            {view === 'donate' && <DonationView />}
+            {view === 'terms' && <TermsOfServiceView />}
+            {view === 'data-deletion' && <UserDataDeletionView />}
+            {view === 'demo' && <DemoNotebook />}
+            {view === 'hackathon' && <HackathonView />}
 
-          <footer className="mt-24 pt-12 border-t border-[var(--border-light)] flex flex-wrap justify-between items-center gap-6 text-[10px] font-mono opacity-50 uppercase tracking-widest text-[var(--text-body)]">
-            <div className="flex items-center gap-4">
-              <div className="cr-badge">cr</div>
-              <span>Signet Protocol Group © 2026 | Master Signatory: signetai.io:ssl</span>
-            </div>
-            <div className="flex gap-4">
-              <a href="#mission" className="hover:text-[var(--trust-blue)]">About</a>
-              <a href="#privacy" className="hover:text-[var(--trust-blue)]">Privacy</a>
-              <a href="#terms" className="hover:text-[var(--trust-blue)]">Terms</a>
-              <a href="#data-deletion" className="hover:text-[var(--trust-blue)]">Data Deletion</a>
-              <a href="#donate" className="hover:text-[var(--trust-blue)]">Grants</a>
-              <span>VERSION: 0.3.3_UTW</span>
-              <span>UPDATED: {new Date().toISOString().replace('T', ' ').split('.')[0]} UTC</span>
-            </div>
-          </footer>
-        </div>
-      </main>
+            <footer className="mt-24 pt-12 border-t border-[var(--border-light)] flex flex-wrap justify-between items-center gap-6 text-[10px] font-mono opacity-50 uppercase tracking-widest text-[var(--text-body)]">
+              <div className="flex items-center gap-4">
+                <div className="cr-badge">cr</div>
+                <span>Signet Protocol Group © 2026 | Master Signatory: signetai.io:ssl</span>
+              </div>
+              <div className="flex gap-4">
+                <a href="#mission" className="hover:text-[var(--trust-blue)]">About</a>
+                <a href="#privacy" className="hover:text-[var(--trust-blue)]">Privacy</a>
+                <a href="#terms" className="hover:text-[var(--trust-blue)]">Terms</a>
+                <a href="#data-deletion" className="hover:text-[var(--trust-blue)]">Data Deletion</a>
+                <a href="#donate" className="hover:text-[var(--trust-blue)]">Grants</a>
+                <span>VERSION: 0.3.3_UTW</span>
+                <span>UPDATED: {new Date().toISOString().replace('T', ' ').split('.')[0]} UTC</span>
+              </div>
+            </footer>
+          </div>
+        </main>
 
-      <PortalView isOpen={isPortalOpen} onClose={() => setIsPortalOpen(false)} />
-      <VerificationBadge />
-      <LiveAssistant />
-    </div>
+        <PortalView isOpen={isPortalOpen} onClose={() => setIsPortalOpen(false)} />
+        <VerificationBadge />
+        <LiveAssistant />
+      </div>
+    </ErrorBoundary>
   );
 };
 

@@ -128,7 +128,7 @@ export const Avatar3D: React.FC<Avatar3DProps> = ({ isSpeaking, voiceName }) => 
             <circle cx="38" cy="42" r="2.5" fill="url(#iris)" />
             <circle cx="37" cy="41" r="0.8" fill="#ffffff" />
             {isFemale && (
-              <path d="M 31 41 Q 38 36 45 41" fill="none" stroke={hairColor} strokeWidth="1.5" strokeLinecap="round" />
+              <path d="M 31 41 Q 38 36 45 41" fill="none" stroke={hairColor} strokeWidth={1.5} strokeLinecap="round" />
             )}
             
             {/* Right Eye */}
@@ -136,32 +136,32 @@ export const Avatar3D: React.FC<Avatar3DProps> = ({ isSpeaking, voiceName }) => 
             <circle cx="62" cy="42" r="2.5" fill="url(#iris)" />
             <circle cx="61" cy="41" r="0.8" fill="#ffffff" />
             {isFemale && (
-              <path d="M 55 41 Q 62 36 69 41" fill="none" stroke={hairColor} strokeWidth="1.5" strokeLinecap="round" />
+              <path d="M 55 41 Q 62 36 69 41" fill="none" stroke={hairColor} strokeWidth={1.5} strokeLinecap="round" />
             )}
           </g>
 
           {/* Eyebrows */}
           {isFemale ? (
             <>
-              <path d="M 28 35 Q 38 31 45 35" fill="none" stroke={hairColor} strokeWidth="1.5" strokeLinecap="round" />
-              <path d="M 72 35 Q 62 31 55 35" fill="none" stroke={hairColor} strokeWidth="1.5" strokeLinecap="round" />
+              <path d="M 28 35 Q 38 31 45 35" fill="none" stroke={hairColor} strokeWidth={1.5} strokeLinecap="round" />
+              <path d="M 72 35 Q 62 31 55 35" fill="none" stroke={hairColor} strokeWidth={1.5} strokeLinecap="round" />
             </>
           ) : (
             <>
-              <path d="M 30 35 Q 38 33 44 36" fill="none" stroke={hairColor} strokeWidth="2.5" strokeLinecap="round" />
-              <path d="M 70 35 Q 62 33 56 36" fill="none" stroke={hairColor} strokeWidth="2.5" strokeLinecap="round" />
+              <path d="M 30 35 Q 38 33 44 36" fill="none" stroke={hairColor} strokeWidth={2.5} strokeLinecap="round" />
+              <path d="M 70 35 Q 62 33 56 36" fill="none" stroke={hairColor} strokeWidth={2.5} strokeLinecap="round" />
             </>
           )}
 
           {/* Nose */}
-          <path d="M 50 42 L 47 54 C 47 56, 53 56, 53 54 Z" fill="#c27a62" opacity="0.4" />
-          <path d="M 46 56 Q 50 58 54 56" fill="none" stroke="#a35d47" strokeWidth="1" opacity="0.4" strokeLinecap="round" />
+          <path d="M 50 42 L 47 54 C 47 56, 53 56, 53 54 Z" fill="#c27a62" opacity={0.4} />
+          <path d="M 46 56 Q 50 58 54 56" fill="none" stroke="#a35d47" strokeWidth={1} opacity={0.4} strokeLinecap="round" />
 
           {/* Cheeks */}
           {isFemale && (
             <>
-              <ellipse cx="32" cy="50" rx="6" ry="3.5" fill="#ff8fa3" opacity="0.4" filter="blur(2px)" />
-              <ellipse cx="68" cy="50" rx="6" ry="3.5" fill="#ff8fa3" opacity="0.4" filter="blur(2px)" />
+              <ellipse cx="32" cy="50" rx="6" ry="3.5" fill="#ff8fa3" opacity={0.4} filter="blur(2px)" />
+              <ellipse cx="68" cy="50" rx="6" ry="3.5" fill="#ff8fa3" opacity={0.4} filter="blur(2px)" />
             </>
           )}
 
@@ -188,7 +188,7 @@ export const Avatar3D: React.FC<Avatar3DProps> = ({ isSpeaking, voiceName }) => 
               d={`M 41 64 Q 50 ${64 - mouthOpen - (isFemale ? 3 : 2)} 59 64`} 
               fill="none" 
               stroke={isFemale ? "#e5383b" : "#b56555"} 
-              strokeWidth={isFemale ? "2.5" : "1.5"} 
+              strokeWidth={isFemale ? 2.5 : 1.5} 
               strokeLinecap="round" 
               className="transition-all duration-75"
             />
@@ -196,7 +196,7 @@ export const Avatar3D: React.FC<Avatar3DProps> = ({ isSpeaking, voiceName }) => 
               d={`M 41 64 Q 50 ${64 + mouthOpen + (isFemale ? 4 : 2)} 59 64`} 
               fill="none" 
               stroke={isFemale ? "#ba1826" : "#9c4a3c"} 
-              strokeWidth={isFemale ? "3" : "2"} 
+              strokeWidth={isFemale ? 3 : 2} 
               strokeLinecap="round" 
               className="transition-all duration-75"
             />
