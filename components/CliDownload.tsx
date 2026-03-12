@@ -20,7 +20,7 @@ const crypto = require('crypto');
 const { Worker, isMainThread, parentPort, workerData } = require('worker_threads');
 
 // --- CONFIG ---
-const VERSION = "0.3.2";
+const VERSION = "0.4.0";
 const CONCURRENCY = 4; // Parallel workers`;
 
 const CLI_CORE = `
@@ -146,7 +146,7 @@ const path = require('path');
 const crypto = require('crypto');
 const { performance } = require('perf_hooks');
 
-const VERSION = "0.3.2";
+const VERSION = "0.4.0";
 
 // --- UTILS ---
 function getFiles(dir, ext) {

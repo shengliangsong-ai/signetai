@@ -3,6 +3,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { GoogleGenAI, LiveServerMessage, Modality, Type } from "@google/genai";
 import ReactMarkdown from 'react-markdown';
 import { GOOGLE_GEMINI_KEY, GOOGLE_GEMINI_LIVE_KEY } from '../src/config/env';
+import { Avatar3D } from './Avatar3D';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -57,17 +58,13 @@ export const LiveAssistant: React.FC = () => {
   const [isMinimized, setIsMinimized] = useState(false);
   const [status, setStatus] = useState<ConnectionStatus>('OFFLINE');
   const [volume, setVolume] = useState(0);
-  const [messages, setMessages] = useState<Message[]>([
-    { role: 'assistant', text: "Systems online. I am **Signet-Alpha**, your Live Digital Notary.\n\nI can help you verify media using our Image and Video Diff Engines, or guide you through Universal Media Signing using your registered keys. How can I help you today?" }
-  ]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [streamingInput, setStreamingInput] = useState('');
   const [streamingOutput, setStreamingOutput] = useState('');
-  const [isVideoEnabled, setIsVideoEnabled] = useState(false);
+  const [selectedVoice, setSelectedVoice] = useState('Zephyr');
+  const [isAgentSpeaking, setIsAgentSpeaking] = useState(false);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const videoIntervalRef = useRef<number | null>(null);
   
   // Audio Refs
   const sessionRef = useRef<any>(null);
@@ -90,6 +87,15 @@ export const LiveAssistant: React.FC = () => {
   useEffect(() => {
     scrollToBottom();
   }, [messages, streamingInput, streamingOutput]);
+
+  useEffect(() => {
+    const handleSpeaking = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      setIsAgentSpeaking(customEvent.detail?.isSpeaking || false);
+    };
+    window.addEventListener('signet:speaking-status', handleSpeaking);
+    return () => window.removeEventListener('signet:speaking-status', handleSpeaking);
+  }, []);
 
   useEffect(() => {
     const handleStartDemo = (e: Event) => {
@@ -175,10 +181,6 @@ export const LiveAssistant: React.FC = () => {
   };
 
   const cleanupAudio = () => {
-    if (videoIntervalRef.current) {
-      window.clearInterval(videoIntervalRef.current);
-      videoIntervalRef.current = null;
-    }
     if (sessionRef.current) {
       try { sessionRef.current.close?.(); } catch(e) {}
       sessionRef.current = null;
@@ -186,9 +188,6 @@ export const LiveAssistant: React.FC = () => {
     if (streamRef.current) {
       streamRef.current.getTracks().forEach(track => track.stop());
       streamRef.current = null;
-    }
-    if (videoRef.current) {
-      videoRef.current.srcObject = null;
     }
     if (inputAudioContextRef.current) {
       inputAudioContextRef.current.close().catch(() => {});
@@ -246,12 +245,8 @@ export const LiveAssistant: React.FC = () => {
       try {
         streamRef.current = await navigator.mediaDevices.getUserMedia({ 
           audio: true, 
-          video: isVideoEnabled ? { facingMode: 'user' } : false 
+          video: false 
         });
-        
-        if (isVideoEnabled && videoRef.current) {
-          videoRef.current.srcObject = streamRef.current;
-        }
       } catch (mediaErr) {
         console.warn("Microphone access denied or unavailable. Connecting without audio input.", mediaErr);
         setMessages(prev => [...prev, { role: 'assistant', text: "⚠️ **Microphone Error:** Access denied or unavailable. I cannot hear you. If you are in the preview, try opening the app in a new tab." }]);
@@ -295,6 +290,12 @@ export const LiveAssistant: React.FC = () => {
               
               source.connect(scriptProcessor);
               scriptProcessor.connect(inputAudioContextRef.current!.destination);
+              
+              if (!pendingDemoNarrate.current) {
+                sessionPromise.then(session => {
+                  session.sendClientContent({ turns: [{ role: 'user', parts: [{ text: "Hello. Please introduce yourself briefly as Signet-Alpha, the Live Digital Notary, and ask how you can help the user today." }] }], turnComplete: true });
+                }).catch(() => {});
+              }
             } else if (!pendingDemoNarrate.current) {
               // Fallback prompt if mic failed and it's not a demo narration
               try {
@@ -304,27 +305,6 @@ export const LiveAssistant: React.FC = () => {
               } catch (err) {
                 console.error("Failed to send fallback prompt:", err);
               }
-            }
-
-            if (isVideoEnabled && streamRef.current) {
-              videoIntervalRef.current = window.setInterval(() => {
-                if (!videoRef.current || !canvasRef.current) return;
-                const video = videoRef.current;
-                const canvas = canvasRef.current;
-                if (video.videoWidth === 0 || video.videoHeight === 0) return;
-                
-                canvas.width = video.videoWidth;
-                canvas.height = video.videoHeight;
-                const ctx = canvas.getContext('2d');
-                if (!ctx) return;
-                
-                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-                const base64Data = canvas.toDataURL('image/jpeg', 0.5).split(',')[1];
-                
-                sessionPromise.then(session => {
-                  session.sendRealtimeInput({ media: { data: base64Data, mimeType: 'image/jpeg' } });
-                }).catch(() => {});
-              }, 1000); // 1 frame per second
             }
 
             if (pendingDemoNarrate.current) {
@@ -473,7 +453,7 @@ export const LiveAssistant: React.FC = () => {
         config: {
           responseModalities: [Modality.AUDIO],
           speechConfig: {
-            voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Zephyr' } },
+            voiceConfig: { prebuiltVoiceConfig: { voiceName: selectedVoice } },
           },
           outputAudioTranscription: {},
           inputAudioTranscription: {},
@@ -490,7 +470,7 @@ export const LiveAssistant: React.FC = () => {
           IDENTITY RECOGNITION:
           Master Signatory is signetai.io:ssl.
           
-          V0.3.2 KEY SPECIFICS:
+          V0.4.0 KEY SPECIFICS:
           - Universal Tail-Wrap (UTW) for binary provenance.
           - Zero-Copy Streaming Engine for large files.
           - 264-bit entropy required for Sovereign Grade.
@@ -551,7 +531,12 @@ export const LiveAssistant: React.FC = () => {
   return (
     <div className="fixed bottom-8 left-8 z-[150] font-sans">
       {!isOpen ? (
-        <button onClick={() => setIsOpen(true)} className="flex items-center justify-center w-14 h-14 bg-[var(--trust-blue)] text-white rounded-full shadow-2xl hover:scale-105 transition-all relative overflow-hidden group">
+        <button onClick={() => {
+          setIsOpen(true);
+          if (status === 'OFFLINE') {
+            initVoiceChat();
+          }
+        }} className="flex items-center justify-center w-14 h-14 bg-[var(--trust-blue)] text-white rounded-full shadow-2xl hover:scale-105 transition-all relative overflow-hidden group">
           <div className="absolute inset-0 bg-white/20 scale-x-0 group-hover:scale-x-100 transition-transform origin-left"></div>
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="relative z-10"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
         </button>
@@ -582,18 +567,20 @@ export const LiveAssistant: React.FC = () => {
                 </div>
               </div>
             </div>
-            <div className="flex gap-2">
-              <button 
-                onClick={() => setIsVideoEnabled(!isVideoEnabled)} 
-                className={`p-2 rounded transition-colors ${isVideoEnabled ? 'bg-blue-500 text-white' : 'text-[var(--trust-blue)] hover:bg-blue-50'}`}
-                title={isVideoEnabled ? "Disable Camera" : "Enable Camera"}
+            <div className="flex gap-2 items-center">
+              <select 
+                value={selectedVoice} 
+                onChange={(e) => setSelectedVoice(e.target.value)}
+                className="text-[10px] bg-transparent border border-[var(--border-light)] rounded px-1 py-1 text-[var(--text-header)] outline-none cursor-pointer"
                 disabled={status !== 'OFFLINE'}
+                title="Select Voice (Disconnect to change)"
               >
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M23 7l-7 5 7 5V7z"></path>
-                  <rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect>
-                </svg>
-              </button>
+                <option value="Zephyr">Zephyr (Female)</option>
+                <option value="Kore">Kore (Female)</option>
+                <option value="Puck">Puck (Male)</option>
+                <option value="Charon">Charon (Male)</option>
+                <option value="Fenrir">Fenrir (Male)</option>
+              </select>
               <button 
                 onClick={initVoiceChat} 
                 className={`p-2 rounded transition-colors ${status !== 'OFFLINE' ? 'bg-red-500 text-white shadow-inner' : 'text-[var(--trust-blue)] hover:bg-blue-50'}`}
@@ -616,13 +603,24 @@ export const LiveAssistant: React.FC = () => {
           
           {!isMinimized && (
             <>
-              {isVideoEnabled && (
-                <div className="bg-black flex justify-center items-center overflow-hidden border-b border-[var(--border-light)]" style={{ height: status !== 'OFFLINE' ? '120px' : '0px', transition: 'height 0.3s ease' }}>
-                  <video ref={videoRef} autoPlay playsInline muted className="h-full object-cover opacity-80" />
-                  <canvas ref={canvasRef} className="hidden" />
+              {status !== 'OFFLINE' && (
+                <div className="flex flex-col items-center justify-center py-6 border-b border-[var(--border-light)] bg-[var(--bg-standard)] shrink-0 relative overflow-hidden">
+                  {isAgentSpeaking && <div className="absolute inset-0 bg-blue-500/5 animate-pulse"></div>}
+                  
+                  <div className={`relative w-24 h-24 rounded-full flex items-center justify-center bg-[var(--code-bg)] border-2 transition-all duration-300 z-10 ${isAgentSpeaking ? 'border-blue-500 shadow-[0_0_30px_rgba(59,130,246,0.5)] scale-110' : 'border-[var(--border-light)]'}`}>
+                    {isAgentSpeaking && (
+                      <>
+                        <div className="absolute inset-0 rounded-full animate-ping bg-blue-500 opacity-20 duration-1000"></div>
+                        <div className="absolute inset-0 rounded-full animate-ping bg-blue-400 opacity-10 duration-700 delay-150"></div>
+                      </>
+                    )}
+                    <Avatar3D isSpeaking={isAgentSpeaking} voiceName={selectedVoice} />
+                  </div>
+                  <span className={`mt-4 text-[10px] font-mono uppercase tracking-widest transition-colors duration-300 z-10 ${isAgentSpeaking ? 'text-blue-500 font-bold' : 'text-slate-500'}`}>
+                    {isAgentSpeaking ? 'Signet-Alpha Speaking...' : 'Listening...'}
+                  </span>
                 </div>
               )}
-              
               <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-[var(--code-bg)]">
                 {messages.map((m, i) => (
                   <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>

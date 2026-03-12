@@ -20,6 +20,7 @@ We were inspired to build **SignetAI** to bridge this gap. By combining Google's
 
 ## What it does
 
+*   **Dynamic 3D Avatar:** The Live Agent features a responsive 3D human-like avatar that reacts to the conversation. It includes real-time lip-syncing when the agent speaks, natural eye movements (blinking), head bobbing, and automatically switches its gender appearance based on the selected voice (e.g., female for Zephyr/Kore, male for Puck/Charon/Fenrir).
 *   **Multimodal Verification & Diff Engine:** Users can upload or show images and videos. Our custom **Image and Video Diff Engines** work alongside Gemini's vision capabilities to detect tampering, compare versions, and identify synthetic alterations. The agent "sees" the content and explains any anomalies naturally.
 *   **Real-Time Guidance:** The agent talks the user through the verification and signing process, explaining complex cryptographic concepts on the fly. Because it uses the Live API, users can interrupt the agent at any time to ask questions (e.g., *"Wait, what exactly did the video diff engine find at timestamp 0:15?"*).
 *   **Universal Media Signing & Key Management:** Once verified, the agent executes a function call to trigger our **Universal Sign Engine** (supporting images, videos, and any document). It utilizes our built-in **Public/Private Key Registration** system to generate a dual-hash signature of the asset and securely logs the transaction to our Google Cloud backend (Firebase Firestore), creating an immutable record of authenticity.

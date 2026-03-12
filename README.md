@@ -4,7 +4,7 @@
 
 Official Repository: [github.com/signetai-io/website](https://github.com/signetai-io/website)
 
-The Signet Protocol (draft-song-signet-03.2) defines a framework for the cryptographic attestation of AI-generated reasoning paths. It transforms non-deterministic LLM outputs into formally verified "Signets" aligned with C2PA 2.3.
+The Signet Protocol (draft-song-signet-04.0) defines a framework for the cryptographic attestation of AI-generated reasoning paths. It transforms non-deterministic LLM outputs into formally verified "Signets" aligned with C2PA 2.3.
 
 ## 1. Introduction
 As AI moves from "Chat" to "Reasoning," current watermarking standards (C2PA) are insufficient because they only sign the final result, not the process. Signet Protocol introduces **"Process Provenance"** via Verifiable Proof of Reasoning (VPR).
@@ -13,6 +13,7 @@ As AI moves from "Chat" to "Reasoning," current watermarking standards (C2PA) ar
 - **2.1. TrustKeyService (TKS)**: A registry of public keys bound to verifiable identities.
 - **2.2. Neural Lens Engine**: A deterministic verifier that probes AI telemetry for logic drift.
 - **2.3. Universal Tail-Wrap (UTW)**: A Zero-Copy injection method for arbitrary binary formats (Video/Audio/PDF).
+- **2.4. Signet-Alpha Live Assistant**: A real-time, voice-first AI notary featuring a dynamic 3D animated avatar with lip-sync, eye movement, and voice-responsive gender switching.
 
 ## 3. CLI & Developer Tools (New in v0.4.0)
 The protocol now includes standalone Node.js tools and a Web Batch Processor.

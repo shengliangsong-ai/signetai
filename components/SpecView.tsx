@@ -114,7 +114,7 @@ export const SpecView: React.FC = () => {
     // Metadata
     doc.setFontSize(10);
     doc.setTextColor(80, 80, 80); // Dark Grey
-    doc.text("VERSION 0.3.2", width/2, 230, { align: 'center' });
+    doc.text("VERSION 0.4.0", width/2, 230, { align: 'center' });
     doc.text("ISO/TC 290 Alignment", width/2, 236, { align: 'center' });
     
     // Bottom Bar
@@ -140,7 +140,7 @@ export const SpecView: React.FC = () => {
     
     const metaData = [
         ["Document ID:", "SPC-VPR-2026-003"],
-        ["Version:", "0.3.2"],
+        ["Version:", "0.4.0"],
         ["Status:", "Active Draft / Implementation Ready"],
         ["Date:", new Date().toLocaleDateString()],
         ["Author:", "Signet Protocol Group"],
@@ -299,7 +299,7 @@ export const SpecView: React.FC = () => {
     const manifest = {
       "@context": "https://signetai.io/contexts/vpr-v1.jsonld",
       "type": "org.signetai.document_provenance",
-      "version": "0.3.2",
+      "version": "0.4.0",
       "strategy": "POST_EOF_INJECTION",
       "asset": {
         "type": "application/pdf",
@@ -438,7 +438,7 @@ ${JSON.stringify(manifest, null, 2)}
                </h1>
                <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2 text-sm font-mono">
                  <dt className="text-[var(--text-body)] opacity-60">Version:</dt>
-                 <dd className="text-[var(--text-header)] font-bold">0.3.2 (Draft)</dd>
+                 <dd className="text-[var(--text-header)] font-bold">0.4.0 (Draft)</dd>
                  <dt className="text-[var(--text-body)] opacity-60">Date:</dt>
                  <dd className="text-[var(--text-header)]">{new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</dd>
                  <dt className="text-[var(--text-body)] opacity-60">Editors:</dt>
