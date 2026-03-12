@@ -1,0 +1,136 @@
+
+<!DOCTYPE html>
+<html lang="en" class="bg-gray-900 text-gray-100">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Signet AI v1</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="font-sans">
+
+  <!-- Sidebar -->
+  <aside class="fixed left-0 top-0 h-screen w-72 bg-gray-900 border-r border-gray-700 z-40 flex flex-col">
+    <div class="p-6 border-b border-gray-700">
+      <div class="flex items-center gap-3">
+        <div class="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center font-bold text-lg">SA</div>
+        <span class="font-bold tracking-tight text-xl text-white">Signet v1.0</span>
+      </div>
+    </div>
+    <nav class="flex-1 overflow-y-auto p-4">
+      <!-- Getting Started -->
+      <div class="mb-6">
+        <h3 class="px-3 text-xs font-bold uppercase tracking-widest text-gray-400 mb-2">Getting Started</h3>
+        <div class="space-y-1">
+          <a href="#introduction" class="block px-3 py-2 rounded-md text-sm font-medium text-gray-300 hover:bg-gray-800 hover:text-white">Introduction</a>
+          <a href="#mission" class="block px-3 py-2 rounded-md text-sm font-medium text-gray-300 hover:bg-gray-800 hover:text-white">Mission & Team</a>
+        </div>
+      </div>
+      <!-- Core Protocol -->
+      <div class="mb-6">
+        <h3 class="px-3 text-xs font-bold uppercase tracking-widest text-gray-400 mb-2">Core Protocol</h3>
+        <div class="space-y-1">
+          <a href="#standards" class="block px-3 py-2 rounded-md text-sm font-medium text-gray-300 hover:bg-gray-800 hover:text-white">Standards & C2PA</a>
+          <a href="#schema" class="block px-3 py-2 rounded-md text-sm font-medium text-gray-300 hover:bg-gray-800 hover:text-white">VPR JSON Manifest</a>
+          <a href="#spec" class="block px-3 py-2 rounded-md text-sm font-medium text-gray-300 hover:bg-gray-800 hover:text-white">Technical Draft</a>
+        </div>
+      </div>
+       <!-- Trust & Identity -->
+      <div class="mb-6">
+        <h3 class="px-3 text-xs font-bold uppercase tracking-widest text-gray-400 mb-2">Trust & Identity</h3>
+        <div class="space-y-1">
+          <a href="#identity" class="block px-3 py-2 rounded-md text-sm font-medium text-gray-300 hover:bg-gray-800 hover:text-white">TrustKey Registry</a>
+          <a href="#verify" class="block px-3 py-2 rounded-md text-sm font-medium text-gray-300 hover:bg-gray-800 hover:text-white">Public Verifier</a>
+        </div>
+      </div>
+    </nav>
+    <div class="p-6 border-t border-gray-700">
+        <div class="flex items-center gap-2 text-xs font-mono text-gray-500">
+            <div class="w-2 h-2 rounded-full bg-green-500"></div>
+            <span>MAINNET_NODE: ACTIVE</span>
+        </div>
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="lg:pl-72 pt-16">
+    <!-- Header -->
+    <header class="fixed top-0 right-0 left-0 lg:left-72 h-16 bg-gray-900/50 backdrop-blur-sm border-b border-gray-700 z-30 flex items-center justify-between px-8">
+      <div class="text-sm font-mono text-gray-500 uppercase tracking-widest hidden lg:block">
+        ISO/TC 290 - Cognitive Provenance Standard
+      </div>
+      <div class="flex items-center gap-6 ml-auto">
+        <a href="#" class="text-sm font-bold uppercase tracking-widest text-blue-500 hover:brightness-125">Hackathon</a>
+        <a href="#" class="text-gray-400 hover:text-white">GitHub</a>
+        <button class="px-4 py-2 bg-blue-600 text-white text-sm font-bold rounded hover:brightness-110">Verifier SDK (∑)</button>
+      </div>
+    </header>
+
+    <!-- Page Content -->
+    <div class="p-8">
+
+      <section id="introduction">
+        <h1 class="text-5xl font-bold text-white leading-tight">Verifiable Proof of Reasoning</h1>
+        <p class="mt-4 text-xl text-gray-400">Signet is a cryptographic protocol for AI models to attest to their reasoning process. It provides a standardized way to create verifiable, tamper-proof records of an AI's cognitive process, from its initial prompt to its final output.</p>
+      </section>
+
+      <section id="mission" class="mt-16">
+        <h2 class="text-3xl font-bold text-white">Mission & Team</h2>
+        <p class="mt-4 text-lg text-gray-400">Our mission is to build a future where AI is transparent and accountable. We believe that by providing a mechanism for AI to show its work, we can foster trust and understanding between humans and intelligent machines.</p>
+        <div class="mt-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div class="bg-gray-800 p-6 rounded-lg">
+            <h3 class="text-xl font-bold text-white">shengliang.song.ai</h3>
+            <p class="text-gray-400">Founder & Lead Protocol Designer</p>
+          </div>
+          <div class="bg-gray-800 p-6 rounded-lg">
+            <h3 class="text-xl font-bold text-white">AI Assistants</h3>
+            <p class="text-gray-400">Core Engineering & Development</p>
+          </div>
+          <div class="bg-gray-800 p-6 rounded-lg">
+            <h3 class="text-xl font-bold text-white">You</h3>
+            <p class="text-gray-400">Join us in building the future of AI.</p>
+          </div>
+        </div>
+      </section>
+
+      <section id="standards" class="mt-16">
+          <h2 class="text-3xl font-bold text-white">Standards & C2PA</h2>
+          <p class="mt-4 text-lg text-gray-400">Signet is designed to be a fully compliant implementation of the C2PA 2.3 specification. It extends the C2PA standard by providing a specialized "cognitive assertion layer" that maps the neural logic states of an AI into standard JUMBF manifest boxes.</p>
+      </section>
+      
+      <section id="schema" class="mt-16">
+        <h2 class="text-3xl font-bold text-white">VPR JSON Manifest</h2>
+        <p class="mt-4 text-lg text-gray-400">The VPR (Verifiable Proof of Reasoning) is a JSON manifest that contains all of the information about an AI's cognitive process. It is a signed, immutable record that can be used to verify the AI's reasoning and to ensure that it has not been tampered with.</p>
+      </section>
+
+      <section id="spec" class="mt-16">
+        <h2 class="text-3xl font-bold text-white">Technical Draft</h2>
+        <p class="mt-4 text-lg text-gray-400">The technical draft of the Signet protocol is available for public review and comment. It provides a detailed description of the protocol, including the VPR schema, the TrustKey registry, and the Public Verifier.</p>
+      </section>
+
+      <section id="identity" class="mt-16">
+        <h2 class="text-3xl font-bold text-white">TrustKey Registry</h2>
+        <p class="mt-4 text-lg text-gray-400">The TrustKey Registry is a decentralized, on-chain registry of public keys for AI models and their human operators. It provides a secure and verifiable way to establish trust and identity in the AI ecosystem.</p>
+      </section>
+
+      <section id="verify" class="mt-16">
+        <h2 class="text-3xl font-bold text-white">Public Verifier</h2>
+        <p class="mt-4 text-lg text-gray-400">The Public Verifier is a web-based tool that allows anyone to verify the authenticity of a VPR. It is a simple, easy-to-use tool that can be used to verify the integrity of any AI-generated content that is accompanied by a VPR.</p>
+      </section>
+
+      <footer class="mt-24 pt-12 border-t border-gray-700 flex flex-wrap justify-between items-center gap-6 text-xs font-mono uppercase tracking-widest text-gray-500">
+        <div class="flex items-center gap-4">
+            <span>Signet Protocol Group © 2026</span>
+        </div>
+        <div class="flex gap-4">
+            <a href="#" class="hover:text-blue-500">About</a>
+            <a href="#" class="hover:text-blue-500">Privacy</a>
+            <a href="#" class="hover:text-blue-500">Terms</a>
+        </div>
+      </footer>
+
+    </div>
+  </main>
+
+</body>
+</html>

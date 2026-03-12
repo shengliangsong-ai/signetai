@@ -2,6 +2,34 @@
 @tailwind components;
 @tailwind utilities;
 
+:root[data-theme='standard'] {
+  --trust-blue: #0055FF;
+  --bg-sidebar: #F0F2F5;
+  --bg-standard: #FFFFFF;
+  --bg-subtle: #F8F9FA;
+  --admonition-bg: #F0F2F5;
+  --code-bg: #F8F9FA;
+  --table-header: #F0F2F5;
+  --text-body: #343A40;
+  --text-header: #212529;
+  --text-dim: #6C757D;
+  --border-light: #E9ECEF;
+}
+
+:root[data-theme='midnight'] {
+  --trust-blue: #00A3FF;
+  --bg-sidebar: #171A1D;
+  --bg-standard: #1B1F23;
+  --bg-subtle: #212529;
+  --admonition-bg: #2C3238;
+  --code-bg: #0D1117;
+  --table-header: #212529;
+  --text-body: #CED4DA;
+  --text-header: #F8F9FA;
+  --text-dim: #6C757D;
+  --border-light: #30363D;
+}
+
 /* Custom Scrollbar for dark mode aesthetic */
 ::-webkit-scrollbar {
   width: 8px;
