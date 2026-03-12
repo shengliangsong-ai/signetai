@@ -65,7 +65,8 @@ export default defineConfig(({ mode }) => {
       rollupOptions: {
         input: {
           main: path.resolve(__dirname, 'index.html'),
-          bridge: path.resolve(__dirname, 'bridge.html')
+          bridge: path.resolve(__dirname, 'bridge.html'),
+          test: path.resolve(__dirname, 'public/test.html')
         }
       }
     }
