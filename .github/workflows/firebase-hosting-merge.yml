@@ -28,6 +28,9 @@ jobs:
           cd ..
           npm run build
       
+      - name: Verify Build Output
+        run: ls -R dist
+
       - name: Authenticate to Google Cloud
         id: auth
         uses: google-github-actions/auth@v2
