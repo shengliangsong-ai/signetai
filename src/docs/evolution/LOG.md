@@ -198,5 +198,15 @@ Deployment via GitHub Actions began failing with TypeScript errors like `Cannot 
     4.  **CI/CD Correction**: The GitHub Actions workflow (`.github/workflows/firebase-hosting-merge.yml`) was critically updated. A new step was added to explicitly run `npm install` inside the `./functions` directory, ensuring the backend dependencies were installed before any build or deployment could occur. This was the final step that resolved the CI/CD pipeline errors.
 - **Outcome**: The project is now successfully deployed with a robust, dual-service architecture. The frontend (Vite) and backend (Cloud Function) are cleanly separated, improving maintainability, scalability, and alignment with modern cloud deployment best practices.
 
+## Entry 26: Gitignore Correction
+**Date:** March 19, 2026
+**Task Goal:** Prevent build artifacts and local environment files from being tracked by git.
+
+**Reasoning Path:**
+Developers observed that running `npm run build` locally would result in a large number of `Changes not staged for commit`. This was because compiled JavaScript, dependency lockfiles, and other build artifacts were being tracked by git, cluttering the repository and creating unnecessary merge conflicts.
+- **Problem Diagnosis**: The `.gitignore` file was empty, providing no instructions to git on which files to ignore.
+- **Solution**: A comprehensive `.gitignore` file was created, based on standard Node.js and Vite project conventions. This file explicitly ignores directories like `node_modules`, `dist`, and `functions/lib`, as well as log files and local environment (`.env`) files.
+- **Outcome**: The repository is now clean. `git status` only shows meaningful changes to the source code, and developers are no longer at risk of accidentally committing build artifacts. This improves the overall health and maintainability of the codebase.
+
 ---
 *Signed: Master Curator, signetai.io:ssl*
