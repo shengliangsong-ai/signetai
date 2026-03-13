@@ -4,6 +4,9 @@ import { GoogleGenAI, LiveServerMessage, Modality, Type } from "@google/genai";
 import ReactMarkdown from 'react-markdown';
 import { GOOGLE_GEMINI_KEY, GOOGLE_GEMINI_LIVE_KEY } from '../src/config/env';
 import { Avatar3D } from './Avatar3D';
+import { CustomAvatar3D } from './CustomAvatar3D';
+import { avatars, AvatarConfig } from '../constants/avatars';
+import { loadAvatarConfig, SavedAvatarConfig } from '../services/avatarDb';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -62,9 +65,27 @@ export const LiveAssistant: React.FC = () => {
   const [streamingInput, setStreamingInput] = useState('');
   const [streamingOutput, setStreamingOutput] = useState('');
   const [selectedVoice, setSelectedVoice] = useState('Zephyr');
+  const [selectedAvatarId, setSelectedAvatarId] = useState('f1');
+  const [customAvatar, setCustomAvatar] = useState<SavedAvatarConfig | null>(null);
   const [isAgentSpeaking, setIsAgentSpeaking] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const loadCustomAvatar = async () => {
+      try {
+        const saved = await loadAvatarConfig();
+        if (saved) {
+          setCustomAvatar(saved);
+          setSelectedVoice(saved.voice || 'Zephyr');
+        }
+      } catch (err) {
+        console.error("Failed to load custom avatar for Live Assistant", err);
+      }
+    };
+    loadCustomAvatar();
+  }, [isOpen]);
   
   // Audio Refs
   const sessionRef = useRef<any>(null);
@@ -457,7 +478,7 @@ export const LiveAssistant: React.FC = () => {
           },
           outputAudioTranscription: {},
           inputAudioTranscription: {},
-          systemInstruction: `You are Signet-Alpha, the Live Digital Notary for Signet Protocol.
+          systemInstruction: `You are ${customAvatar ? customAvatar.name : 'Signet-Alpha'}, the Live Digital Notary for Signet Protocol.
           Your role is to guide users through verifying and signing digital media (images, videos, documents).
           
           CAPABILITIES:
@@ -541,7 +562,7 @@ export const LiveAssistant: React.FC = () => {
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="relative z-10"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
         </button>
       ) : (
-        <div className={`w-80 md:w-96 ${isMinimized ? 'h-auto' : 'h-[60vh] min-h-[400px] min-w-[300px] max-w-[100vw] max-h-[100vh] resize overflow-hidden'} bg-[var(--bg-standard)] border border-[var(--border-light)] shadow-2xl rounded-xl flex flex-col animate-in slide-in-from-bottom-4 transition-all duration-300`}>
+        <div className={`w-96 md:w-[450px] ${isMinimized ? 'h-auto' : 'h-[85vh] min-h-[600px] min-w-[350px] max-w-[100vw] max-h-[100vh] resize overflow-hidden'} bg-[var(--bg-standard)] border border-[var(--border-light)] shadow-2xl rounded-xl flex flex-col animate-in slide-in-from-bottom-4 transition-all duration-300`}>
           <div className="p-4 bg-[var(--table-header)] border-b border-[var(--border-light)] flex justify-between items-center shrink-0">
             <div className="flex items-center gap-3">
               <div className="relative">
@@ -549,7 +570,9 @@ export const LiveAssistant: React.FC = () => {
                 {status === 'CONNECTED' && <div className="absolute inset-0 bg-blue-500 rounded-full animate-ping opacity-75"></div>}
               </div>
               <div className="flex flex-col">
-                <span className="font-mono text-[10px] font-bold uppercase text-[var(--text-header)] leading-none">Signet-Alpha</span>
+                <span className="font-mono text-[10px] font-bold uppercase text-[var(--text-header)] leading-none">
+                  {customAvatar ? customAvatar.name : 'Signet-Alpha'}
+                </span>
                 <div className="flex gap-0.5 mt-1 h-2 items-end">
                   {status === 'CONNECTED' ? (
                     [1,2,3,4,5].map(i => (
@@ -590,6 +613,9 @@ export const LiveAssistant: React.FC = () => {
                   <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
                 </svg>
               </button>
+              <button onClick={() => setShowSettings(!showSettings)} className="opacity-40 hover:opacity-100 p-2" title="Settings">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+              </button>
               <button onClick={() => setIsMinimized(!isMinimized)} className="opacity-40 hover:opacity-100 p-2">
                 {isMinimized ? (
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 15l-6-6-6 6"/></svg>
@@ -603,6 +629,24 @@ export const LiveAssistant: React.FC = () => {
           
           {!isMinimized && (
             <>
+              {showSettings && (
+                <div className="p-4 bg-[var(--bg-standard)] border-b border-[var(--border-light)] shrink-0 max-h-[400px] overflow-y-auto">
+                  <h4 className="text-[10px] font-bold uppercase tracking-widest text-[var(--text-body)] opacity-60 mb-3">Select Avatar</h4>
+                  <div className="grid grid-cols-4 gap-4 p-2">
+                    {avatars.map((avatar: AvatarConfig) => (
+                      <button 
+                        key={avatar.id}
+                        onClick={() => setSelectedAvatarId(avatar.id)}
+                        className={`relative aspect-square rounded-full overflow-hidden border-2 transition-all ${selectedAvatarId === avatar.id ? 'border-[var(--trust-blue)] shadow-[0_0_15px_rgba(0,85,255,0.4)] scale-105' : 'border-transparent hover:border-[var(--border-light)] hover:scale-105'}`}
+                      >
+                        <div className="w-full h-full pointer-events-none flex items-center justify-center">
+                          <Avatar3D isSpeaking={false} avatarId={avatar.id} />
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
               {status !== 'OFFLINE' && (
                 <div className="flex flex-col items-center justify-center py-6 border-b border-[var(--border-light)] bg-[var(--bg-standard)] shrink-0 relative overflow-hidden">
                   {isAgentSpeaking && <div className="absolute inset-0 bg-blue-500/5 animate-pulse"></div>}
@@ -614,10 +658,14 @@ export const LiveAssistant: React.FC = () => {
                         <div className="absolute inset-0 rounded-full animate-ping bg-blue-400 opacity-10 duration-700 delay-150"></div>
                       </>
                     )}
-                    <Avatar3D isSpeaking={isAgentSpeaking} voiceName={selectedVoice} />
+                    {customAvatar ? (
+                      <CustomAvatar3D {...customAvatar} isSpeaking={isAgentSpeaking} />
+                    ) : (
+                      <Avatar3D isSpeaking={isAgentSpeaking} avatarId={selectedAvatarId} />
+                    )}
                   </div>
                   <span className={`mt-4 text-[10px] font-mono uppercase tracking-widest transition-colors duration-300 z-10 ${isAgentSpeaking ? 'text-blue-500 font-bold' : 'text-slate-500'}`}>
-                    {isAgentSpeaking ? 'Signet-Alpha Speaking...' : 'Listening...'}
+                    {isAgentSpeaking ? `${customAvatar ? customAvatar.name : 'Signet-Alpha'} Speaking...` : 'Listening...'}
                   </span>
                 </div>
               )}

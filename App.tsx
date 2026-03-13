@@ -33,6 +33,7 @@ import { TermsOfServiceView } from './components/TermsOfServiceView';
 import { UserDataDeletionView } from './components/UserDataDeletionView';
 import { DemoNotebook } from './components/DemoNotebook';
 import { HackathonView } from './components/HackathonView';
+import { AvatarDesigner } from './components/AvatarDesigner';
 
 class ErrorBoundary extends Component<{children: ReactNode}, {hasError: boolean, error: Error | null}> {
   constructor(props: {children: ReactNode}) {
@@ -156,6 +157,7 @@ const Sidebar: React.FC<{ currentView: string; isOpen: boolean }> = ({ currentVi
       </SidebarGroup>
 
       <SidebarGroup title="Media Labs">
+        <SidebarLink id="avatar-lab" currentView={currentView} label="Avatar Designer Lab" />
         <SidebarLink id="universal-lab" currentView={currentView} label="Universal Media Lab" />
         <SidebarLink id="image-diff" currentView={currentView} label="Image Diff Lab" isSub />
         <SidebarLink id="svg-lab" currentView={currentView} label="SVG Vector Lab" isSub />
@@ -261,7 +263,7 @@ const Header: React.FC<{
 );
 
 const App: React.FC = () => {
-  const [view, setView] = useState<'home' | 'mission' | 'spec' | 'standards' | 'schema' | 'branding' | 'manual' | 'auditor' | 'identity' | 'compliance' | 'verify' | 'ecosystem' | 'svg-lab' | 'pdf-lab' | 'universal-lab' | 'image-diff' | 'status' | 'batch' | 'cli' | 'privacy' | 'donate' | 'terms' | 'data-deletion' | 'demo' | 'hackathon'>('home');
+  const [view, setView] = useState<'home' | 'mission' | 'spec' | 'standards' | 'schema' | 'branding' | 'manual' | 'auditor' | 'identity' | 'compliance' | 'verify' | 'ecosystem' | 'svg-lab' | 'pdf-lab' | 'universal-lab' | 'image-diff' | 'status' | 'batch' | 'cli' | 'privacy' | 'donate' | 'terms' | 'data-deletion' | 'demo' | 'hackathon' | 'avatar-lab'>('home');
   const [theme, setTheme] = useState<Theme>('standard');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isPortalOpen, setIsPortalOpen] = useState(false);
@@ -328,6 +330,8 @@ const App: React.FC = () => {
         setView('demo');
       } else if (route === '#hackathon') {
         setView('hackathon');
+      } else if (route === '#avatar-lab') {
+        setView('avatar-lab');
       } else {
         setView('home');
       }
@@ -421,6 +425,7 @@ const App: React.FC = () => {
             {view === 'data-deletion' && <UserDataDeletionView />}
             {view === 'demo' && <DemoNotebook />}
             {view === 'hackathon' && <HackathonView />}
+            {view === 'avatar-lab' && <AvatarDesigner />}
 
             <footer className="mt-24 pt-12 border-t border-[var(--border-light)] flex flex-wrap justify-between items-center gap-6 text-[10px] font-mono opacity-50 uppercase tracking-widest text-[var(--text-body)]">
               <div className="flex items-center gap-4">

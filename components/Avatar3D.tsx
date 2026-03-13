@@ -1,16 +1,15 @@
 import React, { useEffect, useState } from 'react';
+import { avatars, AvatarConfig } from '../constants/avatars';
 
 interface Avatar3DProps {
   isSpeaking: boolean;
-  voiceName: string;
+  avatarId: string;
 }
 
-export const Avatar3D: React.FC<Avatar3DProps> = ({ isSpeaking, voiceName }) => {
+export const Avatar3D: React.FC<Avatar3DProps> = ({ isSpeaking, avatarId }) => {
   const [mouthOpen, setMouthOpen] = useState(1);
   const [blink, setBlink] = useState(false);
   const [headTilt, setHeadTilt] = useState({ x: 0, y: 0 });
-
-  const isFemale = ['Zephyr', 'Kore'].includes(voiceName);
 
   useEffect(() => {
     if (!isSpeaking) {
@@ -19,7 +18,7 @@ export const Avatar3D: React.FC<Avatar3DProps> = ({ isSpeaking, voiceName }) => 
       return;
     }
     
-    // Random mouth movement to simulate speech
+    // Random mouth/mask movement to simulate speech
     const interval = setInterval(() => {
       setMouthOpen(Math.random() * 8 + 2); // 2 to 10
       
@@ -45,13 +44,21 @@ export const Avatar3D: React.FC<Avatar3DProps> = ({ isSpeaking, voiceName }) => 
     return () => clearInterval(blinkInterval);
   }, []);
 
-  const skinColor = isFemale ? '#ffe0d2' : '#f5cbb7';
-  const skinShadow = isFemale ? '#e8b4a1' : '#dca08a';
-  const hairColor = isFemale ? '#2b2d42' : '#1a1a1a';
-  const eyeColor = isFemale ? '#0284c7' : '#166534'; // Blue vs Green eyes
+  const config = avatars.find((a: AvatarConfig) => a.id === avatarId) || avatars[0];
+  const isFemale = config.gender === 'female';
+  const { skinColor, skinShadow, hairColor, eyeColor, hasGlasses, age } = config;
+
+  const displayHairColor = age >= 56 ? '#94a3b8' : hairColor; // Grey hair for older avatars
+  
+  const scale = age <= 10 ? 0.85 : age <= 16 ? 0.95 : 1;
+  const translateY = age <= 10 ? 8 : age <= 16 ? 4 : 0;
+
+  const skinDark = '#b57b65'; // Prevent dark beard look on female
+
+  const bgClass = isFemale ? "bg-white border-4 border-slate-100" : "bg-gradient-to-b from-slate-800 to-slate-900";
 
   return (
-    <div className="relative w-full h-full flex items-center justify-center overflow-hidden rounded-full bg-gradient-to-b from-slate-800 to-slate-900 shadow-inner">
+    <div className={`relative w-full h-full flex items-center justify-center overflow-hidden rounded-full shadow-inner ${bgClass}`}>
       <div 
         className="w-full h-full transition-transform duration-200 ease-out flex items-center justify-center"
         style={{ transform: `translate(${headTilt.x}px, ${headTilt.y}px)` }}
@@ -61,7 +68,7 @@ export const Avatar3D: React.FC<Avatar3DProps> = ({ isSpeaking, voiceName }) => 
             <radialGradient id="skin" cx="40%" cy="40%" r="60%">
               <stop offset="0%" stopColor={skinColor} />
               <stop offset="80%" stopColor={skinShadow} />
-              <stop offset="100%" stopColor="#b57b65" />
+              <stop offset="100%" stopColor={skinDark} />
             </radialGradient>
             <radialGradient id="eyeWhite" cx="50%" cy="50%" r="50%">
               <stop offset="0%" stopColor="#ffffff" />
@@ -88,69 +95,56 @@ export const Avatar3D: React.FC<Avatar3DProps> = ({ isSpeaking, voiceName }) => 
             </filter>
           </defs>
 
-          {/* Neck */}
-          <path d="M 35 60 L 35 100 L 65 100 L 65 60 Z" fill="url(#skin)" filter="url(#shadow)" />
-          
-          {/* Head Base */}
-          {isFemale ? (
-            <path d="M 22 45 C 22 15, 78 15, 78 45 C 78 72, 65 84, 50 84 C 35 84, 22 72, 22 45 Z" fill="url(#skin)" filter="url(#shadow)" />
-          ) : (
-            <ellipse cx="50" cy="45" rx="28" ry="36" fill="url(#skin)" filter="url(#shadow)" />
-          )}
-
-          {/* Hair Back */}
-          {isFemale && (
-            <path d="M 18 40 C 5 65, 10 105, 30 110 C 50 115, 70 115, 85 105 C 100 90, 95 65, 82 40 Z" fill={hairColor} filter="url(#shadow)" />
-          )}
-
-          {/* Ears */}
-          <ellipse cx="22" cy="48" rx="4" ry="7" fill="url(#skin)" filter="url(#shadow)" />
-          <ellipse cx="78" cy="48" rx="4" ry="7" fill="url(#skin)" filter="url(#shadow)" />
-
-          {/* Hair Front */}
-          {isFemale ? (
-            <g>
-              <path d="M 16 55 C 16 20, 40 5, 55 15 C 70 5, 84 20, 84 55 C 80 30, 65 18, 50 22 C 35 18, 20 30, 16 55 Z" fill={hairColor} filter="url(#shadow)" />
-              <path d="M 25 25 C 35 15, 45 18, 50 22" fill="none" stroke="#4a4e69" strokeWidth="1.5" strokeLinecap="round" opacity="0.4" />
-              <path d="M 75 25 C 65 15, 55 18, 50 22" fill="none" stroke="#4a4e69" strokeWidth="1.5" strokeLinecap="round" opacity="0.4" />
-            </g>
-          ) : (
-            <>
-              <path d="M 22 35 C 22 10, 78 10, 78 35 C 78 20, 50 15, 22 35 Z" fill={hairColor} filter="url(#shadow)" />
-              <path d="M 22 35 C 30 15, 70 15, 78 35 C 70 25, 30 25, 22 35 Z" fill={hairColor} opacity="0.8" />
-            </>
-          )}
-
-          {/* Eyes Group */}
-          <g className="transition-transform duration-75" style={{ transformOrigin: '50px 42px', transform: blink ? 'scaleY(0.05)' : 'scaleY(1)' }}>
-            {/* Left Eye */}
-            <ellipse cx="38" cy="42" rx="6" ry="4" fill="url(#eyeWhite)" filter="url(#inner-shadow)" />
-            <circle cx="38" cy="42" r="2.5" fill="url(#iris)" />
-            <circle cx="37" cy="41" r="0.8" fill="#ffffff" />
-            {isFemale && (
-              <path d="M 31 41 Q 38 36 45 41" fill="none" stroke={hairColor} strokeWidth={1.5} strokeLinecap="round" />
-            )}
+          <g style={{ transform: `scale(${scale}) translateY(${translateY}px)`, transformOrigin: '50px 50px' }}>
+            {/* Neck */}
+            <path d="M 35 60 L 35 120 L 65 120 L 65 60 Z" fill="url(#skin)" filter="url(#shadow)" />
             
-            {/* Right Eye */}
-            <ellipse cx="62" cy="42" rx="6" ry="4" fill="url(#eyeWhite)" filter="url(#inner-shadow)" />
-            <circle cx="62" cy="42" r="2.5" fill="url(#iris)" />
-            <circle cx="61" cy="41" r="0.8" fill="#ffffff" />
-            {isFemale && (
-              <path d="M 55 41 Q 62 36 69 41" fill="none" stroke={hairColor} strokeWidth={1.5} strokeLinecap="round" />
-            )}
-          </g>
+            {/* Head Base */}
+            <ellipse cx="50" cy="45" rx="28" ry="36" fill="url(#skin)" filter="url(#shadow)" />
 
-          {/* Eyebrows */}
-          {isFemale ? (
-            <>
-              <path d="M 28 35 Q 38 31 45 35" fill="none" stroke={hairColor} strokeWidth={1.5} strokeLinecap="round" />
-              <path d="M 72 35 Q 62 31 55 35" fill="none" stroke={hairColor} strokeWidth={1.5} strokeLinecap="round" />
-            </>
-          ) : (
-            <>
-              <path d="M 30 35 Q 38 33 44 36" fill="none" stroke={hairColor} strokeWidth={2.5} strokeLinecap="round" />
-              <path d="M 70 35 Q 62 33 56 36" fill="none" stroke={hairColor} strokeWidth={2.5} strokeLinecap="round" />
-            </>
+            {/* Hair Back (Long Hair) */}
+
+            {/* Ears */}
+            <ellipse cx="22" cy="48" rx="4" ry="7" fill="url(#skin)" filter="url(#shadow)" />
+            <ellipse cx="78" cy="48" rx="4" ry="7" fill="url(#skin)" filter="url(#shadow)" />
+
+            {/* Hair Front */}
+            <path d="M 22 35 C 22 10, 78 10, 78 35 C 78 20, 50 15, 22 35 Z" fill={displayHairColor} filter="url(#shadow)" />
+            <path d="M 22 35 C 30 15, 70 15, 78 35 C 70 25, 30 25, 22 35 Z" fill={displayHairColor} opacity="0.8" />
+
+            {/* Eyes Group */}
+            <g className="transition-transform duration-75" style={{ transformOrigin: '50px 42px', transform: blink ? 'scaleY(0.05)' : 'scaleY(1)' }}>
+              {/* Left Eye */}
+              <ellipse cx="38" cy="42" rx={6} ry={4} fill="url(#eyeWhite)" filter="url(#inner-shadow)" />
+              <circle cx="38" cy="42" r={2.5} fill="url(#iris)" />
+              <circle cx="37" cy="41" r="0.8" fill="#ffffff" />
+              
+              {/* Right Eye */}
+              <ellipse cx="62" cy="42" rx={6} ry={4} fill="url(#eyeWhite)" filter="url(#inner-shadow)" />
+              <circle cx="62" cy="42" r={2.5} fill="url(#iris)" />
+              <circle cx="61" cy="41" r="0.8" fill="#ffffff" />
+            </g>
+
+            {/* Eyebrows */}
+            <path d="M 30 35 Q 38 33 44 36" fill="none" stroke={displayHairColor} strokeWidth={2.5} strokeLinecap="round" />
+            <path d="M 70 35 Q 62 33 56 36" fill="none" stroke={displayHairColor} strokeWidth={2.5} strokeLinecap="round" />
+
+            {/* Glasses */}
+          {hasGlasses && (
+            <g filter="url(#shadow)">
+              {/* Left Frame */}
+              <rect x="26" y="34" width="24" height="16" rx="6" fill="none" stroke="#e11d48" strokeWidth="2.5" />
+              {/* Right Frame */}
+              <rect x="50" y="34" width="24" height="16" rx="6" fill="none" stroke="#e11d48" strokeWidth="2.5" />
+              {/* Bridge */}
+              <path d="M 48 39 Q 50 37 52 39" fill="none" stroke="#e11d48" strokeWidth="2.5" />
+              {/* Arms */}
+              <path d="M 20 38 L 26 38" fill="none" stroke="#e11d48" strokeWidth="2.5" />
+              <path d="M 74 38 L 80 38" fill="none" stroke="#e11d48" strokeWidth="2.5" />
+              {/* Glass glare */}
+              <path d="M 28 36 L 40 48" fill="none" stroke="#ffffff" strokeWidth="2" opacity="0.3" />
+              <path d="M 52 36 L 64 48" fill="none" stroke="#ffffff" strokeWidth="2" opacity="0.3" />
+            </g>
           )}
 
           {/* Nose */}
@@ -158,11 +152,30 @@ export const Avatar3D: React.FC<Avatar3DProps> = ({ isSpeaking, voiceName }) => 
           <path d="M 46 56 Q 50 58 54 56" fill="none" stroke="#a35d47" strokeWidth={1} opacity={0.4} strokeLinecap="round" />
 
           {/* Cheeks */}
-          {isFemale && (
-            <>
-              <ellipse cx="32" cy="50" rx="6" ry="3.5" fill="#ff8fa3" opacity={0.4} filter="blur(2px)" />
-              <ellipse cx="68" cy="50" rx="6" ry="3.5" fill="#ff8fa3" opacity={0.4} filter="blur(2px)" />
-            </>
+
+          {/* Age-based wrinkles */}
+          {age >= 36 && (
+            <g stroke="#000000" opacity={0.1 + (age - 30) * 0.005} fill="none" strokeWidth={0.8}>
+              {/* Smile lines */}
+              <path d="M 38 55 Q 32 65 35 72" />
+              <path d="M 62 55 Q 68 65 65 72" />
+            </g>
+          )}
+          {age >= 46 && (
+            <g stroke="#000000" opacity={0.15 + (age - 40) * 0.005} fill="none" strokeWidth={0.8}>
+              {/* Crow's feet */}
+              <path d="M 22 40 Q 18 42 15 40" />
+              <path d="M 22 43 Q 18 44 15 45" />
+              <path d="M 78 40 Q 82 42 85 40" />
+              <path d="M 78 43 Q 82 44 85 45" />
+            </g>
+          )}
+          {age >= 56 && (
+            <g stroke="#000000" opacity={0.2} fill="none" strokeWidth={0.8}>
+              {/* Forehead wrinkles */}
+              <path d="M 35 22 Q 50 24 65 22" />
+              <path d="M 38 18 Q 50 20 62 18" />
+            </g>
           )}
 
           {/* Mouth */}
@@ -174,7 +187,6 @@ export const Avatar3D: React.FC<Avatar3DProps> = ({ isSpeaking, voiceName }) => 
               ry={mouthOpen} 
               fill="url(#mouth)" 
               className="transition-all duration-75"
-              filter="url(#inner-shadow)"
             />
             {/* Teeth */}
             {mouthOpen > 3 && (
@@ -185,21 +197,22 @@ export const Avatar3D: React.FC<Avatar3DProps> = ({ isSpeaking, voiceName }) => 
             )}
             {/* Lips */}
             <path 
-              d={`M 41 64 Q 50 ${64 - mouthOpen - (isFemale ? 3 : 2)} 59 64`} 
+              d={`M 41 64 Q 50 ${64 - mouthOpen - 2} 59 64`} 
               fill="none" 
-              stroke={isFemale ? "#e5383b" : "#b56555"} 
-              strokeWidth={isFemale ? 2.5 : 1.5} 
+              stroke={"#b56555"} 
+              strokeWidth={1.5} 
               strokeLinecap="round" 
               className="transition-all duration-75"
             />
             <path 
-              d={`M 41 64 Q 50 ${64 + mouthOpen + (isFemale ? 4 : 2)} 59 64`} 
+              d={`M 41 64 Q 50 ${64 + mouthOpen + 2} 59 64`} 
               fill="none" 
-              stroke={isFemale ? "#ba1826" : "#9c4a3c"} 
-              strokeWidth={isFemale ? 3 : 2} 
+              stroke={"#9c4a3c"} 
+              strokeWidth={2} 
               strokeLinecap="round" 
               className="transition-all duration-75"
             />
+          </g>
           </g>
         </svg>
       </div>
