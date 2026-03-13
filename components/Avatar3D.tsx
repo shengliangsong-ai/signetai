@@ -104,9 +104,7 @@ export const Avatar3D: React.FC<Avatar3DProps> = ({ isSpeaking, avatarId }) => {
 
             {/* Hair Back (Long Hair) */}
 
-            {/* Ears */}
-            <ellipse cx="22" cy="48" rx="4" ry="7" fill="url(#skin)" filter="url(#shadow)" />
-            <ellipse cx="78" cy="48" rx="4" ry="7" fill="url(#skin)" filter="url(#shadow)" />
+            {/* Ears removed to avoid duplicate ears */}
 
             {/* Hair Front */}
             <path d="M 22 35 C 22 10, 78 10, 78 35 C 78 20, 50 15, 22 35 Z" fill={displayHairColor} filter="url(#shadow)" />

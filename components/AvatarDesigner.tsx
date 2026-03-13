@@ -2,6 +2,23 @@ import React, { useState, useEffect } from 'react';
 import { CustomAvatar3D, CustomAvatarProps } from './CustomAvatar3D';
 import { saveAvatarConfig, loadAvatarConfig, SavedAvatarConfig } from '../services/avatarDb';
 
+const SliderControl = ({ label, value, onChange }: { label: string, value: number, onChange: (val: number) => void }) => (
+  <div className="mb-4">
+    <div className="flex justify-between items-center mb-1">
+      <label className="block text-xs font-bold text-[var(--text-body)] opacity-70 uppercase">{label}</label>
+      <span className="text-xs text-[var(--text-body)] opacity-50">{value}</span>
+    </div>
+    <input 
+      type="range" 
+      min="0" 
+      max="100" 
+      value={value} 
+      onChange={(e) => onChange(parseInt(e.target.value))}
+      className="w-full h-2 bg-[var(--border-light)] rounded-lg appearance-none cursor-pointer"
+    />
+  </div>
+);
+
 export const AvatarDesigner: React.FC = () => {
   const [config, setConfig] = useState<CustomAvatarProps>({
     hairStyle: 'short',
@@ -12,11 +29,27 @@ export const AvatarDesigner: React.FC = () => {
     eyeStyle: 'normal',
     noseStyle: 'small',
     mouthStyle: 'smile',
-    earStyle: 'normal',
     clothesStyle: 'tshirt',
     clothesColor: '#0055FF',
     bgTheme: 'light',
-    isSpeaking: false
+    isSpeaking: false,
+    facialHairStyle: 'none',
+    facialHairColor: '#1a1a1a',
+    faceWidth: 50,
+    cheekFullness: 50,
+    eyeSize: 50,
+    eyeAngle: 50,
+    eyeDistance: 50,
+    eyelidHeight: 50,
+    upperLashes: 'long',
+    lowerLashes: 'short',
+    noseWidth: 50,
+    noseHeight: 50,
+    noseAngle: 50,
+    noseTipSize: 50,
+    mouthFullness: 50,
+    mouthWidth: 50,
+    mouthHeight: 50
   });
   
   const [avatarName, setAvatarName] = useState('Signet-Alpha');
@@ -31,7 +64,7 @@ export const AvatarDesigner: React.FC = () => {
         const saved = await loadAvatarConfig();
         if (saved) {
           const { name, voice, ...avatarProps } = saved;
-          setConfig(avatarProps);
+          setConfig(prev => ({ ...prev, ...avatarProps }));
           setAvatarName(name);
           setAiVoice(voice);
         }
@@ -75,7 +108,6 @@ export const AvatarDesigner: React.FC = () => {
   eyeStyle="${config.eyeStyle}"
   noseStyle="${config.noseStyle}"
   mouthStyle="${config.mouthStyle}"
-  earStyle="${config.earStyle}"
   clothesStyle="${config.clothesStyle}"
   clothesColor="${config.clothesColor}"
   bgTheme="${config.bgTheme}"
@@ -247,6 +279,41 @@ export const AvatarDesigner: React.FC = () => {
                     </div>
                   </div>
                 )}
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-[var(--text-body)] opacity-70 mb-2 uppercase">Facial Hair</label>
+                    <select 
+                      value={config.facialHairStyle} 
+                      onChange={(e) => updateConfig('facialHairStyle', e.target.value)}
+                      className="w-full bg-[var(--bg-standard)] border border-[var(--border-light)] text-[var(--text-body)] rounded p-2 text-sm"
+                    >
+                      <option value="none">None</option>
+                      <option value="stubble">Stubble</option>
+                      <option value="mustache">Mustache</option>
+                      <option value="beard">Beard</option>
+                      <option value="goatee">Goatee</option>
+                    </select>
+                  </div>
+                  {config.facialHairStyle !== 'none' && (
+                    <div>
+                      <label className="block text-xs font-bold text-[var(--text-body)] opacity-70 mb-2 uppercase">Facial Hair Color</label>
+                      <div className="flex gap-1 flex-wrap">
+                        {colors.hair.map(color => (
+                          <button 
+                            key={color} 
+                            onClick={() => updateConfig('facialHairColor', color)}
+                            className={`w-6 h-6 rounded-full border-2 transition-all ${config.facialHairColor === color ? 'border-[var(--trust-blue)] scale-110' : 'border-transparent hover:scale-110'}`}
+                            style={{ backgroundColor: color }}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <SliderControl label="Face Width" value={config.faceWidth || 50} onChange={(v) => updateConfig('faceWidth', v)} />
+                <SliderControl label="Cheek Fullness" value={config.cheekFullness || 50} onChange={(v) => updateConfig('cheekFullness', v)} />
               </div>
 
               {/* Details & Styling */}
@@ -280,6 +347,39 @@ export const AvatarDesigner: React.FC = () => {
                     </div>
                   </div>
                 </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-[var(--text-body)] opacity-70 mb-2 uppercase">Upper Lashes</label>
+                    <select 
+                      value={config.upperLashes} 
+                      onChange={(e) => updateConfig('upperLashes', e.target.value)}
+                      className="w-full bg-[var(--bg-standard)] border border-[var(--border-light)] text-[var(--text-body)] rounded p-2 text-sm"
+                    >
+                      <option value="none">None</option>
+                      <option value="short">Short</option>
+                      <option value="long">Long</option>
+                      <option value="thick">Thick</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-[var(--text-body)] opacity-70 mb-2 uppercase">Lower Lashes</label>
+                    <select 
+                      value={config.lowerLashes} 
+                      onChange={(e) => updateConfig('lowerLashes', e.target.value)}
+                      className="w-full bg-[var(--bg-standard)] border border-[var(--border-light)] text-[var(--text-body)] rounded p-2 text-sm"
+                    >
+                      <option value="none">None</option>
+                      <option value="short">Short</option>
+                      <option value="long">Long</option>
+                    </select>
+                  </div>
+                </div>
+
+                <SliderControl label="Eye Size" value={config.eyeSize || 50} onChange={(v) => updateConfig('eyeSize', v)} />
+                <SliderControl label="Eye Angle" value={config.eyeAngle || 50} onChange={(v) => updateConfig('eyeAngle', v)} />
+                <SliderControl label="Eye Distance" value={config.eyeDistance || 50} onChange={(v) => updateConfig('eyeDistance', v)} />
+                <SliderControl label="Eyelid Height" value={config.eyelidHeight || 50} onChange={(v) => updateConfig('eyelidHeight', v)} />
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
@@ -322,23 +422,14 @@ export const AvatarDesigner: React.FC = () => {
                   </div>
                 </div>
 
-                <div>
-                  <label className="block text-xs font-bold text-[var(--text-body)] opacity-70 mb-2 uppercase">Ear Style</label>
-                  <select 
-                    value={config.earStyle} 
-                    onChange={(e) => updateConfig('earStyle', e.target.value)}
-                    className="w-full bg-[var(--bg-standard)] border border-[var(--border-light)] text-[var(--text-body)] rounded p-2 text-sm"
-                  >
-                    <option value="normal">Normal</option>
-                    <option value="elf">Elf</option>
-                    <option value="small">Small</option>
-                    <option value="large">Large</option>
-                    <option value="pointed">Pointed</option>
-                    <option value="round">Round</option>
-                    <option value="wide">Wide</option>
-                    <option value="drooping">Drooping</option>
-                  </select>
-                </div>
+                <SliderControl label="Nose Width" value={config.noseWidth || 50} onChange={(v) => updateConfig('noseWidth', v)} />
+                <SliderControl label="Nose Height" value={config.noseHeight || 50} onChange={(v) => updateConfig('noseHeight', v)} />
+                <SliderControl label="Nose Angle" value={config.noseAngle || 50} onChange={(v) => updateConfig('noseAngle', v)} />
+                <SliderControl label="Nose Tip Size" value={config.noseTipSize || 50} onChange={(v) => updateConfig('noseTipSize', v)} />
+
+                <SliderControl label="Mouth Fullness" value={config.mouthFullness || 50} onChange={(v) => updateConfig('mouthFullness', v)} />
+                <SliderControl label="Mouth Width" value={config.mouthWidth || 50} onChange={(v) => updateConfig('mouthWidth', v)} />
+                <SliderControl label="Mouth Height" value={config.mouthHeight || 50} onChange={(v) => updateConfig('mouthHeight', v)} />
 
                 <div>
                   <label className="block text-xs font-bold text-[var(--text-body)] opacity-70 mb-2 uppercase">Clothes Style</label>

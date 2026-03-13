@@ -27,10 +27,26 @@ export const Hero: React.FC<{ onOpenPortal: () => void }> = ({ onOpenPortal }) =
 
         <div className="flex flex-wrap gap-4 pt-10">
           <button 
+            onClick={() => window.location.hash = '#identity'}
+            className="px-8 py-4 bg-[var(--trust-blue)] text-white text-[11px] font-bold uppercase tracking-widest rounded shadow-2xl hover:brightness-110 transition-all active:scale-95 flex flex-col items-center"
+          >
+            <span>1. Identity Authority</span>
+            <span className="opacity-50 text-[9px] lowercase font-normal">/register key</span>
+          </button>
+
+          <button 
+            onClick={() => window.location.hash = '#universal-lab'}
+            className="px-8 py-4 bg-[var(--trust-blue)] text-white text-[11px] font-bold uppercase tracking-widest rounded shadow-2xl hover:brightness-110 transition-all active:scale-95 flex flex-col items-center"
+          >
+            <span>2. Universal Media Lab</span>
+            <span className="opacity-50 text-[9px] lowercase font-normal">/sign doc</span>
+          </button>
+
+          <button 
             onClick={() => window.location.hash = '#verify'}
             className="px-8 py-4 bg-[var(--trust-blue)] text-white text-[11px] font-bold uppercase tracking-widest rounded shadow-2xl hover:brightness-110 transition-all active:scale-95 flex flex-col items-center"
           >
-            <span>Start Verification</span>
+            <span>3. Start Verification</span>
             <span className="opacity-50 text-[9px] lowercase font-normal">/verify endpoint</span>
           </button>
           

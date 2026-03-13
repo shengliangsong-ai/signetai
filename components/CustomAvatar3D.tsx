@@ -9,27 +9,69 @@ export interface CustomAvatarProps {
   eyeStyle: 'normal' | 'glasses' | 'sunglasses';
   noseStyle: 'small' | 'wide' | 'pointed' | 'button' | 'aquiline' | 'snub' | 'roman' | 'flat' | 'broad' | 'thin';
   mouthStyle: 'smile' | 'neutral' | 'sad' | 'smirk' | 'open' | 'surprised' | 'pout' | 'laugh' | 'thin' | 'wide';
-  earStyle?: 'normal' | 'elf' | 'small' | 'large' | 'pointed' | 'round' | 'wide' | 'drooping';
   clothesStyle: 'tshirt' | 'suit' | 'hoodie' | 'sweater' | 'jacket' | 'tanktop' | 'dress' | 'shirt' | 'turtleneck' | 'vneck';
   clothesColor: string;
   bgTheme: 'light' | 'dark' | 'gradient' | 'neon';
   isSpeaking?: boolean;
+
+  // New Facial Hair
+  facialHairStyle?: 'none' | 'stubble' | 'mustache' | 'beard' | 'goatee';
+  facialHairColor?: string;
+
+  // Face Adjustments
+  faceWidth?: number;
+  cheekFullness?: number;
+
+  // Eyes Adjustments
+  eyeSize?: number;
+  eyeAngle?: number;
+  eyeDistance?: number;
+  eyelidHeight?: number;
+  upperLashes?: 'none' | 'short' | 'long' | 'thick';
+  lowerLashes?: 'none' | 'short' | 'long';
+
+  // Nose Adjustments
+  noseWidth?: number;
+  noseHeight?: number;
+  noseAngle?: number;
+  noseTipSize?: number;
+
+  // Mouth Adjustments
+  mouthFullness?: number;
+  mouthWidth?: number;
+  mouthHeight?: number;
 }
 
 export const CustomAvatar3D: React.FC<CustomAvatarProps> = ({
-  hairStyle,
-  hairColor,
-  faceShape,
-  skinColor,
-  eyeColor,
-  eyeStyle,
-  noseStyle,
-  mouthStyle,
-  earStyle = 'normal',
-  clothesStyle,
-  clothesColor,
-  bgTheme,
-  isSpeaking = false
+  hairStyle = 'short',
+  hairColor = '#1a1a1a',
+  faceShape = 'round',
+  skinColor = '#f5cbb7',
+  eyeColor = '#166534',
+  eyeStyle = 'normal',
+  noseStyle = 'small',
+  mouthStyle = 'smile',
+  clothesStyle = 'tshirt',
+  clothesColor = '#0055FF',
+  bgTheme = 'light',
+  isSpeaking = false,
+  facialHairStyle = 'none',
+  facialHairColor = '#1a1a1a',
+  faceWidth = 50,
+  cheekFullness = 50,
+  eyeSize = 50,
+  eyeAngle = 50,
+  eyeDistance = 50,
+  eyelidHeight = 50,
+  upperLashes = 'long',
+  lowerLashes = 'short',
+  noseWidth = 50,
+  noseHeight = 50,
+  noseAngle = 50,
+  noseTipSize = 50,
+  mouthFullness = 50,
+  mouthWidth = 50,
+  mouthHeight = 50
 }) => {
   const [mouthOpen, setMouthOpen] = useState(1);
   const [blink, setBlink] = useState(false);
@@ -81,13 +123,31 @@ export const CustomAvatar3D: React.FC<CustomAvatarProps> = ({
     neon: "bg-black border-4 border-green-400 shadow-[0_0_15px_rgba(74,222,128,0.5)]"
   };
 
+  // Calculations for new properties
+  const faceScaleX = 0.8 + (faceWidth / 100) * 0.4;
+  const cheekScaleX = 0.8 + (cheekFullness / 100) * 0.4;
+  
+  const eyeScale = 0.5 + (eyeSize / 100) * 1.0;
+  const eyeRot = (eyeAngle - 50) * 0.5;
+  const eyeDistOffset = (eyeDistance - 50) * 0.2;
+  const eyelidY = 38 + (eyelidHeight / 100) * 8;
+
+  const noseScaleX = 0.5 + (noseWidth / 100) * 1.0;
+  const noseScaleY = 0.5 + (noseHeight / 100) * 1.0;
+  const noseRot = (noseAngle - 50) * 0.5;
+  const noseTipScale = 0.5 + (noseTipSize / 100) * 1.0;
+
+  const mouthScaleX = 0.5 + (mouthWidth / 100) * 1.0;
+  const mouthScaleY = 0.5 + (mouthHeight / 100) * 1.0;
+  const mouthStrokeWidth = 1 + (mouthFullness / 100) * 2;
+
   return (
     <div className={`relative w-full h-full flex items-center justify-center overflow-hidden rounded-full shadow-inner ${bgClasses[bgTheme]}`}>
       <div 
         className="w-full h-full transition-transform duration-200 ease-out flex items-center justify-center"
         style={{ transform: `translate(${headTilt.x}px, ${headTilt.y}px)` }}
       >
-        <svg viewBox="0 0 100 125" className="w-[115%] h-[115%] drop-shadow-2xl" style={{ transform: 'translateY(8%)' }}>
+        <svg viewBox="0 0 100 130" className="w-[100%] h-[100%] drop-shadow-2xl" style={{ transform: 'translateY(5%)' }}>
           <defs>
             <radialGradient id="customSkin" cx="40%" cy="40%" r="60%">
               <stop offset="0%" stopColor={skinColor} />
@@ -199,59 +259,17 @@ export const CustomAvatar3D: React.FC<CustomAvatarProps> = ({
             )}
 
             {/* Head Base */}
-            {faceShape === 'round' && <ellipse cx="50" cy="45" rx="30" ry="34" fill="url(#customSkin)" filter="url(#customShadow)" />}
-            {faceShape === 'oval' && <ellipse cx="50" cy="45" rx="26" ry="38" fill="url(#customSkin)" filter="url(#customShadow)" />}
-            {faceShape === 'square' && <rect x="22" y="15" width="56" height="60" rx="15" fill="url(#customSkin)" filter="url(#customShadow)" />}
+            <g style={{ transformOrigin: '50px 45px', transform: `scale(${faceScaleX}, 1)` }}>
+              {faceShape === 'round' && <ellipse cx="50" cy="45" rx="30" ry="34" fill="url(#customSkin)" filter="url(#customShadow)" />}
+              {faceShape === 'oval' && <ellipse cx="50" cy="45" rx="26" ry="38" fill="url(#customSkin)" filter="url(#customShadow)" />}
+              {faceShape === 'square' && <rect x="22" y="15" width="56" height="60" rx="15" fill="url(#customSkin)" filter="url(#customShadow)" />}
+              
+              {/* Cheeks */}
+              <ellipse cx="32" cy="55" rx="6" ry="8" fill="url(#customSkin)" opacity={cheekFullness / 100} style={{ transformOrigin: '32px 55px', transform: `scale(${cheekScaleX}, 1)` }} />
+              <ellipse cx="68" cy="55" rx="6" ry="8" fill="url(#customSkin)" opacity={cheekFullness / 100} style={{ transformOrigin: '68px 55px', transform: `scale(${cheekScaleX}, 1)` }} />
+            </g>
 
-            {/* Ears */}
-            {earStyle === 'normal' && (
-              <>
-                <ellipse cx="22" cy="48" rx="4" ry="7" fill="url(#customSkin)" filter="url(#customShadow)" />
-                <ellipse cx="78" cy="48" rx="4" ry="7" fill="url(#customSkin)" filter="url(#customShadow)" />
-              </>
-            )}
-            {earStyle === 'small' && (
-              <>
-                <ellipse cx="23" cy="48" rx="3" ry="5" fill="url(#customSkin)" filter="url(#customShadow)" />
-                <ellipse cx="77" cy="48" rx="3" ry="5" fill="url(#customSkin)" filter="url(#customShadow)" />
-              </>
-            )}
-            {earStyle === 'large' && (
-              <>
-                <ellipse cx="20" cy="48" rx="6" ry="9" fill="url(#customSkin)" filter="url(#customShadow)" />
-                <ellipse cx="80" cy="48" rx="6" ry="9" fill="url(#customSkin)" filter="url(#customShadow)" />
-              </>
-            )}
-            {earStyle === 'elf' && (
-              <>
-                <path d="M 24 45 Q 10 30 8 35 Q 15 48 22 52 Z" fill="url(#customSkin)" filter="url(#customShadow)" />
-                <path d="M 76 45 Q 90 30 92 35 Q 85 48 78 52 Z" fill="url(#customSkin)" filter="url(#customShadow)" />
-              </>
-            )}
-            {earStyle === 'pointed' && (
-              <>
-                <path d="M 24 45 Q 12 35 10 42 Q 15 50 22 52 Z" fill="url(#customSkin)" filter="url(#customShadow)" />
-                <path d="M 76 45 Q 88 35 90 42 Q 85 50 78 52 Z" fill="url(#customSkin)" filter="url(#customShadow)" />
-              </>
-            )}
-            {earStyle === 'round' && (
-              <>
-                <ellipse cx="19" cy="48" rx="5" ry="6" fill="url(#customSkin)" filter="url(#customShadow)" />
-                <ellipse cx="81" cy="48" rx="5" ry="6" fill="url(#customSkin)" filter="url(#customShadow)" />
-              </>
-            )}
-            {earStyle === 'wide' && (
-              <>
-                <ellipse cx="18" cy="48" rx="7" ry="5" fill="url(#customSkin)" filter="url(#customShadow)" />
-                <ellipse cx="82" cy="48" rx="7" ry="5" fill="url(#customSkin)" filter="url(#customShadow)" />
-              </>
-            )}
-            {earStyle === 'drooping' && (
-              <>
-                <path d="M 24 45 Q 12 45 14 55 Q 18 55 22 50 Z" fill="url(#customSkin)" filter="url(#customShadow)" />
-                <path d="M 76 45 Q 88 45 86 55 Q 82 55 78 50 Z" fill="url(#customSkin)" filter="url(#customShadow)" />
-              </>
-            )}
+            {/* Ears removed to avoid duplicate ears */}
 
             {/* Hair Front */}
             {hairStyle !== 'bald' && (
@@ -322,19 +340,39 @@ export const CustomAvatar3D: React.FC<CustomAvatarProps> = ({
             {/* Eyes Group */}
             <g className="transition-transform duration-75" style={{ transformOrigin: '50px 42px', transform: blink ? 'scaleY(0.05)' : 'scaleY(1)' }}>
               {/* Left Eye */}
-              <ellipse cx="38" cy="42" rx={6} ry={4} fill="url(#customEyeWhite)" filter="url(#customInnerShadow)" />
-              <circle cx="38" cy="42" r={2.5} fill="url(#customIris)" />
-              <circle cx="37" cy="41" r="0.8" fill="#ffffff" />
+              <g style={{ transformOrigin: '38px 42px', transform: `translate(${-eyeDistOffset}px, 0) scale(${eyeScale}) rotate(${eyeRot}deg)` }}>
+                <ellipse cx="38" cy="42" rx={6} ry={4} fill="url(#customEyeWhite)" filter="url(#customInnerShadow)" />
+                <circle cx="38" cy="42" r={2.5} fill="url(#customIris)" />
+                <circle cx="37" cy="41" r="0.8" fill="#ffffff" />
+                {/* Eyelid */}
+                <path d={`M 30 42 Q 38 ${eyelidY - 10} 46 42 L 46 ${eyelidY} L 30 ${eyelidY} Z`} fill="url(#customSkin)" />
+                {/* Upper Lashes */}
+                {upperLashes !== 'none' && (
+                  <path d="M 32 40 Q 38 36 44 40" fill="none" stroke="#000" strokeWidth={upperLashes === 'thick' ? 2 : 1} strokeDasharray={upperLashes === 'short' ? "1,2" : "none"} />
+                )}
+                {/* Lower Lashes */}
+                {lowerLashes !== 'none' && (
+                  <path d="M 34 44 Q 38 46 42 44" fill="none" stroke="#000" strokeWidth={0.5} strokeDasharray={lowerLashes === 'short' ? "1,2" : "none"} />
+                )}
+              </g>
               
               {/* Right Eye */}
-              <ellipse cx="62" cy="42" rx={6} ry={4} fill="url(#customEyeWhite)" filter="url(#customInnerShadow)" />
-              <circle cx="62" cy="42" r={2.5} fill="url(#customIris)" />
-              <circle cx="61" cy="41" r="0.8" fill="#ffffff" />
+              <g style={{ transformOrigin: '62px 42px', transform: `translate(${eyeDistOffset}px, 0) scale(${eyeScale}) rotate(${-eyeRot}deg)` }}>
+                <ellipse cx="62" cy="42" rx={6} ry={4} fill="url(#customEyeWhite)" filter="url(#customInnerShadow)" />
+                <circle cx="62" cy="42" r={2.5} fill="url(#customIris)" />
+                <circle cx="61" cy="41" r="0.8" fill="#ffffff" />
+                {/* Eyelid */}
+                <path d={`M 54 42 Q 62 ${eyelidY - 10} 70 42 L 70 ${eyelidY} L 54 ${eyelidY} Z`} fill="url(#customSkin)" />
+                {/* Upper Lashes */}
+                {upperLashes !== 'none' && (
+                  <path d="M 56 40 Q 62 36 68 40" fill="none" stroke="#000" strokeWidth={upperLashes === 'thick' ? 2 : 1} strokeDasharray={upperLashes === 'short' ? "1,2" : "none"} />
+                )}
+                {/* Lower Lashes */}
+                {lowerLashes !== 'none' && (
+                  <path d="M 58 44 Q 62 46 66 44" fill="none" stroke="#000" strokeWidth={0.5} strokeDasharray={lowerLashes === 'short' ? "1,2" : "none"} />
+                )}
+              </g>
             </g>
-
-            {/* Eyebrows */}
-            <path d="M 30 35 Q 38 33 44 36" fill="none" stroke={hairStyle === 'bald' ? skinShadow : hairColor} strokeWidth={2.5} strokeLinecap="round" />
-            <path d="M 70 35 Q 62 33 56 36" fill="none" stroke={hairStyle === 'bald' ? skinShadow : hairColor} strokeWidth={2.5} strokeLinecap="round" />
 
             {/* Glasses */}
             {eyeStyle === 'glasses' && (
@@ -361,19 +399,24 @@ export const CustomAvatar3D: React.FC<CustomAvatarProps> = ({
             )}
 
             {/* Nose */}
-            {noseStyle === 'small' && <path d="M 50 42 L 48 52 C 48 54, 52 54, 52 52 Z" fill={skinDark} opacity={0.4} />}
-            {noseStyle === 'wide' && <path d="M 50 42 L 45 54 C 45 57, 55 57, 55 54 Z" fill={skinDark} opacity={0.4} />}
-            {noseStyle === 'pointed' && <path d="M 50 42 L 48 56 L 50 58 L 52 56 Z" fill={skinDark} opacity={0.4} />}
-            {noseStyle === 'button' && <circle cx="50" cy="52" r="3" fill={skinDark} opacity={0.4} />}
-            {noseStyle === 'aquiline' && <path d="M 50 42 Q 54 48 50 56 L 48 56 Z" fill={skinDark} opacity={0.4} />}
-            {noseStyle === 'snub' && <path d="M 50 45 L 47 52 Q 50 50 53 52 Z" fill={skinDark} opacity={0.4} />}
-            {noseStyle === 'roman' && <path d="M 50 40 L 52 48 L 50 56 L 48 56 Z" fill={skinDark} opacity={0.4} />}
-            {noseStyle === 'flat' && <path d="M 46 54 Q 50 52 54 54 L 54 56 Q 50 55 46 56 Z" fill={skinDark} opacity={0.4} />}
-            {noseStyle === 'broad' && <path d="M 48 42 L 44 56 L 56 56 L 52 42 Z" fill={skinDark} opacity={0.4} />}
-            {noseStyle === 'thin' && <path d="M 50 42 L 49 56 L 51 56 Z" fill={skinDark} opacity={0.4} />}
+            <g style={{ transformOrigin: '50px 48px', transform: `scale(${noseScaleX}, ${noseScaleY}) rotate(${noseRot}deg)` }}>
+              {noseStyle === 'small' && <path d="M 50 42 L 48 52 C 48 54, 52 54, 52 52 Z" fill={skinDark} opacity={0.4} />}
+              {noseStyle === 'wide' && <path d="M 50 42 L 45 54 C 45 57, 55 57, 55 54 Z" fill={skinDark} opacity={0.4} />}
+              {noseStyle === 'pointed' && <path d="M 50 42 L 48 56 L 50 58 L 52 56 Z" fill={skinDark} opacity={0.4} />}
+              {noseStyle === 'button' && <circle cx="50" cy="52" r="3" fill={skinDark} opacity={0.4} />}
+              {noseStyle === 'aquiline' && <path d="M 50 42 Q 54 48 50 56 L 48 56 Z" fill={skinDark} opacity={0.4} />}
+              {noseStyle === 'snub' && <path d="M 50 45 L 47 52 Q 50 50 53 52 Z" fill={skinDark} opacity={0.4} />}
+              {noseStyle === 'roman' && <path d="M 50 40 L 52 48 L 50 56 L 48 56 Z" fill={skinDark} opacity={0.4} />}
+              {noseStyle === 'flat' && <path d="M 46 54 Q 50 52 54 54 L 54 56 Q 50 55 46 56 Z" fill={skinDark} opacity={0.4} />}
+              {noseStyle === 'broad' && <path d="M 48 42 L 44 56 L 56 56 L 52 42 Z" fill={skinDark} opacity={0.4} />}
+              {noseStyle === 'thin' && <path d="M 50 42 L 49 56 L 51 56 Z" fill={skinDark} opacity={0.4} />}
+              
+              {/* Nose Tip */}
+              <circle cx="50" cy="54" r={2 * noseTipScale} fill={skinDark} opacity={0.2} />
+            </g>
 
             {/* Mouth */}
-            <g style={{ transformOrigin: '50px 64px' }}>
+            <g style={{ transformOrigin: '50px 64px', transform: `scale(${mouthScaleX}, ${mouthScaleY})` }}>
               {isSpeaking ? (
                 <>
                   <ellipse 
@@ -411,6 +454,24 @@ export const CustomAvatar3D: React.FC<CustomAvatarProps> = ({
                 </>
               )}
             </g>
+
+            {/* Facial Hair */}
+            {facialHairStyle !== 'none' && (
+              <g style={{ transformOrigin: '50px 65px', transform: `scale(${faceScaleX}, 1)` }}>
+                {facialHairStyle === 'stubble' && (
+                  <path d="M 25 55 Q 50 90 75 55" fill="none" stroke={facialHairColor} strokeWidth="3" strokeDasharray="1,3" opacity="0.4" />
+                )}
+                {facialHairStyle === 'mustache' && (
+                  <path d="M 40 58 Q 50 55 60 58 Q 50 62 40 58 Z" fill={facialHairColor} />
+                )}
+                {facialHairStyle === 'beard' && (
+                  <path d="M 22 55 Q 22 85 50 85 Q 78 85 78 55 Q 70 75 50 75 Q 30 75 22 55 Z" fill={facialHairColor} opacity="0.9" />
+                )}
+                {facialHairStyle === 'goatee' && (
+                  <path d="M 42 68 Q 50 80 58 68 Q 50 75 42 68 Z" fill={facialHairColor} />
+                )}
+              </g>
+            )}
           </g>
         </svg>
       </div>
