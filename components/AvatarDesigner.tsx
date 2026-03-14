@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { GoogleGenAI, Type } from '@google/genai';
 import { CustomAvatar3D, CustomAvatarProps } from './CustomAvatar3D';
 import { saveAvatarConfig, loadAvatarConfig, SavedAvatarConfig } from '../services/avatarDb';
 
@@ -23,7 +24,6 @@ export const AvatarDesigner: React.FC = () => {
   const [config, setConfig] = useState<CustomAvatarProps>({
     hairStyle: 'short',
     hairColor: '#1a1a1a',
-    faceShape: 'round',
     skinColor: '#f5cbb7',
     eyeColor: '#166534',
     eyeStyle: 'normal',
@@ -36,7 +36,6 @@ export const AvatarDesigner: React.FC = () => {
     facialHairStyle: 'none',
     facialHairColor: '#1a1a1a',
     faceWidth: 50,
-    cheekFullness: 50,
     eyeSize: 50,
     eyeAngle: 50,
     eyeDistance: 50,
@@ -58,6 +57,113 @@ export const AvatarDesigner: React.FC = () => {
   const [saveMessage, setSaveMessage] = useState('');
   const [copied, setCopied] = useState(false);
 
+  const [isCameraOpen, setIsCameraOpen] = useState(false);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  const startCamera = async () => {
+    setIsCameraOpen(true);
+    setSaveMessage('');
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+      }
+    } catch (err) {
+      console.error("Error accessing camera:", err);
+      setSaveMessage("Could not access camera. Please ensure permissions are granted.");
+      setIsCameraOpen(false);
+    }
+  };
+
+  const stopCamera = () => {
+    if (videoRef.current && videoRef.current.srcObject) {
+      const stream = videoRef.current.srcObject as MediaStream;
+      stream.getTracks().forEach(track => track.stop());
+    }
+    setIsCameraOpen(false);
+  };
+
+  const captureAndAnalyze = async () => {
+    if (!videoRef.current || !canvasRef.current) return;
+    
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    
+    const base64Image = canvas.toDataURL('image/jpeg').split(',')[1];
+    
+    stopCamera();
+    setIsAnalyzing(true);
+    setSaveMessage('');
+    
+    try {
+      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY as string });
+      
+      const response = await ai.models.generateContent({
+        model: "gemini-3-flash-preview",
+        contents: [
+          {
+            inlineData: {
+              data: base64Image,
+              mimeType: "image/jpeg"
+            }
+          },
+          "Analyze this face and map the person's features to the provided CustomAvatarProps schema. Return ONLY valid JSON matching the schema."
+        ],
+        config: {
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: Type.OBJECT,
+            properties: {
+              hairStyle: { type: Type.STRING, enum: ['short', 'long', 'bald', 'curly', 'buzzcut', 'dreadlocks', 'mohawk', 'spiky', 'wavy', 'bun', 'ponytail', 'fade', 'afro'] },
+              hairColor: { type: Type.STRING, description: "Hex color code for hair" },
+              skinColor: { type: Type.STRING, description: "Hex color code for skin" },
+              eyeColor: { type: Type.STRING, description: "Hex color code for eyes" },
+              eyeStyle: { type: Type.STRING, enum: ['normal', 'glasses', 'sunglasses'] },
+              noseStyle: { type: Type.STRING, enum: ['small', 'wide', 'pointed', 'button', 'aquiline', 'snub', 'roman', 'flat', 'broad', 'thin'] },
+              mouthStyle: { type: Type.STRING, enum: ['smile', 'neutral', 'sad', 'smirk', 'open', 'surprised', 'pout', 'laugh', 'thin', 'wide'] },
+              facialHairStyle: { type: Type.STRING, enum: ['none', 'stubble', 'mustache', 'beard', 'goatee'] },
+              facialHairColor: { type: Type.STRING, description: "Hex color code for facial hair" },
+              faceWidth: { type: Type.NUMBER, description: "0 to 100" },
+              eyeSize: { type: Type.NUMBER, description: "0 to 100" },
+              eyeAngle: { type: Type.NUMBER, description: "0 to 100" },
+              eyeDistance: { type: Type.NUMBER, description: "0 to 100" },
+              eyelidHeight: { type: Type.NUMBER, description: "0 to 100" },
+              upperLashes: { type: Type.STRING, enum: ['none', 'short', 'long', 'thick'] },
+              lowerLashes: { type: Type.STRING, enum: ['none', 'short', 'long'] },
+              noseWidth: { type: Type.NUMBER, description: "0 to 100" },
+              noseHeight: { type: Type.NUMBER, description: "0 to 100" },
+              noseAngle: { type: Type.NUMBER, description: "0 to 100" },
+              noseTipSize: { type: Type.NUMBER, description: "0 to 100" },
+              mouthFullness: { type: Type.NUMBER, description: "0 to 100" },
+              mouthWidth: { type: Type.NUMBER, description: "0 to 100" },
+              mouthHeight: { type: Type.NUMBER, description: "0 to 100" }
+            },
+            required: ["hairStyle", "hairColor", "skinColor", "eyeColor", "eyeStyle", "noseStyle", "mouthStyle", "facialHairStyle", "facialHairColor", "faceWidth", "eyeSize", "eyeAngle", "eyeDistance", "eyelidHeight", "upperLashes", "lowerLashes", "noseWidth", "noseHeight", "noseAngle", "noseTipSize", "mouthFullness", "mouthWidth", "mouthHeight"]
+          }
+        }
+      });
+      
+      const result = JSON.parse(response.text || "{}");
+      setConfig(prev => ({ ...prev, ...result }));
+      setSaveMessage('Avatar generated successfully!');
+      setTimeout(() => setSaveMessage(''), 3000);
+      
+    } catch (err) {
+      console.error("Error analyzing image:", err);
+      setSaveMessage("Failed to analyze image. Please try again.");
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
   useEffect(() => {
     const loadSaved = async () => {
       try {
@@ -65,8 +171,8 @@ export const AvatarDesigner: React.FC = () => {
         if (saved) {
           const { name, voice, ...avatarProps } = saved;
           setConfig(prev => ({ ...prev, ...avatarProps }));
-          setAvatarName(name);
-          setAiVoice(voice);
+          setAvatarName(name === 'My Avatar' ? 'Signet-Alpha' : (name || 'Signet-Alpha'));
+          setAiVoice(voice || 'Zephyr');
         }
       } catch (err) {
         console.error("Failed to load avatar config", err);
@@ -102,7 +208,6 @@ export const AvatarDesigner: React.FC = () => {
     return `<CustomAvatar3D
   hairStyle="${config.hairStyle}"
   hairColor="${config.hairColor}"
-  faceShape="${config.faceShape}"
   skinColor="${config.skinColor}"
   eyeColor="${config.eyeColor}"
   eyeStyle="${config.eyeStyle}"
@@ -139,6 +244,47 @@ export const AvatarDesigner: React.FC = () => {
           {/* Preview Panel */}
           <div className="lg:col-span-1">
             <div className="bg-[var(--bg-sidebar)] border border-[var(--border-light)] rounded-xl p-6 sticky top-24 shadow-lg">
+              
+              <div className="mb-6">
+                <button 
+                  onClick={startCamera}
+                  disabled={isAnalyzing}
+                  className="w-full px-4 py-3 bg-[var(--trust-blue)] text-white rounded-lg font-bold text-sm hover:brightness-110 transition-all shadow-md disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {isAnalyzing ? (
+                    'Analyzing Face...'
+                  ) : (
+                    <>
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
+                      Generate from Photo
+                    </>
+                  )}
+                </button>
+              </div>
+
+              {isCameraOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4">
+                  <div className="bg-[var(--bg-sidebar)] p-6 rounded-xl max-w-md w-full">
+                    <div className="flex justify-between items-center mb-4">
+                      <h3 className="text-lg font-bold text-[var(--text-header)]">Take a Photo</h3>
+                      <button onClick={stopCamera} className="text-[var(--text-body)] opacity-70 hover:opacity-100">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                      </button>
+                    </div>
+                    <div className="relative aspect-video bg-black rounded-lg overflow-hidden mb-4">
+                      <video ref={videoRef} autoPlay playsInline className="w-full h-full object-cover" />
+                      <canvas ref={canvasRef} className="hidden" />
+                    </div>
+                    <button 
+                      onClick={captureAndAnalyze}
+                      className="w-full px-4 py-3 bg-green-600 text-white rounded-lg font-bold text-sm hover:bg-green-500 transition-all shadow-md"
+                    >
+                      Capture & Generate
+                    </button>
+                  </div>
+                </div>
+              )}
+
               <div className="aspect-square w-full max-w-[300px] mx-auto mb-6">
                 <CustomAvatar3D {...config} />
               </div>
@@ -212,21 +358,6 @@ export const AvatarDesigner: React.FC = () => {
               <div className="space-y-6">
                 <h3 className="text-sm font-bold uppercase tracking-widest text-[var(--text-header)] border-b border-[var(--border-light)] pb-2">Face & Head</h3>
                 
-                <div>
-                  <label className="block text-xs font-bold text-[var(--text-body)] opacity-70 mb-2 uppercase">Face Shape</label>
-                  <div className="flex gap-2">
-                    {['round', 'oval', 'square'].map(shape => (
-                      <button 
-                        key={shape} 
-                        onClick={() => updateConfig('faceShape', shape)}
-                        className={`flex-1 py-1.5 text-sm rounded border capitalize transition-all ${config.faceShape === shape ? 'bg-[var(--trust-blue)] border-[var(--trust-blue)] text-white' : 'border-[var(--border-light)] text-[var(--text-body)] hover:border-gray-400'}`}
-                      >
-                        {shape}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
                 <div>
                   <label className="block text-xs font-bold text-[var(--text-body)] opacity-70 mb-2 uppercase">Skin Tone</label>
                   <div className="flex gap-2 flex-wrap">
@@ -313,7 +444,6 @@ export const AvatarDesigner: React.FC = () => {
                 </div>
 
                 <SliderControl label="Face Width" value={config.faceWidth || 50} onChange={(v) => updateConfig('faceWidth', v)} />
-                <SliderControl label="Cheek Fullness" value={config.cheekFullness || 50} onChange={(v) => updateConfig('cheekFullness', v)} />
               </div>
 
               {/* Details & Styling */}

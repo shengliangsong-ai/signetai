@@ -3,7 +3,6 @@ import React, { useEffect, useState } from 'react';
 export interface CustomAvatarProps {
   hairStyle: 'short' | 'long' | 'bald' | 'curly' | 'buzzcut' | 'dreadlocks' | 'mohawk' | 'spiky' | 'wavy' | 'bun' | 'ponytail' | 'fade' | 'afro';
   hairColor: string;
-  faceShape: 'round' | 'oval' | 'square';
   skinColor: string;
   eyeColor: string;
   eyeStyle: 'normal' | 'glasses' | 'sunglasses';
@@ -20,7 +19,6 @@ export interface CustomAvatarProps {
 
   // Face Adjustments
   faceWidth?: number;
-  cheekFullness?: number;
 
   // Eyes Adjustments
   eyeSize?: number;
@@ -45,7 +43,6 @@ export interface CustomAvatarProps {
 export const CustomAvatar3D: React.FC<CustomAvatarProps> = ({
   hairStyle = 'short',
   hairColor = '#1a1a1a',
-  faceShape = 'round',
   skinColor = '#f5cbb7',
   eyeColor = '#166534',
   eyeStyle = 'normal',
@@ -58,7 +55,6 @@ export const CustomAvatar3D: React.FC<CustomAvatarProps> = ({
   facialHairStyle = 'none',
   facialHairColor = '#1a1a1a',
   faceWidth = 50,
-  cheekFullness = 50,
   eyeSize = 50,
   eyeAngle = 50,
   eyeDistance = 50,
@@ -125,7 +121,6 @@ export const CustomAvatar3D: React.FC<CustomAvatarProps> = ({
 
   // Calculations for new properties
   const faceScaleX = 0.8 + (faceWidth / 100) * 0.4;
-  const cheekScaleX = 0.8 + (cheekFullness / 100) * 0.4;
   
   const eyeScale = 0.5 + (eyeSize / 100) * 1.0;
   const eyeRot = (eyeAngle - 50) * 0.5;
@@ -260,16 +255,12 @@ export const CustomAvatar3D: React.FC<CustomAvatarProps> = ({
 
             {/* Head Base */}
             <g style={{ transformOrigin: '50px 45px', transform: `scale(${faceScaleX}, 1)` }}>
-              {faceShape === 'round' && <ellipse cx="50" cy="45" rx="30" ry="34" fill="url(#customSkin)" filter="url(#customShadow)" />}
-              {faceShape === 'oval' && <ellipse cx="50" cy="45" rx="26" ry="38" fill="url(#customSkin)" filter="url(#customShadow)" />}
-              {faceShape === 'square' && <rect x="22" y="15" width="56" height="60" rx="15" fill="url(#customSkin)" filter="url(#customShadow)" />}
-              
-              {/* Cheeks */}
-              <ellipse cx="32" cy="55" rx="6" ry="8" fill="url(#customSkin)" opacity={cheekFullness / 100} style={{ transformOrigin: '32px 55px', transform: `scale(${cheekScaleX}, 1)` }} />
-              <ellipse cx="68" cy="55" rx="6" ry="8" fill="url(#customSkin)" opacity={cheekFullness / 100} style={{ transformOrigin: '68px 55px', transform: `scale(${cheekScaleX}, 1)` }} />
+              <ellipse cx="50" cy="45" rx="30" ry="34" fill="url(#customSkin)" filter="url(#customShadow)" />
             </g>
 
-            {/* Ears removed to avoid duplicate ears */}
+            {/* Ears */}
+            <ellipse cx="22" cy="48" rx="4" ry="7" fill="url(#customSkin)" filter="url(#customShadow)" />
+            <ellipse cx="78" cy="48" rx="4" ry="7" fill="url(#customSkin)" filter="url(#customShadow)" />
 
             {/* Hair Front */}
             {hairStyle !== 'bald' && (

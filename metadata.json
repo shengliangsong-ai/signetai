@@ -3,7 +3,8 @@
   "description": "The TrustKeyService for the 8 billion. Implementing the Signet Protocol for cryptographic accountability in AI-generated ecosystems aligned with C2PA 2.3.",
   "repository": "https://github.com/signetai-io/website",
   "requestFramePermissions": [
-    "microphone"
+    "microphone",
+    "camera"
   ],
   "version": "1.0.5",
   "author": "Signet Protocol Group"
