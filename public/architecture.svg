@@ -1,0 +1,210 @@
+
+<svg width="1500" height="1400" xmlns="http://www.w3.org/2000/svg" font-family="sans-serif" font-size="14">
+    <!-- Definitions -->
+    <defs>
+        <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="#333" />
+        </marker>
+    </defs>
+
+    <!-- Styles -->
+    <style>
+        .title { font-size: 20px; font-weight: bold; text-anchor: middle; }
+        .box { stroke: #333; stroke-width: 1.5; fill: #fff; rx: 5; ry: 5; }
+        .box-title { font-weight: bold; text-anchor: middle; }
+        .box-desc { font-size: 12px; text-anchor: middle; fill: #555; }
+        .flow-line { stroke: #333; stroke-width: 1.5; marker-end: url(#arrow); fill: none; }
+        .flow-label { font-size: 12px; text-anchor: middle; fill: #333; background-color: #fff; }
+        .sub-group { stroke: #ccc; stroke-dasharray: 5 5; fill: #f9f9f9; rx:10; ry:10; }
+    </style>
+
+    <!-- Column 1: Client-Side -->
+    <rect class="sub-group" x="10" y="10" width="700" height="1380" />
+    <text class="title" x="360" y="40">User's Device (Client-Side)</text>
+
+    <!-- Signet PWA -->
+    <rect class="sub-group" style="fill:#fff; stroke:#999;" x="30" y="70" width="660" height="1100" />
+    <text class="title" style="font-size:16px;" x="360" y="100">Signet PWA (React SPA)</text>
+
+    <!-- Core UI & Views -->
+    <g id="AA_AB">
+        <rect class="box" x="50" y="130" width="310" height="120" />
+        <text class="box-title" x="205" y="155">Core UI &amp; Views</text>
+        <text id="AA" class="box-desc" x="205" y="180">Home, Manual, Status</text>
+        <text id="AB" class="box-desc" x="205" y="215">Legal, Privacy, Donate</text>
+    </g>
+
+    <!-- Protocol Specification -->
+    <g id="B1_B2">
+        <rect class="box" x="380" y="130" width="300" height="120" />
+        <text class="box-title" x="530" y="155">Protocol Specification</text>
+        <text id="B1" class="box-desc" x="530" y="180">Spec &amp; Standards</text>
+        <text id="B2" class="box-desc" x="530" y="215">Schema Explorer</text>
+    </g>
+
+    <!-- Trust & Identity Tools -->
+    <g id="C1_C2_C3">
+        <rect class="box" x="50" y="270" width="630" height="150" />
+        <text class="box-title" x="365" y="295">Trust &amp; Identity Tools</text>
+        <g id="C1">
+            <rect class="box" x="70" y="320" width="280" height="80" style="fill:#f0f8ff;"/>
+            <text class="box-title" x="210" y="345">TrustKey Service (Signer)</text>
+            <text class="box-desc" x="210" y="370">Manages user's Ed25519 key pair.</text>
+        </g>
+        <g id="C2">
+            <rect class="box" x="370" y="320" width="150" height="80" />
+            <text class="box-title" x="445" y="345">Public Verifier</text>
+            <text class="box-desc" x="445" y="370">Client-side tool.</text>
+        </g>
+        <g id="C3">
+             <rect class="box" x="540" y="320" width="120" height="80" />
+            <text class="box-title" x="600" y="345">Batch Verifier</text>
+        </g>
+    </g>
+    
+    <!-- Media Labs -->
+    <g id="D1_D2_D3_D4">
+        <rect class="box" x="50" y="440" width="630" height="150" />
+        <text class="box-title" x="365" y="465">Media Labs (Attestation &amp; Analysis)</text>
+        <g id="D1"><rect class="box" x="70" y="490" width="130" height="80" /><text class="box-title" x="135" y="515">Universal Lab</text></g>
+        <g id="D2"><rect class="box" x="220" y="490" width="130" height="80" /><text class="box-title" x="285" y="515">Image Diff Lab</text></g>
+        <g id="D3"><rect class="box" x="370" y="490" width="130" height="80" /><text class="box-title" x="435" y="515">Vector (SVG) Lab</text></g>
+        <g id="D4"><rect class="box" x="520" y="490" width="140" height="80" /><text class="box-title" x="590" y="515">Document (PDF) Lab</text></g>
+    </g>
+    
+    <!-- Browser Storage -->
+    <g id="E">
+        <rect class="box" x="50" y="1200" width="630" height="100" style="fill:#fff9e6; stroke:#ffc107;"/>
+        <text class="box-title" x="365" y="1225">Browser Storage (IndexedDB)</text>
+        <text class="box-desc" x="365" y="1255" style="font-weight:bold; fill:red;">Stores: Private Key &amp; Mnemonic</text>
+        <text class="box-desc" x="365" y="1275">Data never leaves the user's device.</text>
+    </g>
+    
+    <!-- Column 2: Backend -->
+    <rect class="sub-group" x="730" y="10" width="760" height="1380" />
+    <text class="title" x="1110" y="40">Signet Platform (Backend)</text>
+
+    <!-- Firebase Hosting -->
+    <g id="F">
+        <rect class="box" x="750" y="130" width="300" height="120" />
+        <text class="box-title" x="900" y="155">Firebase Hosting</text>
+        <text class="box-desc" x="900" y="180">Serves static React PWA.</text>
+        <text class="box-desc" x="900" y="200">Handles caching via SW.</text>
+    </g>
+
+    <!-- Backend Services -->
+    <rect class="sub-group" style="fill:#fff; stroke:#999;" x="750" y="270" width="720" height="800" />
+    <text class="title" style="font-size:16px;" x="1110" y="300">Backend Services (Google Cloud)</text>
+
+    <!-- Gateway -->
+    <g id="G">
+        <rect class="box" x="1050" y="330" width="300" height="100" />
+        <text class="box-title" x="1200" y="355">Cloud Functions (Gateway)</text>
+        <text class="box-desc" x="1200" y="380">Secure API gateway for routing</text>
+        <text class="box-desc" x="1200" y="400">and authentication.</text>
+    </g>
+
+    <!-- Trident Engine -->
+    <rect class="sub-group" style="fill:#f0f8ff; stroke:#66afe9;" x="770" y="450" width="680" height="250" />
+    <text class="title" style="font-size:16px;" x="1110" y="480">Trident Engine (Microservices)</text>
+
+    <g id="H1">
+        <rect class="box" x="790" y="510" width="200" height="150" />
+        <text class="box-title" x="890" y="535">Provenance Service</text>
+        <text class="box-desc" x="890" y="565">Records &amp; retrieves</text>
+        <text class="box-desc" x="890" y="585">attestation manifests</text>
+        <text class="box-desc" x="890" y="605">and hashes.</text>
+    </g>
+    <g id="H2">
+        <rect class="box" x="1010" y="510" width="200" height="150" />
+        <text class="box-title" x="1110" y="535">Identity Service</text>
+        <text class="box-desc" x="1110" y="565">Manages the Public Key</text>
+        <text class="box-desc" x="1110" y="585">Registry (TrustKey).</text>
+    </g>
+    <g id="H3">
+        <rect class="box" x="1230" y="510" width="200" height="150" />
+        <text class="box-title" x="1330" y="535">AI Proxy Service</text>
+        <text class="box-desc" x="1330" y="565">Securely proxies requests</text>
+        <text class="box-desc" x="1330" y="585">to external AI APIs</text>
+        <text class="box-desc" x="1330" y="605">(e.g., Gemini).</text>
+    </g>
+
+    <!-- Firestore -->
+    <g id="I">
+        <rect class="box" x="770" y="720" width="680" height="100" style="fill:#e6f9ff; stroke:#00b8d4;" />
+        <text class="box-title" x="1110" y="745">Firestore Database</text>
+        <text class="box-desc" x="1110" y="775">Stores Public Key Registry,</text>
+        <text class="box-desc" x="1110" y="795">Provenance Manifests, and Hashes.</text>
+    </g>
+    
+    <!-- External AI APIs -->
+    <g id="J">
+        <rect class="box" x="1130" y="1100" width="240" height="100" />
+        <text class="box-title" x="1250" y="1125">External AI APIs</text>
+        <text class="box-desc" x="1250" y="1155">(e.g., Google Gemini)</text>
+        <text class="box-desc" x="1250" y="1175">Provides generative and</text>
+        <text class="box-desc" x="1250" y="1195">analytical capabilities.</text>
+    </g>
+
+
+    <!-- ARROWS -->
+
+    <!-- C1 -> E -->
+    <path class="flow-line" d="M365,420 v780" />
+    <text class="flow-label" x="420" y="810">Stores Keys Locally</text>
+    
+    <!-- F -> AA -->
+    <path class="flow-line" d="M750,190 H 360" />
+    <text class="flow-label" x="555" y="180">Serves React App</text>
+    
+    <!-- C1 -> H2 -->
+    <path class="flow-line" d="M350,360 H 1110 V 510" />
+    <text class="flow-label" x="730" y="350">Publishes Public Key</text>
+
+    <!-- Media Labs -> G -->
+    <path class="flow-line" d="M680,515 H 1050 V 400" />
+    <text class="flow-label" x="865" y="505">Sends Attestation Data</text>
+
+    <!-- G -> H1 -->
+    <path class="flow-line" d="M1200,430 V 460 H 890 V 510" />
+    <text class="flow-label" x="1045" y="470">Routes to Provenance Service</text>
+
+    <!-- H1 -> I -->
+    <path class="flow-line" d="M890,660 V 720" />
+    <text class="flow-label" x="870" y="690" transform="rotate(-90, 870, 690)">Writes Manifest</text>
+
+    <!-- Verifier -> G -->
+    <path class="flow-line" d="M520,360 H 1050 V 380" />
+    <text class="flow-label" x="785" y="350">Requests Public Key</text>
+
+    <!-- G -> H2 -->
+    <path class="flow-line" d="M1200,430 V 460 H 1110 V 510" />
+    <text class="flow-label" x="1155" y="490">Routes to Identity Service</text>
+
+    <!-- H2 -> I -->
+    <path class="flow-line" d="M1110,660 V 720" />
+    <text class="flow-label" x="1090" y="690" transform="rotate(-90, 1090, 690)">Reads Registry</text>
+    
+    <!-- H2 -> Verifier -->
+    <path class="flow-line" d="M1110,510 V 400 H 520 V 380" />
+    <text class="flow-label" x="815" y="420">Returns Public Key</text>
+
+    <!-- AI Features -> G -->
+    <path class="flow-line" d="M360,190 H 700 V 350 H 1050" />
+    <text class="flow-label" x="705" y="320">Sends AI Chat/Analysis Request</text>
+
+    <!-- G -> H3 -->
+    <path class="flow-line" d="M1200,430 V 460 H 1330 V 510" />
+    <text class="flow-label" x="1265" y="490">Routes to AI Proxy</text>
+
+    <!-- H3 <-> J -->
+    <path class="flow-line" d="M1330,660 V 1150 H 1250" />
+    <text class="flow-label" x="1350" y="900">Calls External API</text>
+    <path class="flow-line" d="M1250,1100 H 1330 V 660" />
+    <text class="flow-label" x="1230" y="900">Returns Response</text>
+    
+    <!-- H3 -> AA -->
+    <path class="flow-line" d="M1330,510 V 300 H 360 V 250" />
+    <text class="flow-label" x="845" y="280">Forwards Response</text>
+
+</svg>
