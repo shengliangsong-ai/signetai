@@ -68,6 +68,10 @@ export const LiveAssistant: React.FC = () => {
   const [customAvatar, setCustomAvatar] = useState<SavedAvatarConfig | null>(null);
   const [isAgentSpeaking, setIsAgentSpeaking] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [presetTab, setPresetTab] = useState<'all' | 'female' | 'male'>('all');
+  const [presetSearch, setPresetSearch] = useState('');
+  const [showSearchHelp, setShowSearchHelp] = useState(false);
+  const [isGeneratingFromSearch, setIsGeneratingFromSearch] = useState(false);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -229,6 +233,77 @@ export const LiveAssistant: React.FC = () => {
     setStatus('OFFLINE');
     setVolume(0);
     nextStartTimeRef.current = 0;
+  };
+
+  const handleAIGenerate = async (query: string) => {
+    setIsGeneratingFromSearch(true);
+    try {
+      const { GoogleGenAI } = await import('@google/genai');
+      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY as string });
+      const response = await ai.models.generateContent({
+        model: "gemini-3-flash-preview",
+        contents: `Generate a 3D avatar configuration based on this search query: "${query}".
+        Return ONLY a valid JSON object with these exact keys and appropriate values.
+        String values must be chosen from the allowed options if applicable.
+        Numeric values should be between 40 and 60.
+        Colors should be hex codes.
+        CRITICAL: Ensure high contrast between the background theme (bgTheme) and the skinColor/clothesColor. If the skin or clothes are dark, use a 'light' bgTheme. If they are light, use a 'dark' bgTheme.`,
+        config: {
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: Type.OBJECT,
+            properties: {
+              gender: { type: Type.STRING, enum: ['male', 'female'], description: "The gender of the person" },
+              age: { type: Type.NUMBER, description: "Age between 18 and 80" },
+              skinColor: { type: Type.STRING, description: "Hex color code" },
+              hairColor: { type: Type.STRING, description: "Hex color code" },
+              eyeColor: { type: Type.STRING, description: "Hex color code" },
+              hairStyle: { type: Type.STRING, enum: ['short', 'long', 'bald', 'curly', 'buzzcut', 'dreadlocks', 'mohawk', 'spiky', 'wavy', 'bun', 'ponytail', 'fade', 'afro'] },
+              eyeStyle: { type: Type.STRING, enum: ['normal', 'glasses', 'sunglasses'] },
+              noseStyle: { type: Type.STRING, enum: ['small', 'wide', 'pointed', 'button', 'aquiline', 'snub', 'roman', 'flat', 'broad', 'thin'] },
+              mouthStyle: { type: Type.STRING, enum: ['smile', 'neutral', 'sad', 'smirk', 'open', 'surprised', 'pout', 'laugh', 'thin', 'wide'] },
+              clothesStyle: { type: Type.STRING, enum: ['tshirt', 'suit', 'hoodie', 'sweater', 'jacket', 'tanktop', 'dress', 'shirt', 'turtleneck', 'vneck', 'doctor', 'chef', 'police', 'astronaut', 'construction', 'ninja', 'wizard', 'cyberpunk', 'sports', 'military', 'royal', 'farmer', 'kimono', 'hanfu', 'sari', 'dashiki', 'poncho', 'qipao', 'dirndl', 'kilt'] },
+              clothesColor: { type: Type.STRING, description: "Hex color code" },
+              bgTheme: { type: Type.STRING, enum: ['light', 'dark', 'gradient', 'neon'] },
+              headwear: { type: Type.STRING, enum: ['none', 'cap', 'beanie', 'hijab', 'turban', 'sombrero', 'conical', 'crown', 'cowboy', 'headband'] },
+              facialHairStyle: { type: Type.STRING, enum: ['none', 'stubble', 'mustache', 'beard', 'goatee'] },
+              facialHairColor: { type: Type.STRING, description: "Hex color code" },
+              faceWidth: { type: Type.NUMBER, description: "40 to 60" },
+              eyeSize: { type: Type.NUMBER, description: "40 to 60" },
+              eyeAngle: { type: Type.NUMBER, description: "40 to 60" },
+              eyeDistance: { type: Type.NUMBER, description: "40 to 60" },
+              eyelidHeight: { type: Type.NUMBER, description: "40 to 60" },
+              upperLashes: { type: Type.STRING, enum: ['none', 'short', 'long', 'thick'] },
+              lowerLashes: { type: Type.STRING, enum: ['none', 'short', 'long'] },
+              noseWidth: { type: Type.NUMBER, description: "40 to 60" },
+              noseHeight: { type: Type.NUMBER, description: "40 to 60" },
+              noseAngle: { type: Type.NUMBER, description: "40 to 60" },
+              noseTipSize: { type: Type.NUMBER, description: "40 to 60" },
+              mouthFullness: { type: Type.NUMBER, description: "40 to 60" },
+              mouthWidth: { type: Type.NUMBER, description: "40 to 60" },
+              mouthHeight: { type: Type.NUMBER, description: "40 to 60" }
+            },
+            required: ["gender", "age", "skinColor", "hairColor", "eyeColor", "hairStyle", "eyeStyle", "noseStyle", "mouthStyle", "clothesStyle", "clothesColor", "bgTheme", "headwear", "facialHairStyle", "facialHairColor", "faceWidth", "eyeSize", "eyeAngle", "eyeDistance", "eyelidHeight", "upperLashes", "lowerLashes", "noseWidth", "noseHeight", "noseAngle", "noseTipSize", "mouthFullness", "mouthWidth", "mouthHeight"]
+          }
+        }
+      });
+      const data = JSON.parse(response.text || '{}');
+      const newAvatar: SavedAvatarConfig = {
+        ...data,
+        id: 'ai-generated',
+        name: 'AI Generated',
+        voice: data.gender === 'female' ? 'Zephyr' : 'Puck',
+        lastModified: Date.now()
+      };
+      setCustomAvatar(newAvatar);
+      setSelectedVoice(newAvatar.voice || 'Zephyr');
+      setPresetSearch('');
+      setShowSettings(false);
+    } catch (e) {
+      console.error("Failed to generate avatar from search:", e);
+    } finally {
+      setIsGeneratingFromSearch(false);
+    }
   };
 
   const initVoiceChat = async () => {
@@ -634,32 +709,139 @@ export const LiveAssistant: React.FC = () => {
           {!isMinimized && (
             <>
               {showSettings && (
-                <div className="p-4 bg-[var(--bg-standard)] border-b border-[var(--border-light)] shrink-0 max-h-[400px] overflow-y-auto">
-                  <h4 className="text-[10px] font-bold uppercase tracking-widest text-[var(--text-body)] opacity-60 mb-3">Select Avatar</h4>
-                  <div className="grid grid-cols-4 gap-4 p-2">
-                    {avatars.map((avatar: AvatarConfig) => (
+                <div className="p-4 bg-[var(--bg-standard)] border-b border-[var(--border-light)] shrink-0 max-h-[400px] overflow-y-auto flex flex-col gap-3">
+                  <div className="flex justify-between items-center">
+                    <h4 className="text-[10px] font-bold uppercase tracking-widest text-[var(--text-body)] opacity-60">Select Avatar</h4>
+                  </div>
+                  
+                  <div className="flex flex-col gap-2">
+                    <div className="flex bg-[var(--bg-sidebar)] p-1 rounded-md border border-[var(--border-light)]">
+                      {(['all', 'female', 'male'] as const).map(tab => (
+                        <button
+                          key={tab}
+                          onClick={() => setPresetTab(tab)}
+                          className={`flex-1 px-2 py-1 text-[10px] font-medium rounded capitalize transition-all ${presetTab === tab ? 'bg-[var(--trust-blue)] text-white shadow-sm' : 'text-[var(--text-body)] hover:bg-[var(--bg-standard)] opacity-70 hover:opacity-100'}`}
+                        >
+                          {tab}
+                        </button>
+                      ))}
+                    </div>
+                    <div className="flex items-center gap-1 w-full">
+                      <div className="relative w-full">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="absolute left-2 top-1/2 -translate-y-1/2 text-[var(--text-body)] opacity-50"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                        <input
+                          type="text"
+                          placeholder="Search..."
+                          value={presetSearch}
+                          onChange={(e) => setPresetSearch(e.target.value)}
+                          className="w-full pl-7 pr-2 py-1 text-[10px] bg-[var(--bg-sidebar)] border border-[var(--border-light)] rounded-md text-[var(--text-body)] focus:outline-none focus:ring-1 focus:ring-[var(--trust-blue)]"
+                        />
+                      </div>
                       <button 
-                        key={avatar.id}
-                        onClick={() => {
-                          setSelectedAvatarId(avatar.id);
-                          setCustomAvatar(null);
-                          if (avatar.gender === 'female') {
-                            if (!selectedVoice.includes('Zephyr') && !selectedVoice.includes('Kore')) {
-                              setSelectedVoice('Zephyr');
-                            }
-                          } else {
-                            if (!selectedVoice.includes('Puck') && !selectedVoice.includes('Charon') && !selectedVoice.includes('Fenrir')) {
-                              setSelectedVoice('Puck');
-                            }
-                          }
-                        }}
-                        className={`relative aspect-square rounded-full overflow-hidden border-2 transition-all ${selectedAvatarId === avatar.id ? 'border-[var(--trust-blue)] shadow-[0_0_15px_rgba(0,85,255,0.4)] scale-105' : 'border-transparent hover:border-[var(--border-light)] hover:scale-105'}`}
+                        onClick={() => setShowSearchHelp(!showSearchHelp)}
+                        className="p-1 bg-[var(--bg-sidebar)] border border-[var(--border-light)] rounded-md hover:bg-[var(--bg-standard)] transition-colors text-[var(--text-body)] opacity-70 hover:opacity-100"
+                        title="Search Usage Manual"
                       >
-                        <div className="w-full h-full pointer-events-none flex items-center justify-center">
-                          <CustomAvatar3D {...avatar} isSpeaking={false} />
-                        </div>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg>
                       </button>
-                    ))}
+                    </div>
+                  </div>
+
+                  {showSearchHelp && (
+                    <div className="bg-[var(--bg-sidebar)] border border-[var(--border-light)] rounded-md p-2 text-[10px] text-[var(--text-body)] animate-in fade-in slide-in-from-top-1 max-h-[60vh] overflow-y-auto">
+                      <strong className="block text-[var(--trust-blue)] mb-1">How to Search</strong>
+                      <ul className="list-disc pl-3 opacity-80 space-y-1">
+                        <li>Names: "Emm" (matches Emma)</li>
+                        <li>Careers: "engineer", "doctor"</li>
+                        <li>Hobbies: "cooking", "runner"</li>
+                        <li>Features: "glasses", "beard"</li>
+                      </ul>
+                      <p className="mt-2 opacity-80 mb-3">If no results match, click "Generate with AI" to create one instantly!</p>
+                      
+                      <div className="border-t border-[var(--border-light)] pt-2">
+                        <strong className="block text-[var(--trust-blue)] mb-1">Programmatic API</strong>
+                        <p className="opacity-80 mb-2">Supported values for <code>&lt;CustomAvatar3D /&gt;</code>:</p>
+                        <div className="space-y-1 opacity-80">
+                          <p><span className="font-semibold">hairStyle:</span> 'short'|'long'|'bald'|'curly'|'buzzcut'|'dreadlocks'|'mohawk'|'spiky'|'wavy'|'bun'|'ponytail'|'fade'|'afro'</p>
+                          <p><span className="font-semibold">eyeStyle:</span> 'normal'|'glasses'|'sunglasses'</p>
+                          <p><span className="font-semibold">noseStyle:</span> 'small'|'wide'|'pointed'|'button'|'aquiline'|'snub'|'roman'|'flat'|'broad'|'thin'</p>
+                          <p><span className="font-semibold">mouthStyle:</span> 'smile'|'neutral'|'sad'|'smirk'|'open'|'surprised'|'pout'|'laugh'|'thin'|'wide'</p>
+                          <p><span className="font-semibold">clothesStyle:</span> 'tshirt'|'suit'|'hoodie'|'sweater'|'jacket'|'tanktop'|'dress'|'shirt'|'turtleneck'|'vneck'|'doctor'|'chef'|'police'|'astronaut'|'construction'|'ninja'|'wizard'|'cyberpunk'|'sports'|'military'|'royal'|'farmer'|'kimono'|'hanfu'|'sari'|'dashiki'|'poncho'|'qipao'|'dirndl'|'kilt'</p>
+                          <p><span className="font-semibold">headwear:</span> 'none'|'cap'|'beanie'|'hijab'|'turban'|'sombrero'|'conical'|'crown'|'cowboy'|'headband'</p>
+                          <p><span className="font-semibold">facialHairStyle:</span> 'none'|'stubble'|'mustache'|'beard'|'goatee'</p>
+                          <p><span className="font-semibold">bgTheme:</span> 'light'|'dark'|'gradient'|'neon'</p>
+                          <p><span className="font-semibold">Colors:</span> hairColor, skinColor, eyeColor, clothesColor, facialHairColor</p>
+                          <p><span className="font-semibold">Numeric (0-100):</span> faceWidth, eyeSize, eyeAngle, eyeDistance, eyelidHeight, noseWidth, noseHeight, noseAngle, noseTipSize, mouthFullness, mouthWidth, mouthHeight</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="grid grid-cols-4 gap-4 p-2">
+                    {(() => {
+                      const filteredAvatars = avatars.filter(avatar => {
+                        if (presetTab !== 'all' && avatar.gender !== presetTab) return false;
+                        if (presetSearch) {
+                          const searchLower = presetSearch.toLowerCase();
+                          const nameMatch = avatar.name?.toLowerCase().includes(searchLower);
+                          const keywordMatch = avatar.keywords?.some(k => k.toLowerCase().includes(searchLower));
+                          return nameMatch || keywordMatch;
+                        }
+                        return true;
+                      });
+
+                      if (filteredAvatars.length === 0) {
+                        return (
+                          <div className="col-span-4 flex flex-col items-center justify-center text-center p-4 border border-dashed border-[var(--border-light)] rounded-lg">
+                            <p className="text-[10px] text-[var(--text-body)] opacity-70 mb-3">
+                              No avatars found for "{presetSearch}".
+                            </p>
+                            <button
+                              onClick={() => handleAIGenerate(presetSearch)}
+                              disabled={isGeneratingFromSearch}
+                              className="flex items-center gap-1 px-3 py-1.5 bg-[var(--trust-blue)] text-white text-[10px] font-medium rounded-md hover:bg-blue-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              {isGeneratingFromSearch ? (
+                                <>
+                                  <svg className="animate-spin h-3 w-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                                  Generating...
+                                </>
+                              ) : (
+                                <>
+                                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2v4"/><path d="M12 18v4"/><path d="M4.93 4.93l2.83 2.83"/><path d="M16.24 16.24l2.83 2.83"/><path d="M2 12h4"/><path d="M18 12h4"/><path d="M4.93 19.07l2.83-2.83"/><path d="M16.24 7.76l2.83-2.83"/></svg>
+                                  Generate AI Avatar
+                                </>
+                              )}
+                            </button>
+                          </div>
+                        );
+                      }
+
+                      return filteredAvatars.map((avatar: AvatarConfig) => (
+                        <button 
+                          key={avatar.id}
+                          onClick={() => {
+                            setSelectedAvatarId(avatar.id);
+                            setCustomAvatar(null);
+                            if (avatar.gender === 'female') {
+                              if (!selectedVoice.includes('Zephyr') && !selectedVoice.includes('Kore')) {
+                                setSelectedVoice('Zephyr');
+                              }
+                            } else {
+                              if (!selectedVoice.includes('Puck') && !selectedVoice.includes('Charon') && !selectedVoice.includes('Fenrir')) {
+                                setSelectedVoice('Puck');
+                              }
+                            }
+                          }}
+                          className={`relative aspect-square rounded-full overflow-hidden border-2 transition-all group ${selectedAvatarId === avatar.id ? 'border-[var(--trust-blue)] shadow-[0_0_15px_rgba(0,85,255,0.4)] scale-105' : 'border-transparent hover:border-[var(--border-light)] hover:scale-105'}`}
+                          title={avatar.name || `${avatar.gender === 'female' ? 'Female' : 'Male'} ${avatar.id.replace(/[a-z]/g, '')}`}
+                        >
+                          <div className="w-full h-full pointer-events-none flex items-center justify-center">
+                            <CustomAvatar3D {...avatar} isSpeaking={false} />
+                          </div>
+                        </button>
+                      ));
+                    })()}
                   </div>
                 </div>
               )}
@@ -681,7 +863,7 @@ export const LiveAssistant: React.FC = () => {
                     )}
                   </div>
                   <span className={`mt-4 text-[10px] font-mono uppercase tracking-widest transition-colors duration-300 z-10 ${isAgentSpeaking ? 'text-blue-500 font-bold' : 'text-slate-500'}`}>
-                    {isAgentSpeaking ? `${customAvatar ? customAvatar.name : 'Signet-Alpha'} Speaking...` : 'Listening...'}
+                    {isAgentSpeaking ? `${customAvatar ? customAvatar.name : (avatars.find(a => a.id === selectedAvatarId)?.name || 'Signet-Alpha')} Speaking...` : 'Listening...'}
                   </span>
                 </div>
               )}

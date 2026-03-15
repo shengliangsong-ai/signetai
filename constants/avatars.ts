@@ -4,9 +4,11 @@ export interface AvatarConfig extends CustomAvatarProps {
   id: string;
   gender: 'male' | 'female';
   age: number;
+  name?: string;
+  keywords?: string[];
 }
 
-export const avatars: AvatarConfig[] = [
+const rawAvatars: AvatarConfig[] = [
   // Females (Ages 6, 16, 26, 36, 46, 56)
   { 
     id: 'f1', gender: 'female', age: 6, 
@@ -976,3 +978,38 @@ export const avatars: AvatarConfig[] = [
     mouthFullness: 48, mouthWidth: 54, mouthHeight: 54
   },
 ];
+
+const femaleNames = ['Emma', 'Olivia', 'Ava', 'Isabella', 'Sophia', 'Mia', 'Charlotte', 'Amelia', 'Harper', 'Evelyn', 'Aisha', 'Mei', 'Yuki', 'Fatima', 'Sofia', 'Chloe', 'Zoe', 'Lily', 'Aria', 'Nora', 'Layla', 'Mila', 'Eleanor', 'Hannah', 'Lillian', 'Addison', 'Aubrey', 'Ellie', 'Stella', 'Natalie', 'Leah', 'Hazel', 'Violet', 'Aurora', 'Savannah', 'Audrey', 'Brooklyn', 'Bella', 'Claire', 'Skylar', 'Lucy', 'Paisley', 'Everly', 'Anna', 'Caroline', 'Nova', 'Genesis', 'Emilia', 'Kennedy', 'Samantha'];
+const maleNames = ['Liam', 'Noah', 'William', 'James', 'Oliver', 'Benjamin', 'Elijah', 'Lucas', 'Mason', 'Logan', 'Omar', 'Kenji', 'Wei', 'Tariq', 'Mateo', 'Leo', 'Jack', 'Luke', 'Jayden', 'Dylan', 'Alexander', 'Ethan', 'Jacob', 'Michael', 'Daniel', 'Henry', 'Jackson', 'Sebastian', 'Aiden', 'Matthew', 'Samuel', 'David', 'Joseph', 'Carter', 'Owen', 'Wyatt', 'John', 'Grayson', 'Levi', 'Isaac', 'Gabriel', 'Julian', 'Anthony', 'Jaxon', 'Lincoln', 'Joshua', 'Christopher', 'Andrew', 'Theodore', 'Caleb'];
+
+const extraKeywords = [
+  'engineer', 'cooking', 'teacher', 'dancer', 'singer', 'farmer', 'driver', 'joker', 
+  'basketball player', 'soccer player', 'fisher', 'runner', 'hiker', 'AI engineer', 
+  'database engineer', 'robotic engineer', 'doctor', 'chef', 'police', 'astronaut', 
+  'ninja', 'wizard', 'student', 'artist', 'writer', 'musician', 'athlete', 'gamer'
+];
+
+export const avatars: AvatarConfig[] = rawAvatars.map((a, i) => {
+  const nameList = a.gender === 'female' ? femaleNames : maleNames;
+  // Use a pseudo-random but deterministic index based on id
+  const nameIndex = parseInt(a.id.replace(/\D/g, '')) || i;
+  const name = nameList[nameIndex % nameList.length];
+  
+  // Assign 2 deterministic extra keywords per avatar
+  const extra1 = extraKeywords[i % extraKeywords.length];
+  const extra2 = extraKeywords[(i * 3 + 7) % extraKeywords.length];
+
+  const keywords = [
+    a.clothesStyle, 
+    a.hairStyle, 
+    a.gender, 
+    a.age.toString(), 
+    a.headwear && a.headwear !== 'none' ? a.headwear : '',
+    a.facialHairStyle && a.facialHairStyle !== 'none' ? a.facialHairStyle : '',
+    a.eyeStyle && a.eyeStyle !== 'normal' ? a.eyeStyle : '',
+    extra1,
+    extra2
+  ].filter(Boolean) as string[];
+
+  return { ...a, name, keywords };
+});

@@ -129,8 +129,10 @@ export const CustomAvatar3D: React.FC<CustomAvatarProps> = ({
   const skinShadow = `rgb(${Math.max(0, rgb.r - 40)}, ${Math.max(0, rgb.g - 40)}, ${Math.max(0, rgb.b - 40)})`;
   const skinDark = `rgb(${Math.max(0, rgb.r - 80)}, ${Math.max(0, rgb.g - 80)}, ${Math.max(0, rgb.b - 80)})`;
 
-  // Force all backgrounds to be light/white to simplify and guarantee contrast
-  const bgClass = "bg-white border-4 border-slate-100";
+  let bgClass = "bg-white border-4 border-slate-100";
+  if (bgTheme === 'dark') bgClass = "bg-slate-900 border-4 border-slate-800";
+  else if (bgTheme === 'gradient') bgClass = "bg-gradient-to-br from-blue-400 to-purple-500 border-4 border-blue-300";
+  else if (bgTheme === 'neon') bgClass = "bg-black border-4 border-pink-500 shadow-[0_0_15px_rgba(236,72,153,0.5)]";
 
   // Calculations for new properties
   const faceScaleX = 0.8 + (faceWidth / 100) * 0.4;

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { GoogleGenAI, Type } from '@google/genai';
 import { CustomAvatar3D, CustomAvatarProps } from './CustomAvatar3D';
-import { saveAvatarConfig, loadAvatarConfig, SavedAvatarConfig } from '../services/avatarDb';
+import { saveAvatarConfig, loadAvatarConfig, SavedAvatarConfig, saveCustomAvatar, loadCustomAvatars, deleteCustomAvatar } from '../services/avatarDb';
 import { avatars } from '../constants/avatars';
 
 export const normalizeColor = (color: string, defaultColor: string = '#000000') => {
@@ -58,20 +58,40 @@ export const ensureGoodContrast = <T extends Partial<CustomAvatarProps>>(config:
   if (config.hairColor) config.hairColor = normalizeColor(config.hairColor, '#1a1a1a');
   if (config.eyeColor) config.eyeColor = normalizeColor(config.eyeColor, '#166534');
 
-  // Simplify: always use light background
-  config.bgTheme = 'light';
-
-  // Avoid white or extremely light face color
   const skinLum = getLuminance(config.skinColor || '#ffe0d2');
-  if (skinLum > 0.8) {
-    // If skin is too light/white, set it to a default natural skin tone
-    config.skinColor = '#f5cbb7';
+  const clothesLum = getLuminance(config.clothesColor || '#0055FF');
+  
+  let bestTheme: 'light' | 'dark' | 'gradient' | 'neon' = config.bgTheme || 'light';
+  let bestContrast = 0;
+
+  // First try to find a theme that works with the current skin and clothes
+  for (const theme of ['light', 'dark', 'gradient', 'neon'] as const) {
+    const themeLum = bgLuminance[theme];
+    const sContrast = getContrast(skinLum, themeLum);
+    const cContrast = getContrast(clothesLum, themeLum);
+    const minContrast = Math.min(sContrast, cContrast);
+    
+    if (minContrast > bestContrast) {
+      bestContrast = minContrast;
+      bestTheme = theme;
+    }
   }
 
-  // Ensure clothes aren't too light against the white background
-  const clothesLum = getLuminance(config.clothesColor || '#0055FF');
-  if (clothesLum > 0.8) {
-    config.clothesColor = '#0055FF'; // Default to blue if clothes are too white
+  config.bgTheme = bestTheme;
+
+  // If even the best theme has poor contrast, adjust the colors
+  if (bestContrast < 2.5) {
+    const themeLum = bgLuminance[bestTheme];
+    
+    // Check skin contrast
+    if (getContrast(skinLum, themeLum) < 2.5) {
+      config.skinColor = themeLum > 0.5 ? '#8d5524' : '#f5cbb7';
+    }
+    
+    // Check clothes contrast
+    if (getContrast(clothesLum, themeLum) < 2.5) {
+      config.clothesColor = themeLum > 0.5 ? '#1a1a1a' : '#f8f9fa';
+    }
   }
 
   return config;
@@ -131,6 +151,11 @@ export const AvatarDesigner: React.FC<{ onAvatarGenerated?: (config: CustomAvata
   const [saveMessage, setSaveMessage] = useState('');
   const [copied, setCopied] = useState(false);
   const [showPresetModal, setShowPresetModal] = useState(false);
+  const [presetTab, setPresetTab] = useState<'all' | 'female' | 'male' | 'custom'>('all');
+  const [presetSearch, setPresetSearch] = useState('');
+  const [showSearchHelp, setShowSearchHelp] = useState(false);
+  const [isGeneratingFromSearch, setIsGeneratingFromSearch] = useState(false);
+  const [customAvatars, setCustomAvatars] = useState<SavedAvatarConfig[]>([]);
 
   const [isCameraOpen, setIsCameraOpen] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -158,6 +183,83 @@ export const AvatarDesigner: React.FC<{ onAvatarGenerated?: (config: CustomAvata
       stream.getTracks().forEach(track => track.stop());
     }
     setIsCameraOpen(false);
+  };
+
+  const handleAIGenerate = async (query: string) => {
+    setIsGeneratingFromSearch(true);
+    setSaveMessage('');
+    try {
+      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY as string });
+      const response = await ai.models.generateContent({
+        model: "gemini-3-flash-preview",
+        contents: `Generate a 3D avatar configuration based on this search query: "${query}".
+        Return ONLY a valid JSON object with these exact keys and appropriate values.
+        String values must be chosen from the allowed options if applicable.
+        Numeric values should be between 40 and 60.
+        Colors should be hex codes.
+        CRITICAL: Ensure high contrast between the background theme (bgTheme) and the skinColor/clothesColor. If the skin or clothes are dark, use a 'light' bgTheme. If they are light, use a 'dark' bgTheme.`,
+        config: {
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: Type.OBJECT,
+            properties: {
+              gender: { type: Type.STRING, enum: ['male', 'female'], description: "The gender of the person" },
+              age: { type: Type.NUMBER, description: "Age between 18 and 80" },
+              skinColor: { type: Type.STRING, description: "Hex color code" },
+              hairColor: { type: Type.STRING, description: "Hex color code" },
+              eyeColor: { type: Type.STRING, description: "Hex color code" },
+              hairStyle: { type: Type.STRING, enum: ['short', 'long', 'bald', 'curly', 'buzzcut', 'dreadlocks', 'mohawk', 'spiky', 'wavy', 'bun', 'ponytail', 'fade', 'afro'] },
+              eyeStyle: { type: Type.STRING, enum: ['normal', 'glasses', 'sunglasses'] },
+              noseStyle: { type: Type.STRING, enum: ['small', 'wide', 'pointed', 'button', 'aquiline', 'snub', 'roman', 'flat', 'broad', 'thin'] },
+              mouthStyle: { type: Type.STRING, enum: ['smile', 'neutral', 'sad', 'smirk', 'open', 'surprised', 'pout', 'laugh', 'thin', 'wide'] },
+              clothesStyle: { type: Type.STRING, enum: ['tshirt', 'suit', 'hoodie', 'sweater', 'jacket', 'tanktop', 'dress', 'shirt', 'turtleneck', 'vneck', 'doctor', 'chef', 'police', 'astronaut', 'construction', 'ninja', 'wizard', 'cyberpunk', 'sports', 'military', 'royal', 'farmer', 'kimono', 'hanfu', 'sari', 'dashiki', 'poncho', 'qipao', 'dirndl', 'kilt'] },
+              clothesColor: { type: Type.STRING, description: "Hex color code" },
+              bgTheme: { type: Type.STRING, enum: ['light', 'dark', 'gradient', 'neon'] },
+              headwear: { type: Type.STRING, enum: ['none', 'cap', 'beanie', 'hijab', 'turban', 'sombrero', 'conical', 'crown', 'cowboy', 'headband'] },
+              facialHairStyle: { type: Type.STRING, enum: ['none', 'stubble', 'mustache', 'beard', 'goatee'] },
+              facialHairColor: { type: Type.STRING, description: "Hex color code" },
+              faceWidth: { type: Type.NUMBER, description: "40 to 60" },
+              eyeSize: { type: Type.NUMBER, description: "40 to 60" },
+              eyeAngle: { type: Type.NUMBER, description: "40 to 60" },
+              eyeDistance: { type: Type.NUMBER, description: "40 to 60" },
+              eyelidHeight: { type: Type.NUMBER, description: "40 to 60" },
+              upperLashes: { type: Type.STRING, enum: ['none', 'short', 'long', 'thick'] },
+              lowerLashes: { type: Type.STRING, enum: ['none', 'short', 'long'] },
+              noseWidth: { type: Type.NUMBER, description: "40 to 60" },
+              noseHeight: { type: Type.NUMBER, description: "40 to 60" },
+              noseAngle: { type: Type.NUMBER, description: "40 to 60" },
+              noseTipSize: { type: Type.NUMBER, description: "40 to 60" },
+              mouthFullness: { type: Type.NUMBER, description: "40 to 60" },
+              mouthWidth: { type: Type.NUMBER, description: "40 to 60" },
+              mouthHeight: { type: Type.NUMBER, description: "40 to 60" }
+            },
+            required: ["gender", "age", "skinColor", "hairColor", "eyeColor", "hairStyle", "eyeStyle", "noseStyle", "mouthStyle", "clothesStyle", "clothesColor", "bgTheme", "headwear", "facialHairStyle", "facialHairColor", "faceWidth", "eyeSize", "eyeAngle", "eyeDistance", "eyelidHeight", "upperLashes", "lowerLashes", "noseWidth", "noseHeight", "noseAngle", "noseTipSize", "mouthFullness", "mouthWidth", "mouthHeight"]
+          }
+        }
+      });
+      const data = JSON.parse(response.text || '{}');
+      setConfig(prev => {
+        const newConfig = ensureGoodContrast({ ...prev, ...data });
+        
+        const customName = `AI Generated - ${query}`;
+        saveCustomAvatar({
+          ...newConfig,
+          name: customName,
+          voice: data.gender === 'female' ? 'Zephyr' : 'Puck'
+        }).then(newCustomAvatar => {
+          setCustomAvatars(customList => [newCustomAvatar, ...customList]);
+        });
+        
+        return newConfig;
+      });
+      setShowPresetModal(false);
+      setPresetSearch('');
+    } catch (e) {
+      console.error(e);
+      setSaveMessage("Failed to generate avatar from search.");
+    } finally {
+      setIsGeneratingFromSearch(false);
+    }
   };
 
   const captureAndAnalyze = async () => {
@@ -241,6 +343,16 @@ export const AvatarDesigner: React.FC<{ onAvatarGenerated?: (config: CustomAvata
         const mergedConfig = { ...prev, ...result };
         const contrastFixedResult = ensureGoodContrast(mergedConfig);
         if (onAvatarGenerated) onAvatarGenerated(contrastFixedResult);
+        
+        const customName = `AI Generated - Camera`;
+        saveCustomAvatar({
+          ...contrastFixedResult,
+          name: customName,
+          voice: result.gender === 'female' ? 'Zephyr' : 'Puck'
+        }).then(newCustomAvatar => {
+          setCustomAvatars(customList => [newCustomAvatar, ...customList]);
+        });
+        
         return contrastFixedResult;
       });
       
@@ -275,6 +387,8 @@ export const AvatarDesigner: React.FC<{ onAvatarGenerated?: (config: CustomAvata
           setAvatarName(name === 'My Avatar' ? 'Signet-Alpha' : (name || 'Signet-Alpha'));
           setAiVoice(voice || 'Zephyr');
         }
+        const custom = await loadCustomAvatars();
+        setCustomAvatars(custom);
       } catch (err) {
         console.error("Failed to load avatar config", err);
       }
@@ -334,6 +448,10 @@ export const AvatarDesigner: React.FC<{ onAvatarGenerated?: (config: CustomAvata
   const skinContrast = getContrast(skinLum, bgLum);
   const clothesContrast = getContrast(clothesLum, bgLum);
   const hasPoorContrast = skinContrast < 2.5 || clothesContrast < 2.5;
+
+  const autoFixContrast = () => {
+    setConfig(prev => ensureGoodContrast({ ...prev }));
+  };
 
   const colors = {
     skin: ['#ffe0d2', '#f5cbb7', '#e0ac69', '#8d5524', '#3d2210'],
@@ -415,9 +533,17 @@ export const AvatarDesigner: React.FC<{ onAvatarGenerated?: (config: CustomAvata
               {hasPoorContrast && (
                 <div className="mb-6 p-3 bg-orange-500/10 border border-orange-500/30 rounded-lg flex items-start gap-3">
                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-orange-500 mt-0.5 shrink-0"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
-                  <p className="text-xs text-orange-600 dark:text-orange-400">
-                    <strong>Low Contrast Warning:</strong> The current background theme may make the avatar hard to see. Consider changing the background theme, skin color, or clothes color.
-                  </p>
+                  <div className="flex-1">
+                    <p className="text-xs text-orange-600 dark:text-orange-400">
+                      <strong>Low Contrast Warning:</strong> The current background theme may make the avatar hard to see. Consider changing the background theme, skin color, or clothes color.
+                    </p>
+                    <button
+                      onClick={autoFixContrast}
+                      className="mt-2 px-3 py-1 bg-orange-500 text-white text-xs font-medium rounded hover:bg-orange-600 transition-colors"
+                    >
+                      Auto Fix Contrast
+                    </button>
+                  </div>
                 </div>
               )}
               
@@ -804,51 +930,254 @@ export const AvatarDesigner: React.FC<{ onAvatarGenerated?: (config: CustomAvata
       {showPresetModal && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 md:p-8">
           <div className="bg-[var(--bg-standard)] rounded-2xl border border-[var(--border-light)] shadow-2xl w-full max-w-6xl max-h-full flex flex-col overflow-hidden">
-            <div className="p-6 border-b border-[var(--border-light)] flex justify-between items-center bg-[var(--bg-sidebar)]">
-              <div>
-                <h2 className="text-xl font-bold text-[var(--text-header)]">Select Avatar Preset</h2>
-                <p className="text-sm text-[var(--text-body)] opacity-70">Choose a starting point for your digital identity.</p>
+            <div className="p-6 border-b border-[var(--border-light)] flex flex-col gap-4 bg-[var(--bg-sidebar)]">
+              <div className="flex justify-between items-center">
+                <div>
+                  <h2 className="text-xl font-bold text-[var(--text-header)]">Select Avatar Preset</h2>
+                  <p className="text-sm text-[var(--text-body)] opacity-70">Choose a starting point for your digital identity.</p>
+                </div>
+                <button 
+                  onClick={() => setShowPresetModal(false)}
+                  className="p-2 hover:bg-[var(--bg-standard)] rounded-full transition-colors text-[var(--text-body)]"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                </button>
               </div>
-              <button 
-                onClick={() => setShowPresetModal(false)}
-                className="p-2 hover:bg-[var(--bg-standard)] rounded-full transition-colors text-[var(--text-body)]"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
-              </button>
+              
+              <div className="flex flex-col sm:flex-row gap-4 justify-between items-center">
+                <div className="flex bg-[var(--bg-standard)] p-1 rounded-lg border border-[var(--border-light)] w-full sm:w-auto">
+                  {(['all', 'female', 'male', 'custom'] as const).map(tab => (
+                    <button
+                      key={tab}
+                      onClick={() => setPresetTab(tab)}
+                      className={`flex-1 sm:flex-none px-4 py-1.5 text-sm font-medium rounded-md capitalize transition-all ${presetTab === tab ? 'bg-[var(--trust-blue)] text-white shadow-sm' : 'text-[var(--text-body)] hover:bg-[var(--bg-sidebar)] opacity-70 hover:opacity-100'}`}
+                    >
+                      {tab}
+                    </button>
+                  ))}
+                </div>
+                <div className="flex items-center gap-2 w-full sm:w-auto">
+                  <div className="relative w-full sm:w-64">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-body)] opacity-50"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                    <input
+                      type="text"
+                      placeholder="Search features, jobs, hobbies..."
+                      value={presetSearch}
+                      onChange={(e) => setPresetSearch(e.target.value)}
+                      className="w-full pl-9 pr-4 py-2 text-sm bg-[var(--bg-standard)] border border-[var(--border-light)] rounded-lg text-[var(--text-body)] focus:outline-none focus:ring-2 focus:ring-[var(--trust-blue)]"
+                    />
+                  </div>
+                  <button 
+                    onClick={() => setShowSearchHelp(!showSearchHelp)}
+                    className="p-2 bg-[var(--bg-standard)] border border-[var(--border-light)] rounded-lg hover:bg-[var(--bg-sidebar)] transition-colors text-[var(--text-body)] opacity-70 hover:opacity-100"
+                    title="Search Usage Manual"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg>
+                  </button>
+                  {presetTab === 'custom' && (
+                    <label className="p-2 bg-[var(--bg-standard)] border border-[var(--border-light)] rounded-lg hover:bg-[var(--bg-sidebar)] transition-colors text-[var(--text-body)] opacity-70 hover:opacity-100 cursor-pointer" title="Upload Custom Avatar JSON">
+                      <input 
+                        type="file" 
+                        accept=".json" 
+                        className="hidden" 
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          const reader = new FileReader();
+                          reader.onload = async (event) => {
+                            try {
+                              const json = JSON.parse(event.target?.result as string);
+                              const { id, timestamp, ...rest } = json;
+                              const newCustomAvatar = await saveCustomAvatar(rest);
+                              setCustomAvatars(prev => [newCustomAvatar, ...prev]);
+                            } catch (err) {
+                              alert("Invalid JSON file");
+                            }
+                          };
+                          reader.readAsText(file);
+                          e.target.value = '';
+                        }} 
+                      />
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>
+                    </label>
+                  )}
+                </div>
+              </div>
+              
+              {showSearchHelp && (
+                <div className="bg-[var(--bg-standard)] border border-[var(--border-light)] rounded-lg p-4 text-sm text-[var(--text-body)] animate-in fade-in slide-in-from-top-2 max-h-[60vh] overflow-y-auto">
+                  <h3 className="font-bold mb-2 flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+                    Search & API Usage Manual
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                    <div>
+                      <strong className="block mb-1 text-[var(--trust-blue)]">1. How to Search</strong>
+                      <p className="opacity-80 text-xs">Search by name prefixes, careers, hobbies, or features.</p>
+                      <ul className="list-disc pl-4 mt-1 opacity-80 text-xs">
+                        <li>Names: "Emm" (matches Emma), "Li"</li>
+                        <li>Careers: "engineer", "doctor", "farmer"</li>
+                        <li>Hobbies: "cooking", "runner", "gamer"</li>
+                        <li>Features: "glasses", "beard", "bun"</li>
+                      </ul>
+                    </div>
+                    <div>
+                      <strong className="block mb-1 text-[var(--trust-blue)]">2. Modify Existing</strong>
+                      <p className="opacity-80 text-xs">Select any preset avatar from the list below. Once loaded, use the left sidebar controls to tweak colors, facial features, and clothing.</p>
+                    </div>
+                    <div>
+                      <strong className="block mb-1 text-[var(--trust-blue)]">3. Design Your Own</strong>
+                      <p className="opacity-80 text-xs">If you can't find what you need, type a detailed description in the search bar. If no results match, an "AI Generate" button will appear to create it instantly!</p>
+                    </div>
+                  </div>
+                  
+                  <div className="border-t border-[var(--border-light)] pt-4">
+                    <strong className="block mb-2 text-[var(--trust-blue)]">Programmatic API (CustomAvatar3D)</strong>
+                    <p className="opacity-80 text-xs mb-3">You can programmatically generate avatars using the <code>&lt;CustomAvatar3D /&gt;</code> component with the following supported exact string values. <strong>Note:</strong> Using invalid values (like "Elegant Hollywood Waves") will result in missing features.</p>
+                    
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3 text-xs">
+                      <div><span className="font-mono font-semibold text-[var(--text-header)]">hairStyle:</span> <span className="opacity-70">'short' | 'long' | 'bald' | 'curly' | 'buzzcut' | 'dreadlocks' | 'mohawk' | 'spiky' | 'wavy' | 'bun' | 'ponytail' | 'fade' | 'afro'</span></div>
+                      <div><span className="font-mono font-semibold text-[var(--text-header)]">eyeStyle:</span> <span className="opacity-70">'normal' | 'glasses' | 'sunglasses'</span></div>
+                      <div><span className="font-mono font-semibold text-[var(--text-header)]">noseStyle:</span> <span className="opacity-70">'small' | 'wide' | 'pointed' | 'button' | 'aquiline' | 'snub' | 'roman' | 'flat' | 'broad' | 'thin'</span></div>
+                      <div><span className="font-mono font-semibold text-[var(--text-header)]">mouthStyle:</span> <span className="opacity-70">'smile' | 'neutral' | 'sad' | 'smirk' | 'open' | 'surprised' | 'pout' | 'laugh' | 'thin' | 'wide'</span></div>
+                      <div><span className="font-mono font-semibold text-[var(--text-header)]">clothesStyle:</span> <span className="opacity-70">'tshirt' | 'suit' | 'hoodie' | 'sweater' | 'jacket' | 'tanktop' | 'dress' | 'shirt' | 'turtleneck' | 'vneck' | 'doctor' | 'chef' | 'police' | 'astronaut' | 'construction' | 'ninja' | 'wizard' | 'cyberpunk' | 'sports' | 'military' | 'royal' | 'farmer' | 'kimono' | 'hanfu' | 'sari' | 'dashiki' | 'poncho' | 'qipao' | 'dirndl' | 'kilt'</span></div>
+                      <div><span className="font-mono font-semibold text-[var(--text-header)]">headwear:</span> <span className="opacity-70">'none' | 'cap' | 'beanie' | 'hijab' | 'turban' | 'sombrero' | 'conical' | 'crown' | 'cowboy' | 'headband'</span></div>
+                      <div><span className="font-mono font-semibold text-[var(--text-header)]">facialHairStyle:</span> <span className="opacity-70">'none' | 'stubble' | 'mustache' | 'beard' | 'goatee'</span></div>
+                      <div><span className="font-mono font-semibold text-[var(--text-header)]">bgTheme:</span> <span className="opacity-70">'light' | 'dark' | 'gradient' | 'neon'</span></div>
+                      <div><span className="font-mono font-semibold text-[var(--text-header)]">upperLashes:</span> <span className="opacity-70">'none' | 'short' | 'long' | 'thick'</span></div>
+                      <div><span className="font-mono font-semibold text-[var(--text-header)]">lowerLashes:</span> <span className="opacity-70">'none' | 'short' | 'long'</span></div>
+                      <div className="col-span-1 sm:col-span-2"><span className="font-mono font-semibold text-[var(--text-header)]">Colors (Hex):</span> <span className="opacity-70">hairColor, skinColor, eyeColor, clothesColor, facialHairColor</span></div>
+                      <div className="col-span-1 sm:col-span-2"><span className="font-mono font-semibold text-[var(--text-header)]">Numeric (0-100):</span> <span className="opacity-70">faceWidth, eyeSize, eyeAngle, eyeDistance, eyelidHeight, noseWidth, noseHeight, noseAngle, noseTipSize, mouthFullness, mouthWidth, mouthHeight</span></div>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
             
             <div className="flex-1 overflow-y-auto p-6">
-              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-4">
-                {avatars.map(avatar => (
-                  <button 
-                    key={avatar.id}
-                    onClick={() => {
-                      const { id, gender, age, ...rest } = avatar;
-                      setConfig(prev => ({ ...prev, ...rest }));
-                      if (gender === 'female') {
-                        if (!aiVoice.includes('Zephyr') && !aiVoice.includes('Kore')) {
-                          setAiVoice('Zephyr');
-                        }
-                      } else {
-                        if (!aiVoice.includes('Puck') && !aiVoice.includes('Charon') && !aiVoice.includes('Fenrir')) {
-                          setAiVoice('Puck');
-                        }
+              {(() => {
+                const filteredAvatars = presetTab === 'custom'
+                  ? customAvatars.filter(avatar => {
+                      if (presetSearch) {
+                        const searchLower = presetSearch.toLowerCase();
+                        return avatar.name?.toLowerCase().includes(searchLower);
                       }
-                      setShowPresetModal(false);
-                    }}
-                    className="group relative flex flex-col items-center gap-2 p-2 rounded-xl border-2 border-transparent hover:border-[var(--trust-blue)] hover:bg-[var(--bg-sidebar)] transition-all focus:outline-none focus:ring-2 focus:ring-[var(--trust-blue)]"
-                  >
-                    <div className="w-full aspect-square rounded-full overflow-hidden border border-[var(--border-light)] bg-[var(--bg-standard)] shadow-sm group-hover:shadow-md transition-all">
-                      <div className="w-full h-full pointer-events-none flex items-center justify-center">
-                        <CustomAvatar3D {...avatar} isSpeaking={false} />
+                      return true;
+                    })
+                  : avatars.filter(avatar => {
+                      if (presetTab !== 'all' && avatar.gender !== presetTab) return false;
+                      if (presetSearch) {
+                        const searchLower = presetSearch.toLowerCase();
+                        const nameMatch = avatar.name?.toLowerCase().includes(searchLower);
+                        const keywordMatch = avatar.keywords?.some(k => k.toLowerCase().includes(searchLower));
+                        return nameMatch || keywordMatch;
+                      }
+                      return true;
+                    });
+
+                if (filteredAvatars.length === 0) {
+                  return (
+                    <div className="flex flex-col items-center justify-center h-full text-center p-8">
+                      <div className="w-16 h-16 bg-[var(--bg-sidebar)] rounded-full flex items-center justify-center mb-4 border border-[var(--border-light)]">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--text-body)] opacity-50"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
                       </div>
+                      <h3 className="text-lg font-bold text-[var(--text-header)] mb-2">No presets found</h3>
+                      <p className="text-[var(--text-body)] opacity-70 max-w-md mb-6">
+                        We couldn't find any avatars matching "{presetSearch}". Would you like our AI to generate a custom avatar based on this description?
+                      </p>
+                      <button
+                        onClick={() => handleAIGenerate(presetSearch)}
+                        disabled={isGeneratingFromSearch}
+                        className="flex items-center gap-2 px-6 py-3 bg-[var(--trust-blue)] text-white font-medium rounded-xl hover:bg-blue-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg"
+                      >
+                        {isGeneratingFromSearch ? (
+                          <>
+                            <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                            Generating...
+                          </>
+                        ) : (
+                          <>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2v4"/><path d="M12 18v4"/><path d="M4.93 4.93l2.83 2.83"/><path d="M16.24 16.24l2.83 2.83"/><path d="M2 12h4"/><path d="M18 12h4"/><path d="M4.93 19.07l2.83-2.83"/><path d="M16.24 7.76l2.83-2.83"/></svg>
+                            Generate with AI
+                          </>
+                        )}
+                      </button>
                     </div>
-                    <span className="text-[10px] font-mono uppercase tracking-wider text-[var(--text-body)] opacity-70 group-hover:opacity-100 group-hover:text-[var(--trust-blue)] transition-colors">
-                      {avatar.gender === 'female' ? 'Female' : 'Male'} {avatar.id.replace(/[a-z]/g, '')}
-                    </span>
-                  </button>
-                ))}
-              </div>
+                  );
+                }
+
+                return (
+                  <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-4">
+                    {filteredAvatars.map(avatar => (
+                      <div key={avatar.id} className="relative group">
+                        <button 
+                          onClick={() => {
+                            const { id, gender, age, name, keywords, timestamp, voice, ...rest } = avatar as any;
+                            setConfig(prev => ({ ...prev, ...rest }));
+                            if (voice) {
+                              setAiVoice(voice);
+                            } else if (gender === 'female') {
+                              if (!aiVoice.includes('Zephyr') && !aiVoice.includes('Kore')) {
+                                setAiVoice('Zephyr');
+                              }
+                            } else {
+                              if (!aiVoice.includes('Puck') && !aiVoice.includes('Charon') && !aiVoice.includes('Fenrir')) {
+                                setAiVoice('Puck');
+                              }
+                            }
+                            if (name) setAvatarName(name);
+                            setShowPresetModal(false);
+                          }}
+                          className="w-full flex flex-col items-center gap-2 p-2 rounded-xl border-2 border-transparent hover:border-[var(--trust-blue)] hover:bg-[var(--bg-sidebar)] transition-all focus:outline-none focus:ring-2 focus:ring-[var(--trust-blue)]"
+                        >
+                          <div className="w-full aspect-square rounded-full overflow-hidden border border-[var(--border-light)] bg-[var(--bg-standard)] shadow-sm group-hover:shadow-md transition-all">
+                            <div className="w-full h-full pointer-events-none flex items-center justify-center">
+                              <CustomAvatar3D {...avatar} isSpeaking={false} />
+                            </div>
+                          </div>
+                          <span className="text-[11px] font-medium tracking-wide text-[var(--text-body)] opacity-80 group-hover:opacity-100 group-hover:text-[var(--trust-blue)] transition-colors truncate w-full text-center">
+                            {avatar.name || ((avatar as any).gender === 'female' ? 'Female' : 'Male') + ' ' + avatar.id?.replace(/[a-z]/g, '')}
+                          </span>
+                        </button>
+                        {presetTab === 'custom' && (
+                          <div className="absolute -top-2 -right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(avatar, null, 2));
+                                const downloadAnchorNode = document.createElement('a');
+                                downloadAnchorNode.setAttribute("href", dataStr);
+                                downloadAnchorNode.setAttribute("download", (avatar.name || 'custom-avatar') + ".json");
+                                document.body.appendChild(downloadAnchorNode);
+                                downloadAnchorNode.click();
+                                downloadAnchorNode.remove();
+                              }}
+                              className="bg-[var(--trust-blue)] text-white rounded-full p-1 shadow-md hover:bg-blue-600"
+                              title="Download JSON"
+                            >
+                              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (confirm('Delete this custom avatar?')) {
+                                  deleteCustomAvatar(avatar.id!).then(() => {
+                                    setCustomAvatars(prev => prev.filter(a => a.id !== avatar.id));
+                                  });
+                                }
+                              }}
+                              className="bg-red-500 text-white rounded-full p-1 shadow-md hover:bg-red-600"
+                              title="Delete"
+                            >
+                              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                );
+              })()}
             </div>
           </div>
         </div>
