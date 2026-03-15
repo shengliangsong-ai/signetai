@@ -17,6 +17,8 @@ import type { ConfirmationResult, User, AuthCredential } from 'firebase/auth';
 import { firebaseConfig } from '../src/config/env';
 import { PersistenceService, VaultRecord } from '../services/PersistenceService';
 import { BIP39_WORDS } from '../constants/Bip39Words';
+import { AvatarDesigner } from './AvatarDesigner';
+import { CustomAvatarProps } from './CustomAvatar3D';
 
 const initSignetFirebase = () => {
   try {
@@ -39,10 +41,33 @@ const auth = app ? getAuth(app) : null;
 const PROTOCOL_AUTHORITY = "signetai.io";
 const SEPARATOR = ":";
 
-const generateMnemonic = (wordCount: 12 | 24) => {
+const generateMnemonic = (wordCount: 12 | 24, seedString?: string) => {
   const result = [];
   const randomValues = new Uint32Array(wordCount);
-  window.crypto.getRandomValues(randomValues);
+  
+  if (seedString) {
+    // Deterministic generation based on seed string (e.g. facial features)
+    // We use a simple hash function to generate pseudo-random values
+    let h = 0x811c9dc5;
+    for (let i = 0; i < seedString.length; i++) {
+      h ^= seedString.charCodeAt(i);
+      h = Math.imul(h, 0x01000193);
+    }
+    
+    // Mix with crypto random for added entropy
+    const cryptoValues = new Uint32Array(wordCount);
+    window.crypto.getRandomValues(cryptoValues);
+    
+    for (let i = 0; i < wordCount; i++) {
+      h = Math.imul(h ^ i, 0x5bd1e995);
+      h ^= h >>> 15;
+      // Combine deterministic hash with true random
+      randomValues[i] = (h >>> 0) ^ cryptoValues[i];
+    }
+  } else {
+    window.crypto.getRandomValues(randomValues);
+  }
+
   for (let i = 0; i < wordCount; i++) {
     const index = randomValues[i] % BIP39_WORDS.length;
     result.push(BIP39_WORDS[index]);
@@ -54,7 +79,7 @@ const generateMnemonic = (wordCount: 12 | 24) => {
  * Deterministically derives a 256-bit mock public key (64 hex chars)
  * for the given identity anchor.
  */
-const deriveMockKey = (identity: string) => {
+const deriveMockKey = (identity: string, seedString?: string) => {
   const generateHash = (str: string, seed: number) => {
     let h = seed;
     for (let i = 0; i < str.length; i++) {
@@ -66,8 +91,9 @@ const deriveMockKey = (identity: string) => {
 
   // Generate 8 segments of 8 hex chars to reach 64 chars (256 bits)
   let fullHex = '';
+  const baseStr = seedString ? `${identity}-${seedString}` : identity;
   for (let i = 0; i < 8; i++) {
-    fullHex += generateHash(identity + i, 0x811c9dc5 + i);
+    fullHex += generateHash(baseStr + i, 0x811c9dc5 + i);
   }
   
   return `ed25519:signet_v3.1_sovereign_${fullHex}`;
@@ -77,6 +103,8 @@ export const TrustKeyService: React.FC = () => {
   const [activeVault, setActiveVault] = useState<VaultRecord | null>(null);
   const [allVaults, setAllVaults] = useState<VaultRecord[]>([]);
   const [isRegistering, setIsRegistering] = useState(false);
+  const [registrationStep, setRegistrationStep] = useState<'avatar' | 'identity'>('avatar');
+  const [avatarConfig, setAvatarConfig] = useState<CustomAvatarProps | null>(null);
   const [securityGrade, setSecurityGrade] = useState<12 | 24>(24);
   const [identityInput, setIdentityInput] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
@@ -138,7 +166,10 @@ export const TrustKeyService: React.FC = () => {
     const active = await PersistenceService.getActiveVault();
     setAllVaults(vaults);
     setActiveVault(active);
-    if (vaults.length === 0) setIsRegistering(true);
+    if (vaults.length === 0) {
+      setIsRegistering(true);
+      setRegistrationStep('identity');
+    }
   }, []);
 
   useEffect(() => {
@@ -435,8 +466,9 @@ export const TrustKeyService: React.FC = () => {
     await new Promise(r => setTimeout(r, 600));
 
     const anchor = `${PROTOCOL_AUTHORITY}${SEPARATOR}${identity}`;
-    const pubKey = deriveMockKey(identity);
-    const mnemonic = generateMnemonic(securityGrade);
+    const seedString = avatarConfig ? JSON.stringify(avatarConfig) : undefined;
+    const pubKey = deriveMockKey(identity, seedString);
+    const mnemonic = generateMnemonic(securityGrade, seedString);
 
     try {
       const actor = auth?.currentUser || currentUser;
@@ -537,6 +569,53 @@ export const TrustKeyService: React.FC = () => {
     a.click();
   };
 
+  const handleDownloadBadge = () => {
+    if (!activeVault) return;
+    const svgContent = `
+      <svg xmlns="http://www.w3.org/2000/svg" width="400" height="200" viewBox="0 0 400 200">
+        <rect width="400" height="200" rx="15" fill="#1a1a1a" />
+        <rect x="10" y="10" width="380" height="180" rx="10" fill="none" stroke="#0055FF" stroke-width="2" opacity="0.5" />
+        <text x="30" y="50" font-family="monospace" font-size="12" fill="#0055FF" font-weight="bold" letter-spacing="2">SIGNET IDENTITY BADGE</text>
+        <text x="30" y="90" font-family="serif" font-size="28" fill="#ffffff" font-style="italic" font-weight="bold">${activeVault.identity}</text>
+        <text x="30" y="120" font-family="monospace" font-size="10" fill="#a0a0a0">ANCHOR: ${activeVault.anchor}</text>
+        <text x="30" y="140" font-family="monospace" font-size="10" fill="#a0a0a0">GRADE: ${activeVault.type}</text>
+        <text x="30" y="170" font-family="monospace" font-size="8" fill="#4a4a4a">PUBKEY: ${activeVault.publicKey}</text>
+      </svg>
+    `;
+    const blob = new Blob([svgContent], { type: 'image/svg+xml' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `signet_badge_${activeVault.identity}.svg`;
+    a.click();
+  };
+
+  if (isRegistering && registrationStep === 'avatar') {
+    return (
+      <section id="identity" className="py-12 relative overflow-hidden animate-in fade-in slide-in-from-bottom-4">
+        <div className="max-w-6xl mx-auto px-8 mb-4 flex justify-between items-center">
+          <div>
+            <span className="font-mono text-[10px] text-[var(--trust-blue)] tracking-[0.4em] uppercase font-bold">Optional Step</span>
+            <h2 className="text-3xl font-bold italic text-[var(--text-header)]">Avatar Generation</h2>
+            <p className="text-sm opacity-70 mt-1">Extract facial features to seed your cryptographic key.</p>
+          </div>
+          <button 
+            onClick={() => setRegistrationStep('identity')} 
+            className="text-[10px] font-mono opacity-50 hover:opacity-100 uppercase font-bold px-4 py-2 border border-[var(--border-light)] rounded"
+          >
+            Cancel
+          </button>
+        </div>
+        <div className="border-t border-[var(--border-light)] pt-4">
+          <AvatarDesigner onNextStep={(config) => {
+            setAvatarConfig(config);
+            setRegistrationStep('identity');
+          }} />
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section id="identity" className="py-24 border-v relative overflow-hidden">
       <div className="absolute top-0 right-0 w-96 h-96 bg-[var(--trust-blue)] opacity-[0.05] blur-[120px] pointer-events-none"></div>
@@ -554,10 +633,14 @@ export const TrustKeyService: React.FC = () => {
           {isRegistering ? (
             <div className="space-y-8 animate-in fade-in slide-in-from-top-4">
               <div className="flex justify-between items-center border-b border-[var(--border-light)] pb-4">
-                <h3 className="font-mono text-[11px] uppercase font-bold text-[var(--trust-blue)]">New Registration</h3>
-                {allVaults.length > 0 && (
-                  <button onClick={() => setIsRegistering(false)} className="text-[10px] font-mono opacity-50 hover:opacity-100 uppercase font-bold">Cancel</button>
-                )}
+                <div>
+                  <h3 className="font-mono text-[11px] uppercase font-bold text-[var(--trust-blue)]">Identity Registration</h3>
+                </div>
+                <div className="flex gap-4">
+                  {allVaults.length > 0 && (
+                    <button onClick={() => setIsRegistering(false)} className="text-[10px] font-mono opacity-50 hover:opacity-100 uppercase font-bold">Cancel</button>
+                  )}
+                </div>
               </div>
 
               <div className="space-y-6">
@@ -730,6 +813,27 @@ export const TrustKeyService: React.FC = () => {
                   )}
                 </div>
 
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <label className="font-mono text-[10px] uppercase font-bold opacity-40">Avatar Seed (Optional)</label>
+                    {avatarConfig && (
+                      <span className="font-mono text-[9px] text-green-500 font-bold uppercase">Configured</span>
+                    )}
+                  </div>
+                  <div className="p-4 border border-[var(--border-light)] rounded-lg flex flex-col items-center justify-center bg-[var(--bg-sidebar)] gap-3">
+                    <p className="text-[10px] font-mono opacity-60 text-center">
+                      {avatarConfig ? "Your avatar configuration will be used to seed your cryptographic key." : "Extract facial features to seed your cryptographic key."}
+                    </p>
+                    <button 
+                      onClick={() => setRegistrationStep('avatar')}
+                      disabled={isGenerating}
+                      className="px-4 py-2 bg-[var(--text-header)] text-white font-mono text-[10px] uppercase font-bold tracking-widest rounded shadow-sm hover:brightness-110 transition-all"
+                    >
+                      {avatarConfig ? "Edit Avatar Seed" : "Design Avatar Seed"}
+                    </button>
+                  </div>
+                </div>
+
                 <div className="p-1 border border-[var(--border-light)] rounded-lg flex bg-[var(--bg-sidebar)]">
                   <button 
                     disabled={isGenerating}
@@ -772,7 +876,7 @@ export const TrustKeyService: React.FC = () => {
             <div className="space-y-8 animate-in fade-in">
               <div className="flex justify-between items-center border-b border-[var(--border-light)] pb-4">
                  <h3 className="font-mono text-[11px] uppercase font-bold opacity-40">Active Vault</h3>
-                 <button onClick={() => setIsRegistering(true)} className="text-[10px] font-mono text-[var(--trust-blue)] font-bold uppercase hover:underline">+ New Identity</button>
+                 <button onClick={() => { setIsRegistering(true); setRegistrationStep('avatar'); }} className="text-[10px] font-mono text-[var(--trust-blue)] font-bold uppercase hover:underline">+ New Identity</button>
               </div>
 
               {activeVault && (
@@ -812,12 +916,20 @@ export const TrustKeyService: React.FC = () => {
                       </div>
                    </div>
 
-                   <button 
-                      onClick={handleDownloadVault}
-                      className="w-full py-5 bg-[var(--text-header)] text-white font-mono text-[10px] uppercase font-bold tracking-widest rounded shadow-lg hover:brightness-110 transition-all flex items-center justify-center gap-3"
-                   >
-                     <span>⭳</span> Download Seed Manifest (.json)
-                   </button>
+                   <div className="flex gap-4">
+                     <button 
+                        onClick={handleDownloadVault}
+                        className="flex-1 py-5 bg-[var(--text-header)] text-white font-mono text-[10px] uppercase font-bold tracking-widest rounded shadow-lg hover:brightness-110 transition-all flex items-center justify-center gap-3"
+                     >
+                       <span>⭳</span> Seed Manifest (.json)
+                     </button>
+                     <button 
+                        onClick={handleDownloadBadge}
+                        className="flex-1 py-5 bg-[var(--trust-blue)] text-white font-mono text-[10px] uppercase font-bold tracking-widest rounded shadow-lg hover:brightness-110 transition-all flex items-center justify-center gap-3"
+                     >
+                       <span>⭳</span> Digital Badge (.svg)
+                     </button>
+                   </div>
                 </div>
               )}
 

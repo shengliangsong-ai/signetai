@@ -14,6 +14,7 @@ As AI moves from "Chat" to "Reasoning," current watermarking standards (C2PA) ar
 - **2.2. Neural Lens Engine**: A deterministic verifier that probes AI telemetry for logic drift.
 - **2.3. Universal Tail-Wrap (UTW)**: A Zero-Copy injection method for arbitrary binary formats (Video/Audio/PDF).
 - **2.4. Signet-Alpha Live Assistant**: A real-time, voice-first AI notary featuring a dynamic 3D animated avatar with lip-sync, eye movement, and voice-responsive gender switching.
+- **2.5. Avatar Designer Lab**: A customization suite for the Live Assistant, featuring a "Generate from Photo" capability powered by Gemini 3.1 Pro/Flash to automatically map real-world facial features to the 3D avatar.
 
 ## 3. Architecture
 ![Architecture Diagram](./architecture.svg)

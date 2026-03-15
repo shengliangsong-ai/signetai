@@ -3,7 +3,6 @@ import React, { useState, useRef, useEffect } from 'react';
 import { GoogleGenAI, LiveServerMessage, Modality, Type } from "@google/genai";
 import ReactMarkdown from 'react-markdown';
 import { GOOGLE_GEMINI_KEY, GOOGLE_GEMINI_LIVE_KEY } from '../src/config/env';
-import { Avatar3D } from './Avatar3D';
 import { CustomAvatar3D } from './CustomAvatar3D';
 import { avatars, AvatarConfig } from '../constants/avatars';
 import { loadAvatarConfig, SavedAvatarConfig } from '../services/avatarDb';
@@ -274,6 +273,9 @@ export const LiveAssistant: React.FC = () => {
         // We will proceed without streamRef.current
       }
       
+      const actualVoiceName = selectedVoice.split('-')[0];
+      const isChinese = selectedVoice.endsWith('-CN');
+
       const sessionPromise = ai.live.connect({
         model: 'gemini-2.5-flash-native-audio-preview-09-2025',
         callbacks: {
@@ -474,11 +476,11 @@ export const LiveAssistant: React.FC = () => {
         config: {
           responseModalities: [Modality.AUDIO],
           speechConfig: {
-            voiceConfig: { prebuiltVoiceConfig: { voiceName: selectedVoice } },
+            voiceConfig: { prebuiltVoiceConfig: { voiceName: actualVoiceName } },
           },
           outputAudioTranscription: {},
           inputAudioTranscription: {},
-          systemInstruction: `You are ${customAvatar ? customAvatar.name : 'Signet-Alpha'}, the Live Digital Notary for Signet Protocol.
+          systemInstruction: `You are ${customAvatar ? customAvatar.name : 'Signet-Alpha'}, the Live Digital Notary for Signet Protocol.${isChinese ? '\n\nCRITICAL: You MUST speak ONLY in Chinese (Mandarin). All your responses must be in Chinese.' : ''}
           Your role is to guide users through verifying and signing digital media (images, videos, documents).
           
           CAPABILITIES:
@@ -603,6 +605,8 @@ export const LiveAssistant: React.FC = () => {
                 <option value="Puck">Puck (Male)</option>
                 <option value="Charon">Charon (Male)</option>
                 <option value="Fenrir">Fenrir (Male)</option>
+                <option value="Zephyr-CN">Zephyr (Female - Chinese)</option>
+                <option value="Fenrir-CN">Fenrir (Male - Chinese)</option>
               </select>
               <button 
                 onClick={initVoiceChat} 
@@ -636,11 +640,23 @@ export const LiveAssistant: React.FC = () => {
                     {avatars.map((avatar: AvatarConfig) => (
                       <button 
                         key={avatar.id}
-                        onClick={() => setSelectedAvatarId(avatar.id)}
+                        onClick={() => {
+                          setSelectedAvatarId(avatar.id);
+                          setCustomAvatar(null);
+                          if (avatar.gender === 'female') {
+                            if (!selectedVoice.includes('Zephyr') && !selectedVoice.includes('Kore')) {
+                              setSelectedVoice('Zephyr');
+                            }
+                          } else {
+                            if (!selectedVoice.includes('Puck') && !selectedVoice.includes('Charon') && !selectedVoice.includes('Fenrir')) {
+                              setSelectedVoice('Puck');
+                            }
+                          }
+                        }}
                         className={`relative aspect-square rounded-full overflow-hidden border-2 transition-all ${selectedAvatarId === avatar.id ? 'border-[var(--trust-blue)] shadow-[0_0_15px_rgba(0,85,255,0.4)] scale-105' : 'border-transparent hover:border-[var(--border-light)] hover:scale-105'}`}
                       >
                         <div className="w-full h-full pointer-events-none flex items-center justify-center">
-                          <Avatar3D isSpeaking={false} avatarId={avatar.id} />
+                          <CustomAvatar3D {...avatar} isSpeaking={false} />
                         </div>
                       </button>
                     ))}
@@ -661,7 +677,7 @@ export const LiveAssistant: React.FC = () => {
                     {customAvatar ? (
                       <CustomAvatar3D {...customAvatar} isSpeaking={isAgentSpeaking} />
                     ) : (
-                      <Avatar3D isSpeaking={isAgentSpeaking} avatarId={selectedAvatarId} />
+                      <CustomAvatar3D {...(avatars.find(a => a.id === selectedAvatarId) || avatars[0])} isSpeaking={isAgentSpeaking} />
                     )}
                   </div>
                   <span className={`mt-4 text-[10px] font-mono uppercase tracking-widest transition-colors duration-300 z-10 ${isAgentSpeaking ? 'text-blue-500 font-bold' : 'text-slate-500'}`}>

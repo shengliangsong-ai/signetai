@@ -2,6 +2,80 @@ import React, { useState, useEffect, useRef } from 'react';
 import { GoogleGenAI, Type } from '@google/genai';
 import { CustomAvatar3D, CustomAvatarProps } from './CustomAvatar3D';
 import { saveAvatarConfig, loadAvatarConfig, SavedAvatarConfig } from '../services/avatarDb';
+import { avatars } from '../constants/avatars';
+
+export const normalizeColor = (color: string, defaultColor: string = '#000000') => {
+  if (!color) return defaultColor;
+  if (/^#[0-9A-Fa-f]{3,6}$/.test(color)) return color;
+  
+  try {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    if (ctx) {
+      ctx.fillStyle = color;
+      return ctx.fillStyle; // Returns hex format like '#000000'
+    }
+  } catch (e) {
+    // Ignore canvas errors in non-browser environments
+  }
+  return defaultColor;
+};
+
+export const getLuminance = (hex: string) => {
+  if (!hex) return 0;
+  hex = hex.replace('#', '');
+  
+  if (hex.length === 3) {
+    hex = hex.split('').map(c => c + c).join('');
+  }
+  const r = parseInt(hex.substring(0, 2), 16) / 255 || 0;
+  const g = parseInt(hex.substring(2, 4), 16) / 255 || 0;
+  const b = parseInt(hex.substring(4, 6), 16) / 255 || 0;
+
+  const a = [r, g, b].map(v => {
+    return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+  });
+  return a[0] * 0.2126 + a[1] * 0.7152 + a[2] * 0.0722;
+};
+
+export const getContrast = (lum1: number, lum2: number) => {
+  const lighter = Math.max(lum1, lum2);
+  const darker = Math.min(lum1, lum2);
+  return (lighter + 0.05) / (darker + 0.05);
+};
+
+export const bgLuminance = {
+  light: getLuminance('#ffffff'),
+  dark: getLuminance('#0f172a'),
+  gradient: getLuminance('#60a5fa'),
+  neon: getLuminance('#000000')
+};
+
+export const ensureGoodContrast = <T extends Partial<CustomAvatarProps>>(config: T): T => {
+  // Normalize colors to ensure named colors (like 'black') are converted to hex
+  if (config.skinColor) config.skinColor = normalizeColor(config.skinColor, '#ffe0d2');
+  if (config.clothesColor) config.clothesColor = normalizeColor(config.clothesColor, '#0055FF');
+  if (config.hairColor) config.hairColor = normalizeColor(config.hairColor, '#1a1a1a');
+  if (config.eyeColor) config.eyeColor = normalizeColor(config.eyeColor, '#166534');
+
+  // Simplify: always use light background
+  config.bgTheme = 'light';
+
+  // Avoid white or extremely light face color
+  const skinLum = getLuminance(config.skinColor || '#ffe0d2');
+  if (skinLum > 0.8) {
+    // If skin is too light/white, set it to a default natural skin tone
+    config.skinColor = '#f5cbb7';
+  }
+
+  // Ensure clothes aren't too light against the white background
+  const clothesLum = getLuminance(config.clothesColor || '#0055FF');
+  if (clothesLum > 0.8) {
+    config.clothesColor = '#0055FF'; // Default to blue if clothes are too white
+  }
+
+  return config;
+};
 
 const SliderControl = ({ label, value, onChange }: { label: string, value: number, onChange: (val: number) => void }) => (
   <div className="mb-4">
@@ -20,7 +94,7 @@ const SliderControl = ({ label, value, onChange }: { label: string, value: numbe
   </div>
 );
 
-export const AvatarDesigner: React.FC = () => {
+export const AvatarDesigner: React.FC<{ onAvatarGenerated?: (config: CustomAvatarProps) => void, onNextStep?: (config: CustomAvatarProps) => void }> = ({ onAvatarGenerated, onNextStep }) => {
   const [config, setConfig] = useState<CustomAvatarProps>({
     hairStyle: 'short',
     hairColor: '#1a1a1a',
@@ -56,6 +130,7 @@ export const AvatarDesigner: React.FC = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState('');
   const [copied, setCopied] = useState(false);
+  const [showPresetModal, setShowPresetModal] = useState(false);
 
   const [isCameraOpen, setIsCameraOpen] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -108,15 +183,19 @@ export const AvatarDesigner: React.FC = () => {
       
       const response = await ai.models.generateContent({
         model: "gemini-3-flash-preview",
-        contents: [
-          {
-            inlineData: {
-              data: base64Image,
-              mimeType: "image/jpeg"
+        contents: {
+          parts: [
+            {
+              inlineData: {
+                data: base64Image,
+                mimeType: "image/jpeg"
+              }
+            },
+            {
+              text: "Analyze this face and map the person's features to the provided CustomAvatarProps schema. Return ONLY valid JSON matching the schema. IMPORTANT RULES: 1. Always use 'light' for bgTheme. 2. Do not generate pure white (#ffffff) or extremely light skinColor. Use realistic natural skin tones. 3. Do not generate pure white or extremely light clothesColor."
             }
-          },
-          "Analyze this face and map the person's features to the provided CustomAvatarProps schema. Return ONLY valid JSON matching the schema."
-        ],
+          ]
+        },
         config: {
           responseMimeType: "application/json",
           responseSchema: {
@@ -129,6 +208,10 @@ export const AvatarDesigner: React.FC = () => {
               eyeStyle: { type: Type.STRING, enum: ['normal', 'glasses', 'sunglasses'] },
               noseStyle: { type: Type.STRING, enum: ['small', 'wide', 'pointed', 'button', 'aquiline', 'snub', 'roman', 'flat', 'broad', 'thin'] },
               mouthStyle: { type: Type.STRING, enum: ['smile', 'neutral', 'sad', 'smirk', 'open', 'surprised', 'pout', 'laugh', 'thin', 'wide'] },
+              clothesStyle: { type: Type.STRING, enum: ['tshirt', 'suit', 'hoodie', 'sweater', 'jacket', 'tanktop', 'dress', 'shirt', 'turtleneck', 'vneck', 'doctor', 'chef', 'police', 'astronaut', 'construction', 'ninja', 'wizard', 'cyberpunk', 'sports', 'military', 'royal', 'farmer', 'kimono', 'hanfu', 'sari', 'dashiki', 'poncho', 'qipao', 'dirndl', 'kilt'] },
+              clothesColor: { type: Type.STRING, description: "Hex color code for clothes" },
+              headwear: { type: Type.STRING, enum: ['none', 'cap', 'beanie', 'hijab', 'turban', 'sombrero', 'conical', 'crown', 'cowboy', 'headband'] },
+              bgTheme: { type: Type.STRING, enum: ['light', 'dark', 'gradient', 'neon'] },
               facialHairStyle: { type: Type.STRING, enum: ['none', 'stubble', 'mustache', 'beard', 'goatee'] },
               facialHairColor: { type: Type.STRING, description: "Hex color code for facial hair" },
               faceWidth: { type: Type.NUMBER, description: "0 to 100" },
@@ -144,15 +227,33 @@ export const AvatarDesigner: React.FC = () => {
               noseTipSize: { type: Type.NUMBER, description: "0 to 100" },
               mouthFullness: { type: Type.NUMBER, description: "0 to 100" },
               mouthWidth: { type: Type.NUMBER, description: "0 to 100" },
-              mouthHeight: { type: Type.NUMBER, description: "0 to 100" }
+              mouthHeight: { type: Type.NUMBER, description: "0 to 100" },
+              gender: { type: Type.STRING, enum: ["male", "female"], description: "The gender of the person" }
             },
-            required: ["hairStyle", "hairColor", "skinColor", "eyeColor", "eyeStyle", "noseStyle", "mouthStyle", "facialHairStyle", "facialHairColor", "faceWidth", "eyeSize", "eyeAngle", "eyeDistance", "eyelidHeight", "upperLashes", "lowerLashes", "noseWidth", "noseHeight", "noseAngle", "noseTipSize", "mouthFullness", "mouthWidth", "mouthHeight"]
+            required: ["gender", "hairStyle", "hairColor", "skinColor", "eyeColor", "eyeStyle", "noseStyle", "mouthStyle", "clothesStyle", "clothesColor", "headwear", "bgTheme", "facialHairStyle", "facialHairColor", "faceWidth", "eyeSize", "eyeAngle", "eyeDistance", "eyelidHeight", "upperLashes", "lowerLashes", "noseWidth", "noseHeight", "noseAngle", "noseTipSize", "mouthFullness", "mouthWidth", "mouthHeight"]
           }
         }
       });
       
       const result = JSON.parse(response.text || "{}");
-      setConfig(prev => ({ ...prev, ...result }));
+      
+      setConfig(prev => {
+        const mergedConfig = { ...prev, ...result };
+        const contrastFixedResult = ensureGoodContrast(mergedConfig);
+        if (onAvatarGenerated) onAvatarGenerated(contrastFixedResult);
+        return contrastFixedResult;
+      });
+      
+      if (result.gender === 'female') {
+        if (!aiVoice.includes('Zephyr') && !aiVoice.includes('Kore')) {
+          setAiVoice('Zephyr');
+        }
+      } else if (result.gender === 'male') {
+        if (!aiVoice.includes('Puck') && !aiVoice.includes('Charon') && !aiVoice.includes('Fenrir')) {
+          setAiVoice('Puck');
+        }
+      }
+
       setSaveMessage('Avatar generated successfully!');
       setTimeout(() => setSaveMessage(''), 3000);
       
@@ -215,6 +316,7 @@ export const AvatarDesigner: React.FC = () => {
   mouthStyle="${config.mouthStyle}"
   clothesStyle="${config.clothesStyle}"
   clothesColor="${config.clothesColor}"
+  headwear="${config.headwear || 'none'}"
   bgTheme="${config.bgTheme}"
 />`;
   };
@@ -225,6 +327,14 @@ export const AvatarDesigner: React.FC = () => {
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const skinLum = getLuminance(config.skinColor);
+  const clothesLum = getLuminance(config.clothesColor);
+  const bgLum = bgLuminance[config.bgTheme || 'light'];
+  
+  const skinContrast = getContrast(skinLum, bgLum);
+  const clothesContrast = getContrast(clothesLum, bgLum);
+  const hasPoorContrast = skinContrast < 2.5 || clothesContrast < 2.5;
+
   const colors = {
     skin: ['#ffe0d2', '#f5cbb7', '#e0ac69', '#8d5524', '#3d2210'],
     hair: ['#1a1a1a', '#4a3018', '#a53814', '#e8c37a', '#a0a0a0', '#94a3b8', '#e11d48', '#0284c7'],
@@ -233,18 +343,31 @@ export const AvatarDesigner: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[var(--bg-standard)] p-8">
+    <div className="bg-[var(--bg-standard)] p-8">
       <div className="max-w-6xl mx-auto">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-[var(--text-header)] mb-2">Avatar Designer Lab</h1>
-          <p className="text-[var(--text-body)] opacity-70">Customize your digital identity representation.</p>
-        </div>
+        {!onNextStep && (
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold text-[var(--text-header)] mb-2">Avatar Designer Lab</h1>
+            <p className="text-[var(--text-body)] opacity-70">Customize your digital identity representation.</p>
+          </div>
+        )}
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Preview Panel */}
           <div className="lg:col-span-1">
             <div className="bg-[var(--bg-sidebar)] border border-[var(--border-light)] rounded-xl p-6 sticky top-24 shadow-lg">
               
+              <div className="mb-6">
+                <label className="block text-xs font-bold text-[var(--text-body)] opacity-70 uppercase mb-2">Start from Preset</label>
+                <button 
+                  onClick={() => setShowPresetModal(true)}
+                  className="w-full bg-[var(--bg-standard)] border border-[var(--border-light)] rounded-lg px-3 py-2.5 text-sm text-[var(--text-body)] outline-none hover:border-[var(--trust-blue)] transition-colors flex items-center justify-between"
+                >
+                  <span>Browse Avatar Presets</span>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+                </button>
+              </div>
+
               <div className="mb-6">
                 <button 
                   onClick={startCamera}
@@ -288,6 +411,15 @@ export const AvatarDesigner: React.FC = () => {
               <div className="aspect-square w-full max-w-[300px] mx-auto mb-6">
                 <CustomAvatar3D {...config} />
               </div>
+
+              {hasPoorContrast && (
+                <div className="mb-6 p-3 bg-orange-500/10 border border-orange-500/30 rounded-lg flex items-start gap-3">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-orange-500 mt-0.5 shrink-0"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+                  <p className="text-xs text-orange-600 dark:text-orange-400">
+                    <strong>Low Contrast Warning:</strong> The current background theme may make the avatar hard to see. Consider changing the background theme, skin color, or clothes color.
+                  </p>
+                </div>
+              )}
               
               <div className="flex justify-center gap-4">
                 <button 
@@ -321,6 +453,8 @@ export const AvatarDesigner: React.FC = () => {
                     <option value="Puck">Puck (Male)</option>
                     <option value="Charon">Charon (Male)</option>
                     <option value="Fenrir">Fenrir (Male)</option>
+                    <option value="Zephyr-CN">Zephyr (Female - Chinese)</option>
+                    <option value="Fenrir-CN">Fenrir (Male - Chinese)</option>
                   </select>
                 </div>
                 <button 
@@ -578,6 +712,46 @@ export const AvatarDesigner: React.FC = () => {
                     <option value="shirt">Button Shirt</option>
                     <option value="turtleneck">Turtleneck</option>
                     <option value="vneck">V-Neck</option>
+                    <option value="doctor">Doctor</option>
+                    <option value="chef">Chef</option>
+                    <option value="police">Police</option>
+                    <option value="astronaut">Astronaut</option>
+                    <option value="construction">Construction</option>
+                    <option value="ninja">Ninja</option>
+                    <option value="wizard">Wizard</option>
+                    <option value="cyberpunk">Cyberpunk</option>
+                    <option value="sports">Sports</option>
+                    <option value="military">Military</option>
+                    <option value="royal">Royal</option>
+                    <option value="farmer">Farmer</option>
+                    <option value="kimono">Kimono</option>
+                    <option value="hanfu">Hanfu</option>
+                    <option value="sari">Sari</option>
+                    <option value="dashiki">Dashiki</option>
+                    <option value="poncho">Poncho</option>
+                    <option value="qipao">Qipao</option>
+                    <option value="dirndl">Dirndl</option>
+                    <option value="kilt">Kilt</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-[var(--text-body)] opacity-70 mb-2 uppercase">Headwear</label>
+                  <select 
+                    value={config.headwear || 'none'} 
+                    onChange={(e) => updateConfig('headwear', e.target.value)}
+                    className="w-full bg-[var(--bg-standard)] border border-[var(--border-light)] text-[var(--text-body)] rounded p-2 text-sm"
+                  >
+                    <option value="none">None</option>
+                    <option value="cap">Cap</option>
+                    <option value="beanie">Beanie</option>
+                    <option value="hijab">Hijab</option>
+                    <option value="turban">Turban</option>
+                    <option value="sombrero">Sombrero</option>
+                    <option value="conical">Conical Hat</option>
+                    <option value="crown">Crown</option>
+                    <option value="cowboy">Cowboy Hat</option>
+                    <option value="headband">Headband</option>
                   </select>
                 </div>
 
@@ -609,12 +783,76 @@ export const AvatarDesigner: React.FC = () => {
                     ))}
                   </div>
                 </div>
+                
+                {onNextStep && (
+                  <div className="mt-8 pt-6 border-t border-[var(--border-light)]">
+                    <button
+                      onClick={() => onNextStep(config)}
+                      className="w-full py-4 bg-[var(--trust-blue)] text-white font-mono text-[12px] uppercase font-bold tracking-widest rounded shadow-lg hover:brightness-110 transition-all flex items-center justify-center gap-3"
+                    >
+                      Save & Return to Registration <span>→</span>
+                    </button>
+                  </div>
+                )}
 
               </div>
             </div>
           </div>
         </div>
       </div>
+
+      {showPresetModal && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 md:p-8">
+          <div className="bg-[var(--bg-standard)] rounded-2xl border border-[var(--border-light)] shadow-2xl w-full max-w-6xl max-h-full flex flex-col overflow-hidden">
+            <div className="p-6 border-b border-[var(--border-light)] flex justify-between items-center bg-[var(--bg-sidebar)]">
+              <div>
+                <h2 className="text-xl font-bold text-[var(--text-header)]">Select Avatar Preset</h2>
+                <p className="text-sm text-[var(--text-body)] opacity-70">Choose a starting point for your digital identity.</p>
+              </div>
+              <button 
+                onClick={() => setShowPresetModal(false)}
+                className="p-2 hover:bg-[var(--bg-standard)] rounded-full transition-colors text-[var(--text-body)]"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+              </button>
+            </div>
+            
+            <div className="flex-1 overflow-y-auto p-6">
+              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-4">
+                {avatars.map(avatar => (
+                  <button 
+                    key={avatar.id}
+                    onClick={() => {
+                      const { id, gender, age, ...rest } = avatar;
+                      setConfig(prev => ({ ...prev, ...rest }));
+                      if (gender === 'female') {
+                        if (!aiVoice.includes('Zephyr') && !aiVoice.includes('Kore')) {
+                          setAiVoice('Zephyr');
+                        }
+                      } else {
+                        if (!aiVoice.includes('Puck') && !aiVoice.includes('Charon') && !aiVoice.includes('Fenrir')) {
+                          setAiVoice('Puck');
+                        }
+                      }
+                      setShowPresetModal(false);
+                    }}
+                    className="group relative flex flex-col items-center gap-2 p-2 rounded-xl border-2 border-transparent hover:border-[var(--trust-blue)] hover:bg-[var(--bg-sidebar)] transition-all focus:outline-none focus:ring-2 focus:ring-[var(--trust-blue)]"
+                  >
+                    <div className="w-full aspect-square rounded-full overflow-hidden border border-[var(--border-light)] bg-[var(--bg-standard)] shadow-sm group-hover:shadow-md transition-all">
+                      <div className="w-full h-full pointer-events-none flex items-center justify-center">
+                        <CustomAvatar3D {...avatar} isSpeaking={false} />
+                      </div>
+                    </div>
+                    <span className="text-[10px] font-mono uppercase tracking-wider text-[var(--text-body)] opacity-70 group-hover:opacity-100 group-hover:text-[var(--trust-blue)] transition-colors">
+                      {avatar.gender === 'female' ? 'Female' : 'Male'} {avatar.id.replace(/[a-z]/g, '')}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

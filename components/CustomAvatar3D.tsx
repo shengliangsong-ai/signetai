@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useId } from 'react';
 
 export interface CustomAvatarProps {
   hairStyle: 'short' | 'long' | 'bald' | 'curly' | 'buzzcut' | 'dreadlocks' | 'mohawk' | 'spiky' | 'wavy' | 'bun' | 'ponytail' | 'fade' | 'afro';
@@ -8,10 +8,13 @@ export interface CustomAvatarProps {
   eyeStyle: 'normal' | 'glasses' | 'sunglasses';
   noseStyle: 'small' | 'wide' | 'pointed' | 'button' | 'aquiline' | 'snub' | 'roman' | 'flat' | 'broad' | 'thin';
   mouthStyle: 'smile' | 'neutral' | 'sad' | 'smirk' | 'open' | 'surprised' | 'pout' | 'laugh' | 'thin' | 'wide';
-  clothesStyle: 'tshirt' | 'suit' | 'hoodie' | 'sweater' | 'jacket' | 'tanktop' | 'dress' | 'shirt' | 'turtleneck' | 'vneck';
+  clothesStyle: 'tshirt' | 'suit' | 'hoodie' | 'sweater' | 'jacket' | 'tanktop' | 'dress' | 'shirt' | 'turtleneck' | 'vneck' | 'doctor' | 'chef' | 'police' | 'astronaut' | 'construction' | 'ninja' | 'wizard' | 'cyberpunk' | 'sports' | 'military' | 'royal' | 'farmer' | 'kimono' | 'hanfu' | 'sari' | 'dashiki' | 'poncho' | 'qipao' | 'dirndl' | 'kilt';
   clothesColor: string;
   bgTheme: 'light' | 'dark' | 'gradient' | 'neon';
   isSpeaking?: boolean;
+
+  // New Headwear
+  headwear?: 'none' | 'cap' | 'beanie' | 'hijab' | 'turban' | 'sombrero' | 'conical' | 'crown' | 'cowboy' | 'headband';
 
   // New Facial Hair
   facialHairStyle?: 'none' | 'stubble' | 'mustache' | 'beard' | 'goatee';
@@ -43,15 +46,16 @@ export interface CustomAvatarProps {
 export const CustomAvatar3D: React.FC<CustomAvatarProps> = ({
   hairStyle = 'short',
   hairColor = '#1a1a1a',
-  skinColor = '#f5cbb7',
+  skinColor: propSkinColor = '#f5cbb7',
   eyeColor = '#166534',
   eyeStyle = 'normal',
   noseStyle = 'small',
   mouthStyle = 'smile',
   clothesStyle = 'tshirt',
-  clothesColor = '#0055FF',
+  clothesColor: propClothesColor = '#0055FF',
   bgTheme = 'light',
   isSpeaking = false,
+  headwear = 'none',
   facialHairStyle = 'none',
   facialHairColor = '#1a1a1a',
   faceWidth = 50,
@@ -99,6 +103,18 @@ export const CustomAvatar3D: React.FC<CustomAvatarProps> = ({
     return () => clearInterval(blinkInterval);
   }, []);
 
+  const uid = useId();
+  const customSkinId = `customSkin-${uid}`;
+  const customEyeWhiteId = `customEyeWhite-${uid}`;
+  const customIrisId = `customIris-${uid}`;
+  const customMouthId = `customMouth-${uid}`;
+  const customShadowId = `customShadow-${uid}`;
+  const customInnerShadowId = `customInnerShadow-${uid}`;
+
+  // Force avoid pure white or extremely light colors for skin and clothes to ensure contrast against white background
+  const skinColor = ['#ffffff', '#fff', 'white', '#f8f9fa', '#f1f5f9'].includes(propSkinColor.toLowerCase()) ? '#f5cbb7' : propSkinColor;
+  const clothesColor = ['#ffffff', '#fff', 'white', '#f8f9fa', '#f1f5f9'].includes(propClothesColor.toLowerCase()) ? '#0055FF' : propClothesColor;
+
   // Calculate shadow color based on skin color (simple darkening)
   const hexToRgb = (hex: string) => {
     const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
@@ -108,16 +124,13 @@ export const CustomAvatar3D: React.FC<CustomAvatarProps> = ({
       b: parseInt(result[3], 16)
     } : { r: 200, g: 150, b: 120 };
   };
+
   const rgb = hexToRgb(skinColor);
   const skinShadow = `rgb(${Math.max(0, rgb.r - 40)}, ${Math.max(0, rgb.g - 40)}, ${Math.max(0, rgb.b - 40)})`;
   const skinDark = `rgb(${Math.max(0, rgb.r - 80)}, ${Math.max(0, rgb.g - 80)}, ${Math.max(0, rgb.b - 80)})`;
 
-  const bgClasses = {
-    light: "bg-white border-4 border-slate-100",
-    dark: "bg-slate-900 border-4 border-slate-800",
-    gradient: "bg-gradient-to-br from-blue-400 to-purple-500",
-    neon: "bg-black border-4 border-green-400 shadow-[0_0_15px_rgba(74,222,128,0.5)]"
-  };
+  // Force all backgrounds to be light/white to simplify and guarantee contrast
+  const bgClass = "bg-white border-4 border-slate-100";
 
   // Calculations for new properties
   const faceScaleX = 0.8 + (faceWidth / 100) * 0.4;
@@ -137,34 +150,34 @@ export const CustomAvatar3D: React.FC<CustomAvatarProps> = ({
   const mouthStrokeWidth = 1 + (mouthFullness / 100) * 2;
 
   return (
-    <div className={`relative w-full h-full flex items-center justify-center overflow-hidden rounded-full shadow-inner ${bgClasses[bgTheme]}`}>
+    <div className={`relative w-full h-full flex items-center justify-center overflow-hidden rounded-full shadow-inner ${bgClass}`}>
       <div 
         className="w-full h-full transition-transform duration-200 ease-out flex items-center justify-center"
         style={{ transform: `translate(${headTilt.x}px, ${headTilt.y}px)` }}
       >
         <svg viewBox="0 0 100 130" className="w-[100%] h-[100%] drop-shadow-2xl" style={{ transform: 'translateY(5%)' }}>
           <defs>
-            <radialGradient id="customSkin" cx="40%" cy="40%" r="60%">
+            <radialGradient id={customSkinId} cx="40%" cy="40%" r="60%">
               <stop offset="0%" stopColor={skinColor} />
               <stop offset="80%" stopColor={skinShadow} />
               <stop offset="100%" stopColor={skinDark} />
             </radialGradient>
-            <radialGradient id="customEyeWhite" cx="50%" cy="50%" r="50%">
+            <radialGradient id={customEyeWhiteId} cx="50%" cy="50%" r="50%">
               <stop offset="0%" stopColor="#ffffff" />
               <stop offset="100%" stopColor="#cbd5e1" />
             </radialGradient>
-            <radialGradient id="customIris" cx="40%" cy="40%" r="60%">
+            <radialGradient id={customIrisId} cx="40%" cy="40%" r="60%">
               <stop offset="0%" stopColor={eyeColor} />
               <stop offset="100%" stopColor="#0f172a" />
             </radialGradient>
-            <linearGradient id="customMouth" x1="0" y1="0" x2="0" y2="1">
+            <linearGradient id={customMouthId} x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stopColor="#4c0519" />
               <stop offset="100%" stopColor="#881337" />
             </linearGradient>
-            <filter id="customShadow" x="-20%" y="-20%" width="140%" height="140%">
+            <filter id={customShadowId} x="-20%" y="-20%" width="140%" height="140%">
               <feDropShadow dx="0" dy="8" stdDeviation="6" floodOpacity="0.4" />
             </filter>
-            <filter id="customInnerShadow">
+            <filter id={customInnerShadowId}>
               <feOffset dx="0" dy="2"/>
               <feGaussianBlur stdDeviation="2" result="offset-blur"/>
               <feComposite operator="out" in="SourceGraphic" in2="offset-blur" result="inverse"/>
@@ -177,7 +190,7 @@ export const CustomAvatar3D: React.FC<CustomAvatarProps> = ({
           <g style={{ transformOrigin: '50px 50px' }}>
             {/* Hair Back (Long Hair) */}
             {hairStyle === 'long' && (
-              <path d="M 15 40 Q 5 55 18 70 Q 5 85 20 100 Q 10 115 30 120 Q 50 115 70 120 Q 90 115 80 100 Q 95 85 82 70 Q 95 55 85 40 Z" fill={hairColor} filter="url(#customShadow)" />
+              <path d="M 15 40 Q 5 55 18 70 Q 5 85 20 100 Q 10 115 30 120 Q 50 115 70 120 Q 90 115 80 100 Q 95 85 82 70 Q 95 55 85 40 Z" fill={hairColor} filter="url(#${customShadowId})" />
             )}
             {hairStyle === 'wavy' && (
               <path d="M 12 40 Q 0 60 20 80 Q 5 100 25 120 Q 50 110 75 120 Q 95 100 80 80 Q 100 60 88 40 Z" fill={hairColor} filter="url(#customShadow)" />
@@ -192,7 +205,7 @@ export const CustomAvatar3D: React.FC<CustomAvatarProps> = ({
             )}
 
             {/* Neck */}
-            <path d="M 35 60 L 35 125 L 65 125 L 65 60 Z" fill="url(#customSkin)" filter="url(#customShadow)" />
+            <path d="M 35 60 L 35 125 L 65 125 L 65 60 Z" fill="url(#${customSkinId})" filter="url(#customShadow)" />
             
             {/* Clothes */}
             {clothesStyle === 'tshirt' && (
@@ -251,6 +264,171 @@ export const CustomAvatar3D: React.FC<CustomAvatarProps> = ({
             )}
             {clothesStyle === 'vneck' && (
               <path d="M 18 90 L 50 115 L 82 90 L 95 125 L 5 125 Z" fill={clothesColor} filter="url(#customShadow)" />
+            )}
+            {clothesStyle === 'doctor' && (
+              <g>
+                <path d="M 15 90 Q 50 100 85 90 L 95 125 L 5 125 Z" fill="#ffffff" filter="url(#customShadow)" />
+                <path d="M 45 90 L 50 125 L 55 90 Z" fill={clothesColor} />
+                <path d="M 35 90 Q 30 110 50 115 Q 70 110 65 90" fill="none" stroke="#334155" strokeWidth="3" />
+                <circle cx="50" cy="115" r="4" fill="#94a3b8" />
+              </g>
+            )}
+            {clothesStyle === 'chef' && (
+              <g>
+                <path d="M 15 90 Q 50 100 85 90 L 95 125 L 5 125 Z" fill="#ffffff" filter="url(#customShadow)" />
+                <path d="M 40 90 L 40 125 M 60 90 L 60 125" fill="none" stroke="#e2e8f0" strokeWidth="2" />
+                <circle cx="45" cy="100" r="2" fill="#1e293b" />
+                <circle cx="45" cy="110" r="2" fill="#1e293b" />
+                <circle cx="55" cy="100" r="2" fill="#1e293b" />
+                <circle cx="55" cy="110" r="2" fill="#1e293b" />
+              </g>
+            )}
+            {clothesStyle === 'police' && (
+              <g>
+                <path d="M 15 90 Q 50 100 85 90 L 95 125 L 5 125 Z" fill="#1e3a8a" filter="url(#customShadow)" />
+                <path d="M 50 90 L 50 125" fill="none" stroke="#0f172a" strokeWidth="3" />
+                <path d="M 30 100 L 40 100 L 40 110 L 30 110 Z" fill="#0f172a" />
+                <path d="M 60 100 L 70 100 L 70 110 L 60 110 Z" fill="#0f172a" />
+                <path d="M 62 95 L 68 95 L 65 102 Z" fill="#eab308" />
+              </g>
+            )}
+            {clothesStyle === 'astronaut' && (
+              <g>
+                <path d="M 10 85 Q 50 100 90 85 L 95 125 L 5 125 Z" fill="#f8fafc" filter="url(#customShadow)" />
+                <path d="M 20 85 Q 50 110 80 85" fill="none" stroke="#cbd5e1" strokeWidth="4" />
+                <rect x="40" y="105" width="20" height="15" rx="2" fill="#0f172a" />
+                <circle cx="45" cy="112" r="3" fill="#ef4444" />
+                <circle cx="55" cy="112" r="3" fill="#3b82f6" />
+              </g>
+            )}
+            {clothesStyle === 'construction' && (
+              <g>
+                <path d="M 15 90 Q 50 100 85 90 L 95 125 L 5 125 Z" fill={clothesColor} filter="url(#customShadow)" />
+                <path d="M 25 90 L 35 125 L 20 125 Z" fill="#f97316" />
+                <path d="M 75 90 L 65 125 L 80 125 Z" fill="#f97316" />
+                <path d="M 25 110 L 75 110" fill="none" stroke="#eab308" strokeWidth="4" />
+              </g>
+            )}
+            {clothesStyle === 'ninja' && (
+              <g>
+                <path d="M 15 90 Q 50 100 85 90 L 95 125 L 5 125 Z" fill="#0f172a" filter="url(#customShadow)" />
+                <path d="M 30 90 L 70 125 M 70 90 L 30 125" fill="none" stroke="#1e293b" strokeWidth="4" />
+                <path d="M 15 90 L 50 115 L 85 90" fill="none" stroke={clothesColor} strokeWidth="2" />
+              </g>
+            )}
+            {clothesStyle === 'wizard' && (
+              <g>
+                <path d="M 10 90 Q 50 100 90 90 L 95 125 L 5 125 Z" fill="#581c87" filter="url(#customShadow)" />
+                <path d="M 40 90 L 30 125 M 60 90 L 70 125" fill="none" stroke="#facc15" strokeWidth="3" />
+                <path d="M 45 105 L 55 105 M 50 100 L 50 110" fill="none" stroke="#facc15" strokeWidth="2" />
+              </g>
+            )}
+            {clothesStyle === 'cyberpunk' && (
+              <g>
+                <path d="M 15 80 Q 50 100 85 80 L 95 125 L 5 125 Z" fill="#0f172a" filter="url(#customShadow)" />
+                <path d="M 15 80 L 35 100 L 35 125 M 85 80 L 65 100 L 65 125" fill="none" stroke="#06b6d4" strokeWidth="3" />
+                <path d="M 35 100 L 65 100" fill="none" stroke="#ec4899" strokeWidth="2" />
+                <circle cx="50" cy="115" r="6" fill="#06b6d4" opacity="0.8" />
+              </g>
+            )}
+            {clothesStyle === 'sports' && (
+              <g>
+                <path d="M 20 90 Q 50 100 80 90 L 95 125 L 5 125 Z" fill={clothesColor} filter="url(#customShadow)" />
+                <path d="M 35 90 L 35 125 M 65 90 L 65 125" fill="none" stroke="#ffffff" strokeWidth="4" />
+                <text x="50" y="115" fill="#ffffff" fontSize="20" fontWeight="bold" textAnchor="middle">10</text>
+              </g>
+            )}
+            {clothesStyle === 'military' && (
+              <g>
+                <path d="M 15 90 Q 50 100 85 90 L 95 125 L 5 125 Z" fill="#4d7c0f" filter="url(#customShadow)" />
+                <path d="M 20 100 Q 30 90 40 105 Q 30 115 20 100 Z" fill="#3f6212" />
+                <path d="M 60 110 Q 70 100 80 115 Q 70 125 60 110 Z" fill="#3f6212" />
+                <path d="M 45 95 Q 55 85 65 100 Q 55 110 45 95 Z" fill="#1a2e05" />
+              </g>
+            )}
+            {clothesStyle === 'royal' && (
+              <g>
+                <path d="M 15 90 Q 50 100 85 90 L 95 125 L 5 125 Z" fill="#9f1239" filter="url(#customShadow)" />
+                <path d="M 15 90 Q 25 100 35 90 Z" fill="#facc15" />
+                <path d="M 85 90 Q 75 100 65 90 Z" fill="#facc15" />
+                <path d="M 45 90 L 50 125 L 55 90 Z" fill="#ffffff" />
+                <path d="M 40 100 L 60 100 M 40 110 L 60 110 M 40 120 L 60 120" fill="none" stroke="#facc15" strokeWidth="2" />
+              </g>
+            )}
+            {clothesStyle === 'farmer' && (
+              <g>
+                <path d="M 15 90 Q 50 100 85 90 L 95 125 L 5 125 Z" fill="#ef4444" filter="url(#customShadow)" />
+                <path d="M 15 90 L 15 125 M 25 90 L 25 125 M 35 90 L 35 125 M 45 90 L 45 125 M 55 90 L 55 125 M 65 90 L 65 125 M 75 90 L 75 125 M 85 90 L 85 125" fill="none" stroke="#991b1b" strokeWidth="2" opacity="0.5" />
+                <path d="M 5 100 L 95 100 M 5 110 L 95 110 M 5 120 L 95 120" fill="none" stroke="#991b1b" strokeWidth="2" opacity="0.5" />
+                <path d="M 30 125 L 30 105 L 70 105 L 70 125 Z" fill="#1d4ed8" />
+                <path d="M 20 90 L 30 105 M 80 90 L 70 105" fill="none" stroke="#1d4ed8" strokeWidth="4" />
+                <circle cx="28" cy="103" r="3" fill="#fbbf24" />
+                <circle cx="72" cy="103" r="3" fill="#fbbf24" />
+              </g>
+            )}
+            {clothesStyle === 'kimono' && (
+              <g>
+                <path d="M 15 90 Q 50 100 85 90 L 95 125 L 5 125 Z" fill={clothesColor} filter="url(#customShadow)" />
+                <path d="M 35 90 L 50 125 L 65 90" fill="none" stroke="#ffffff" strokeWidth="4" opacity="0.8" />
+                <path d="M 20 110 L 80 110 L 80 125 L 20 125 Z" fill="#b91c1c" />
+              </g>
+            )}
+            {clothesStyle === 'hanfu' && (
+              <g>
+                <path d="M 15 90 Q 50 100 85 90 L 95 125 L 5 125 Z" fill={clothesColor} filter="url(#customShadow)" />
+                <path d="M 30 90 L 70 125 M 70 90 L 30 125" fill="none" stroke="#ffffff" strokeWidth="3" opacity="0.6" />
+                <path d="M 40 100 L 60 100 L 60 120 L 40 120 Z" fill="none" stroke="#fbbf24" strokeWidth="2" />
+              </g>
+            )}
+            {clothesStyle === 'sari' && (
+              <g>
+                <path d="M 15 90 Q 50 100 85 90 L 95 125 L 5 125 Z" fill={clothesColor} filter="url(#customShadow)" />
+                <path d="M 20 125 Q 50 80 85 125" fill="none" stroke="#fbbf24" strokeWidth="8" opacity="0.9" />
+                <circle cx="30" cy="110" r="3" fill="#fbbf24" />
+                <circle cx="50" cy="115" r="3" fill="#fbbf24" />
+                <circle cx="70" cy="110" r="3" fill="#fbbf24" />
+              </g>
+            )}
+            {clothesStyle === 'dashiki' && (
+              <g>
+                <path d="M 15 90 Q 50 100 85 90 L 95 125 L 5 125 Z" fill={clothesColor} filter="url(#customShadow)" />
+                <path d="M 40 90 L 40 115 L 60 115 L 60 90" fill="none" stroke="#fbbf24" strokeWidth="3" />
+                <path d="M 45 95 L 55 95 M 45 105 L 55 105" fill="none" stroke="#ef4444" strokeWidth="2" />
+                <circle cx="50" cy="120" r="4" fill="#10b981" />
+              </g>
+            )}
+            {clothesStyle === 'poncho' && (
+              <g>
+                <path d="M 15 90 Q 50 100 85 90 L 95 125 L 50 125 L 5 125 Z" fill={clothesColor} filter="url(#customShadow)" />
+                <path d="M 10 100 L 90 100 M 15 110 L 85 110 M 20 120 L 80 120" fill="none" stroke="#ffffff" strokeWidth="3" opacity="0.7" />
+                <path d="M 50 90 L 50 125" fill="none" stroke="#fbbf24" strokeWidth="2" strokeDasharray="4 4" />
+              </g>
+            )}
+            {clothesStyle === 'qipao' && (
+              <g>
+                <path d="M 20 90 Q 50 95 80 90 L 85 125 L 15 125 Z" fill={clothesColor} filter="url(#customShadow)" />
+                <path d="M 45 90 L 45 95 L 75 110" fill="none" stroke="#fbbf24" strokeWidth="2" />
+                <circle cx="55" cy="100" r="2" fill="#fbbf24" />
+                <circle cx="65" cy="105" r="2" fill="#fbbf24" />
+                <circle cx="75" cy="110" r="2" fill="#fbbf24" />
+              </g>
+            )}
+            {clothesStyle === 'dirndl' && (
+              <g>
+                <path d="M 15 90 Q 50 100 85 90 L 95 125 L 5 125 Z" fill="#ffffff" filter="url(#customShadow)" />
+                <path d="M 25 90 L 25 125 L 75 125 L 75 90 Z" fill={clothesColor} />
+                <path d="M 35 90 L 45 110 M 65 90 L 55 110 M 40 100 L 60 100" fill="none" stroke="#fbbf24" strokeWidth="2" />
+                <path d="M 45 110 L 55 110 L 50 125 Z" fill="#ef4444" />
+              </g>
+            )}
+            {clothesStyle === 'kilt' && (
+              <g>
+                <path d="M 15 90 Q 50 100 85 90 L 95 125 L 5 125 Z" fill="#ffffff" filter="url(#customShadow)" />
+                <path d="M 20 100 L 80 100 L 85 125 L 15 125 Z" fill={clothesColor} />
+                <path d="M 25 100 L 25 125 M 35 100 L 35 125 M 45 100 L 45 125 M 55 100 L 55 125 M 65 100 L 65 125 M 75 100 L 75 125" fill="none" stroke="#1e293b" strokeWidth="2" opacity="0.5" />
+                <path d="M 15 110 L 85 110 M 15 120 L 85 120" fill="none" stroke="#1e293b" strokeWidth="2" opacity="0.5" />
+                <rect x="45" y="105" width="10" height="15" rx="2" fill="#475569" />
+              </g>
             )}
 
             {/* Head Base */}
@@ -328,12 +506,72 @@ export const CustomAvatar3D: React.FC<CustomAvatarProps> = ({
               </>
             )}
 
+            {/* Headwear */}
+            {headwear === 'cap' && (
+              <g>
+                <path d="M 15 35 Q 50 10 85 35 L 50 35 Z" fill={clothesColor} filter="url(#customShadow)" />
+                <path d="M 10 35 L 90 35 L 85 40 L 15 40 Z" fill={clothesColor} />
+              </g>
+            )}
+            {headwear === 'beanie' && (
+              <g>
+                <path d="M 20 40 Q 50 -5 80 40 L 20 40 Z" fill={clothesColor} filter="url(#customShadow)" />
+                <rect x="18" y="35" width="64" height="8" rx="2" fill={clothesColor} opacity="0.9" />
+              </g>
+            )}
+            {headwear === 'hijab' && (
+              <g>
+                <path d="M 15 35 Q 50 -10 85 35 L 90 80 Q 50 110 10 80 Z" fill={clothesColor} filter="url(#customShadow)" />
+                <ellipse cx="50" cy="45" rx="28" ry="32" fill="url(#customSkin)" />
+              </g>
+            )}
+            {headwear === 'turban' && (
+              <g>
+                <path d="M 15 40 Q 50 -10 85 40 Q 50 50 15 40 Z" fill={clothesColor} filter="url(#customShadow)" />
+                <path d="M 20 30 Q 50 10 80 30" fill="none" stroke="#ffffff" strokeWidth="2" opacity="0.3" />
+                <circle cx="50" cy="25" r="4" fill="#fbbf24" />
+              </g>
+            )}
+            {headwear === 'sombrero' && (
+              <g>
+                <path d="M 30 35 Q 50 -10 70 35 Z" fill={clothesColor} filter="url(#customShadow)" />
+                <ellipse cx="50" cy="35" rx="45" ry="8" fill={clothesColor} />
+                <ellipse cx="50" cy="35" rx="40" ry="6" fill="none" stroke="#fbbf24" strokeWidth="2" />
+              </g>
+            )}
+            {headwear === 'conical' && (
+              <g>
+                <path d="M 50 5 L 90 40 L 10 40 Z" fill={clothesColor} filter="url(#customShadow)" />
+                <path d="M 15 38 L 85 38" fill="none" stroke="#fbbf24" strokeWidth="1" opacity="0.5" />
+              </g>
+            )}
+            {headwear === 'crown' && (
+              <g>
+                <path d="M 25 35 L 20 15 L 35 25 L 50 10 L 65 25 L 80 15 L 75 35 Z" fill="#fbbf24" filter="url(#customShadow)" />
+                <circle cx="20" cy="15" r="2" fill="#ef4444" />
+                <circle cx="50" cy="10" r="3" fill="#3b82f6" />
+                <circle cx="80" cy="15" r="2" fill="#ef4444" />
+              </g>
+            )}
+            {headwear === 'cowboy' && (
+              <g>
+                <path d="M 30 35 Q 50 0 70 35 Z" fill="#8b4513" filter="url(#customShadow)" />
+                <path d="M 10 35 Q 50 45 90 35 Q 95 30 85 30 Q 50 40 15 30 Q 5 30 10 35 Z" fill="#8b4513" />
+                <path d="M 30 33 L 70 33" fill="none" stroke="#3e2723" strokeWidth="3" />
+              </g>
+            )}
+            {headwear === 'headband' && (
+              <g>
+                <path d="M 20 30 Q 50 35 80 30 L 82 35 Q 50 40 18 35 Z" fill={clothesColor} filter="url(#customShadow)" />
+              </g>
+            )}
+
             {/* Eyes Group */}
             <g className="transition-transform duration-75" style={{ transformOrigin: '50px 42px', transform: blink ? 'scaleY(0.05)' : 'scaleY(1)' }}>
               {/* Left Eye */}
               <g style={{ transformOrigin: '38px 42px', transform: `translate(${-eyeDistOffset}px, 0) scale(${eyeScale}) rotate(${eyeRot}deg)` }}>
-                <ellipse cx="38" cy="42" rx={6} ry={4} fill="url(#customEyeWhite)" filter="url(#customInnerShadow)" />
-                <circle cx="38" cy="42" r={2.5} fill="url(#customIris)" />
+                <ellipse cx="38" cy="42" rx={6} ry={4} fill="url(#${customEyeWhiteId})" filter="url(#${customInnerShadowId})" />
+                <circle cx="38" cy="42" r={2.5} fill="url(#${customIrisId})" />
                 <circle cx="37" cy="41" r="0.8" fill="#ffffff" />
                 {/* Eyelid */}
                 <path d={`M 30 42 Q 38 ${eyelidY - 10} 46 42 L 46 ${eyelidY} L 30 ${eyelidY} Z`} fill="url(#customSkin)" />
@@ -415,7 +653,7 @@ export const CustomAvatar3D: React.FC<CustomAvatarProps> = ({
                     cy="64" 
                     rx="8" 
                     ry={mouthOpen} 
-                    fill="url(#customMouth)" 
+                    fill="url(#${customMouthId})" 
                     className="transition-all duration-75"
                   />
                   {mouthOpen > 3 && (
