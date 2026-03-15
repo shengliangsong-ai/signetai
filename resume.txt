@@ -1,0 +1,64 @@
+Sheng-Liang Song
+Fremont, CA, US, shengliang.song@gmail.com, (510) 766-9107
+SUMMARY 
+A highly experienced software engineer and technical leader with over 20+ years of C++ experience designing, developing, and launching innovative software products. Strong expertise in computer architecture, embedded systems, distributed storage, cloud compute-storage separation database, and serverless database within a Kubernetes cluster.
+EXPERIENCE
+Senior Software Engineer
+Meta Jan 2025 - Dec 2025, Burlingame, CA
+Designed and implemented a memory management component for the embedded Connectivity Framework, optimizing memory footprint and performance across multiple device profiles.
+Developed the Stream file transfer service over the DataX transport layer for AR/VR devices, enabling efficient and reliable coredump uploads and OTA software updates.
+Implemented Constellation Profile Arbitration, supporting Hands-Free Profile integration for seamless Bluetooth coexistence and user experience.
+Hackathon: Co-created LectureMate, an AI-driven podcast agent integrated with Metamate and Deep Research, built in just 3 days as part of a two-person team.
+Senior Software Engineer 
+TikTok May 2022 -Dec 2024, San Jose, CA 
+Led the design and development of DDL query execution in a MySQL cluster with N-shard writers, improving distributed schema change reliability and scalability.
+Implemented a proof-of-concept for distributed query processing, demonstrating performance gains for cross-shard analytics and laying groundwork for future federated query capabilities.
+Designed and implemented adaptive autoscaling for buffer pool and heap memory, extending beyond CPU-based scaling to optimize resource utilization and reduce latency under dynamic workloads.
+Built a continuous code coverage pipeline that generated daily reports, increasing test visibility and improving regression detection efficiency.
+Authored the “ByteNDB Compile & Run Cookbook,” standardizing internal build workflows and accelerating onboarding for new engineers.
+Mentored interns and led technical interviews, contributing to talent development and building a high-performing, collaborative engineering culture.
+Senior Software Engineer 
+Microsoft January 2020 - March 2022, Mountain View, CA 
+Implemented asynchronous DDL physical replication within a replica group for MySQL8, resulting in improved replication speed and overall user experience. Reduced replication lag and improved system performance.
+Participated in on-call support for Azure databases, including MySQL and PostgreSQL products, ensuring timely and effective resolution of customer issues. Increased collaboration across teams, improved customer satisfaction, and enhanced technical proficiency.
+Aurora Software Engineer 
+Amazon December 2016 - January 2020, East Palo Alto, CA
+Trained Primary-On-Call engineers on DDL Recovery and MySQL Metadata Lock issues through hands-on exercises, enhancing their technical proficiency and enabling them to effectively handle complex issues. Reduced resolution time for DDL Recovery and Metadata Lock issues.
+Contributed to various projects including Aurora Fast DDL features, Porting from MySQL 5.6 to 5.7, Parallel-Query processing, and multi-master DDL features, improving product functionality and enabling better user experience. Increased customer satisfaction and improved product quality.
+Lecturer
+SJSU December 2016 - August 2018, San Jose, CA
+Taught CMPE 200 Computer Architecture for 3 semesters: Spring 2017, Fall 2017, and Spring 2018 
+
+Senior Software Engineer 
+Google March 2014 - June 2016, Mountain View, CA
+Designed and implemented battery firmware over-the-air update for Chromebook, resulting in significant cost savings by avoiding the need to ship Chromebooks back for manual fixes. 
+Conducted over 200 interviews and served on the Hire Committee, playing a key role in hiring top talent for the company. Helped streamline the recruitment process, resulting in faster hiring and increased candidate satisfaction (61 days).
+Taught interviewer training classes to 400+ googlers which enhanced interviewing skills and ensured a consistent hiring process across teams. Taught a firmware class to 200+ googlers in the g2g program, sharing knowledge across the organizations.
+Sr. Staff Software Engineer 
+Broadcom Corporation May 2011 - November 2013, Santa Clara, CA 
+Improved DDR3 memory controller frequency from 666MHz to 800MHz through implementing Read Training and Write Leveling.
+Collaborated with a team of 10+ engineers to bring up XLPII multicore processors.
+Conducted openocd/gdb debug training sessions for 15 RTL verification and software team members.
+Sr. Staff Firmware Engineer 
+LinkAMedia Devices October 2009 - May 2011, Santa Clara, CA
+Led the end-to-end Hybrid HDD Firmware Project and integrated Toshiba Host interface API from the design phase to SoC bring-up within a timeline of 6 months. Delivered the firmware on schedule and met project objectives.
+Developed NAND Flash Management and SSD failure analysis components that improved the overall system reliability and facilitated root cause analysis.
+Collaborated effectively with cross-functional teams to resolve PCIe Gen2 Physical link retrain issues, resulting in improved system performance and stability. 
+Sr. Architectural Modeling 
+Bay Microsystems Inc July 2006 - October 2009, San Jose, CA
+Designed ODU Overhead termination and generation and OTN FEC model in SystemC.
+Developed sample Linux network applications with programmable network processors.
+Diagnostic Software Engineer 
+Cisco Systems Inc. May 2000 - July 2006, San Jose, CA
+Brought up one Cat6K and 7600 family line card: Embedded Logic Analyzer, Channelized OC12, PowerPC MPC8548, and EZchip, and Shared Port Adapters.
+Trained manufacturing partners to isolate component level failures to improve yields.
+EDUCATION
+Master of Computer Science 
+San Jose State University • San Jose, CA• 2005 - 2008 (While working full-time)
+Electrical Engineering and Computer Science, BS
+UC Berkeley • Berkeley, CA • 1998 - 2000
+Santa Rosa Junior College, Computer Science, AS
+UC Berkeley • Berkeley, CA • 1995 - 1998
+SKILLS 
+C/C++/SystemC, Architectural Modeling, Embedded/DDR/SSD/Storage System, Database, k8s.
+

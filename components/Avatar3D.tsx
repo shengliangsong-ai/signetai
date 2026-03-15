@@ -46,7 +46,8 @@ export const Avatar3D: React.FC<Avatar3DProps> = ({ isSpeaking, avatarId }) => {
 
   const config = avatars.find((a: AvatarConfig) => a.id === avatarId) || avatars[0];
   const isFemale = config.gender === 'female';
-  const { skinColor, skinShadow, hairColor, eyeColor, hasGlasses, age } = config;
+  const { skinColor, hairColor, eyeColor, age, eyeStyle } = config as any;
+  const hasGlasses = eyeStyle === 'glasses' || eyeStyle === 'sunglasses';
 
   const displayHairColor = age >= 56 ? '#94a3b8' : hairColor; // Grey hair for older avatars
   
@@ -67,7 +68,6 @@ export const Avatar3D: React.FC<Avatar3DProps> = ({ isSpeaking, avatarId }) => {
           <defs>
             <radialGradient id="skin" cx="40%" cy="40%" r="60%">
               <stop offset="0%" stopColor={skinColor} />
-              <stop offset="80%" stopColor={skinShadow} />
               <stop offset="100%" stopColor={skinDark} />
             </radialGradient>
             <radialGradient id="eyeWhite" cx="50%" cy="50%" r="50%">
