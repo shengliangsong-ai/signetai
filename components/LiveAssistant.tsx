@@ -72,6 +72,8 @@ export const LiveAssistant: React.FC = () => {
   const [presetSearch, setPresetSearch] = useState('');
   const [showSearchHelp, setShowSearchHelp] = useState(false);
   const [isGeneratingFromSearch, setIsGeneratingFromSearch] = useState(false);
+  const [isDemoMuted, setIsDemoMuted] = useState(false);
+  const isDemoMutedRef = useRef(false);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -104,6 +106,16 @@ export const LiveAssistant: React.FC = () => {
   const pendingDemoNarrate = useRef(false);
   const speakingTimeoutRef = useRef<number | null>(null);
 
+  useEffect(() => {
+    const handleDemoStatus = (e: Event) => {
+      const { isRunning } = (e as CustomEvent).detail;
+      isDemoMutedRef.current = isRunning;
+      setIsDemoMuted(isRunning);
+    };
+    window.addEventListener('signet:demo-status', handleDemoStatus);
+    return () => window.removeEventListener('signet:demo-status', handleDemoStatus);
+  }, []);
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
@@ -131,9 +143,11 @@ export const LiveAssistant: React.FC = () => {
       if (status === 'OFFLINE') {
         pendingDemoNarrate.current = true;
         initVoiceChat();
+      } else if (status === 'CONNECTING') {
+        pendingDemoNarrate.current = true;
       } else if (status === 'CONNECTED' && sessionRef.current) {
         try {
-          sessionRef.current.sendClientContent({ turns: [{ role: 'user', parts: [{ text: "I just started the demo notebook manually. Please provide a 1-minute introduction summarizing the key of the project, addressing the hackathon requirements (Live Agent, Gemini Live API, Google Cloud). Then, explain Stage 1: Sovereign Identity Initialization. Do NOT explain the other stages yet. I will prompt you when the UI advances to the next stage." }] }], turnComplete: true });
+          sessionRef.current.sendClientContent({ turns: [{ role: 'user', parts: [{ text: "I just started the demo notebook manually. Please provide a 1-minute introduction summarizing the key of the project, addressing the hackathon requirements (Live Agent, Gemini Live API, Google Cloud). Then, explain Stage 1: Sovereign Identity & Verification. Do NOT explain the other stages yet. I will prompt you when the UI advances to the next stage." }] }], turnComplete: true });
         } catch (err) {
           console.error("Failed to send demo prompt:", err);
         }
@@ -229,6 +243,7 @@ export const LiveAssistant: React.FC = () => {
       window.clearTimeout(speakingTimeoutRef.current);
       speakingTimeoutRef.current = null;
     }
+    nextStartTimeRef.current = 0;
     window.dispatchEvent(new CustomEvent('signet:speaking-status', { detail: { isSpeaking: false } }));
     setStatus('OFFLINE');
     setVolume(0);
@@ -319,13 +334,6 @@ export const LiveAssistant: React.FC = () => {
     outputAudioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
     inputAudioContextRef.current.resume();
     outputAudioContextRef.current.resume();
-    
-    // 2. Resolve API Key selection (Race condition handling)
-    const hasKey = await (window as any).aistudio?.hasSelectedApiKey();
-    if (!hasKey) {
-      // Per instructions: assume selection successful after trigger and proceed
-      (window as any).aistudio?.openSelectKey();
-    }
 
     const apiKey = getApiKey();
     if (!apiKey) {
@@ -382,7 +390,9 @@ export const LiveAssistant: React.FC = () => {
                 
                 // Rely solely on sessionPromise to prevent stale closure issues
                 sessionPromise.then(session => {
-                  session.sendRealtimeInput({ media: pcmBlob });
+                  if (!isDemoMutedRef.current) {
+                    session.sendRealtimeInput({ media: pcmBlob });
+                  }
                 }).catch(() => {});
               };
               
@@ -408,7 +418,7 @@ export const LiveAssistant: React.FC = () => {
             if (pendingDemoNarrate.current) {
               pendingDemoNarrate.current = false;
               sessionPromise.then(session => {
-                session.sendClientContent({ turns: [{ role: 'user', parts: [{ text: "I just started the demo notebook manually. Please provide a 1-minute introduction summarizing the key of the project, addressing the hackathon requirements (Live Agent, Gemini Live API, Google Cloud). Then, explain Stage 1: Sovereign Identity Initialization. Do NOT explain the other stages yet. I will prompt you when the UI advances to the next stage." }] }], turnComplete: true });
+                session.sendClientContent({ turns: [{ role: 'user', parts: [{ text: "I just started the demo notebook manually. Please provide a 1-minute introduction summarizing the key of the project, addressing the hackathon requirements (Live Agent, Gemini Live API, Google Cloud). Then, explain Stage 1: Sovereign Identity & Verification. Do NOT explain the other stages yet. I will prompt you when the UI advances to the next stage." }] }], turnComplete: true });
               }).catch(() => {});
             }
           },
@@ -515,7 +525,7 @@ export const LiveAssistant: React.FC = () => {
                     setTimeout(() => {
                       window.dispatchEvent(new CustomEvent('signet:start-demo', { detail: { fromAgent: true } }));
                     }, 500);
-                    result = "Demo Notebook opened. The UI will advance automatically. Please provide a 1-minute introduction summarizing the key of the project, addressing the hackathon requirements (Live Agent, Gemini Live API, Google Cloud). Then, explain Stage 1: Sovereign Identity Initialization. Do NOT explain the other stages yet. I will prompt you when the UI advances to the next stage.";
+                    result = "Demo Notebook opened. The UI will advance automatically. Please provide a 1-minute introduction summarizing the key of the project, addressing the hackathon requirements (Live Agent, Gemini Live API, Google Cloud). Then, explain Stage 1: Sovereign Identity & Verification. Do NOT explain the other stages yet. I will prompt you when the UI advances to the next stage.";
                   } else if (call.name === "setDemoStep") {
                     const stepNum = call.args?.stepNumber;
                     setMessages(prev => [...prev, { role: 'assistant', text: `⚙️ **Action:** Advancing to Step ${stepNum}...` }]);
@@ -563,7 +573,7 @@ export const LiveAssistant: React.FC = () => {
           - You can help users detect deepfakes, tampering, or synthetic alterations.
           - You guide users through the Universal Media Signing process.
           - You explain cryptographic concepts (like dual-hashing and Public/Private keys) simply and clearly.
-          - If the user asks for a demo, you MUST call the "startSelfDemo" tool. This will open the Demo Notebook page. You should then narrate the 6 stages: 1. Sovereign Identity Initialization, 2. Universal Media Signing, 3. Public Ledger Verification, 4. Image Forensic Diff Analysis, 5. Video Authenticity Verification, 6. Conclusion & Future Outlook. The UI will advance automatically, and you will receive a prompt when it's time to explain the next stage. Do NOT explain all stages at once. Wait for the prompt for each stage. Do NOT call the setDemoStep tool during the automated demo unless the user explicitly asks you to skip to a specific stage.
+          - If the user asks for a demo, you MUST call the "startSelfDemo" tool. This will open the Demo Notebook page. You should then narrate the 7 stages: 1. Sovereign Identity & Verification, 2. Universal Media Signing, 3. Public Ledger Verification, 4. Image Forensic Diff Analysis, 5. Video Authenticity Verification, 6. Hackathon Submission, 7. Conclusion & Future Outlook. The UI will advance automatically, and you will receive a prompt when it's time to explain the next stage. Do NOT explain all stages at once. Wait for the prompt for each stage. Do NOT call the setDemoStep tool during the automated demo unless the user explicitly asks you to skip to a specific stage.
           
           IDENTITY RECOGNITION:
           Master Signatory is signetai.io:ssl.
@@ -605,7 +615,7 @@ export const LiveAssistant: React.FC = () => {
               },
               {
                 name: "setDemoStep",
-                description: "Advance the demo to a specific step (1 to 6). Call this right before you start explaining that step.",
+                description: "Advance the demo to a specific step (1 to 7). Call this right before you start explaining that step.",
                 parameters: {
                   type: Type.OBJECT,
                   properties: {

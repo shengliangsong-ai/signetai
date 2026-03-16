@@ -1,24 +1,56 @@
 // [SOURCE PROMPT]: Initialize the /docs/evolution/LOG.md file. Document the transition from aivoicecast.com to signetai.io. Then, generate the first "Verification Badge" component for the homepage that, when clicked, shows a popup explaining how the site's own code is a "Signet-Verified Asset."
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 export const VerificationBadge: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const [demoStatus, setDemoStatus] = useState({ isRunning: false, timeElapsed: 0 });
+
+  useEffect(() => {
+    const handleDemoStatus = (e: Event) => {
+      const { isRunning, timeElapsed } = (e as CustomEvent).detail;
+      setDemoStatus({ isRunning, timeElapsed });
+    };
+    window.addEventListener('signet:demo-status', handleDemoStatus);
+    return () => window.removeEventListener('signet:demo-status', handleDemoStatus);
+  }, []);
+
+  const formatTime = (seconds: number) => {
+    const m = Math.floor(seconds / 60).toString().padStart(2, '0');
+    const s = (seconds % 60).toString().padStart(2, '0');
+    return `${m}:${s}`;
+  };
 
   return (
     <>
       <div 
-        onClick={() => setIsOpen(true)}
-        className="fixed bottom-8 right-8 z-[100] cursor-pointer group"
+        className="fixed bottom-8 right-8 z-[100] flex items-center gap-4"
       >
-        <div className="relative">
-          {/* Pulsing Ring */}
-          <div className="absolute inset-0 rounded-full bg-emerald-500/20 animate-ping group-hover:bg-emerald-500/40 transition-all"></div>
-          
-          {/* Main Badge */}
-          <div className="relative flex items-center gap-3 px-4 py-2 bg-black border border-emerald-500/50 rounded-full shadow-[0_0_20px_rgba(16,185,129,0.2)] group-hover:border-emerald-500 transition-all duration-300">
-            <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
-            <span className="font-mono text-[10px] uppercase tracking-widest text-emerald-500">Signet Verified</span>
+        {demoStatus.isRunning && (
+          <div className="flex items-center gap-2 bg-black/80 backdrop-blur-sm border border-blue-500/50 px-4 py-2 rounded-full shadow-[0_0_15px_rgba(59,130,246,0.2)] animate-in fade-in slide-in-from-right-4">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={demoStatus.timeElapsed > 240 ? 'text-red-500' : 'text-blue-400'}>
+              <circle cx="12" cy="12" r="10"></circle>
+              <polyline points="12 6 12 12 16 14"></polyline>
+            </svg>
+            <span className={`font-mono font-bold text-xs ${demoStatus.timeElapsed > 240 ? 'text-red-500' : 'text-blue-400'}`}>
+              {formatTime(demoStatus.timeElapsed)}
+            </span>
+          </div>
+        )}
+
+        <div 
+          onClick={() => setIsOpen(true)}
+          className="cursor-pointer group"
+        >
+          <div className="relative">
+            {/* Pulsing Ring */}
+            <div className="absolute inset-0 rounded-full bg-emerald-500/20 animate-ping group-hover:bg-emerald-500/40 transition-all"></div>
+            
+            {/* Main Badge */}
+            <div className="relative flex items-center gap-3 px-4 py-2 bg-black border border-emerald-500/50 rounded-full shadow-[0_0_20px_rgba(16,185,129,0.2)] group-hover:border-emerald-500 transition-all duration-300">
+              <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
+              <span className="font-mono text-[10px] uppercase tracking-widest text-emerald-500">Signet Verified</span>
+            </div>
           </div>
         </div>
       </div>
