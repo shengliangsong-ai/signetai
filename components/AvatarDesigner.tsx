@@ -237,7 +237,7 @@ export const AvatarDesigner: React.FC<{ onAvatarGenerated?: (config: CustomAvata
           }
         }
       });
-      const data = JSON.parse(await response.text() || '{}');
+      const data = JSON.parse(response.text || '{}');
       setConfig(prev => {
         const newConfig = ensureGoodContrast({ ...prev, ...data });
         
@@ -337,7 +337,7 @@ export const AvatarDesigner: React.FC<{ onAvatarGenerated?: (config: CustomAvata
         }
       });
       
-      const result = JSON.parse(await response.text() || "{}");
+      const result = JSON.parse(response.text || "{}");
       
       setConfig(prev => {
         const mergedConfig = { ...prev, ...result };
