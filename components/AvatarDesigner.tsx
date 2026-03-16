@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { GoogleGenAI, Type } from '@google/genai';
 import { CustomAvatar3D, CustomAvatarProps } from './CustomAvatar3D';
 import { saveAvatarConfig, loadAvatarConfig, SavedAvatarConfig, saveCustomAvatar, loadCustomAvatars, deleteCustomAvatar } from '../services/avatarDb';
 import { avatars } from '../constants/avatars';
@@ -19,82 +18,6 @@ export const normalizeColor = (color: string, defaultColor: string = '#000000') 
     // Ignore canvas errors in non-browser environments
   }
   return defaultColor;
-};
-
-export const getLuminance = (hex: string) => {
-  if (!hex) return 0;
-  hex = hex.replace('#', '');
-  
-  if (hex.length === 3) {
-    hex = hex.split('').map(c => c + c).join('');
-  }
-  const r = parseInt(hex.substring(0, 2), 16) / 255 || 0;
-  const g = parseInt(hex.substring(2, 4), 16) / 255 || 0;
-  const b = parseInt(hex.substring(4, 6), 16) / 255 || 0;
-
-  const a = [r, g, b].map(v => {
-    return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
-  });
-  return a[0] * 0.2126 + a[1] * 0.7152 + a[2] * 0.0722;
-};
-
-export const getContrast = (lum1: number, lum2: number) => {
-  const lighter = Math.max(lum1, lum2);
-  const darker = Math.min(lum1, lum2);
-  return (lighter + 0.05) / (darker + 0.05);
-};
-
-export const bgLuminance = {
-  light: getLuminance('#ffffff'),
-  dark: getLuminance('#0f172a'),
-  gradient: getLuminance('#60a5fa'),
-  neon: getLuminance('#000000')
-};
-
-export const ensureGoodContrast = <T extends Partial<CustomAvatarProps>>(config: T): T => {
-  // Normalize colors to ensure named colors (like 'black') are converted to hex
-  if (config.skinColor) config.skinColor = normalizeColor(config.skinColor, '#ffe0d2');
-  if (config.clothesColor) config.clothesColor = normalizeColor(config.clothesColor, '#0055FF');
-  if (config.hairColor) config.hairColor = normalizeColor(config.hairColor, '#1a1a1a');
-  if (config.eyeColor) config.eyeColor = normalizeColor(config.eyeColor, '#166534');
-
-  const skinLum = getLuminance(config.skinColor || '#ffe0d2');
-  const clothesLum = getLuminance(config.clothesColor || '#0055FF');
-  
-  let bestTheme: 'light' | 'dark' | 'gradient' | 'neon' = config.bgTheme || 'light';
-  let bestContrast = 0;
-
-  // First try to find a theme that works with the current skin and clothes
-  for (const theme of ['light', 'dark', 'gradient', 'neon'] as const) {
-    const themeLum = bgLuminance[theme];
-    const sContrast = getContrast(skinLum, themeLum);
-    const cContrast = getContrast(clothesLum, themeLum);
-    const minContrast = Math.min(sContrast, cContrast);
-    
-    if (minContrast > bestContrast) {
-      bestContrast = minContrast;
-      bestTheme = theme;
-    }
-  }
-
-  config.bgTheme = bestTheme;
-
-  // If even the best theme has poor contrast, adjust the colors
-  if (bestContrast < 2.5) {
-    const themeLum = bgLuminance[bestTheme];
-    
-    // Check skin contrast
-    if (getContrast(skinLum, themeLum) < 2.5) {
-      config.skinColor = themeLum > 0.5 ? '#8d5524' : '#f5cbb7';
-    }
-    
-    // Check clothes contrast
-    if (getContrast(clothesLum, themeLum) < 2.5) {
-      config.clothesColor = themeLum > 0.5 ? '#1a1a1a' : '#f8f9fa';
-    }
-  }
-
-  return config;
 };
 
 const SliderControl = ({ label, value, onChange }: { label: string, value: number, onChange: (val: number) => void }) => (
@@ -154,228 +77,7 @@ export const AvatarDesigner: React.FC<{ onAvatarGenerated?: (config: CustomAvata
   const [presetTab, setPresetTab] = useState<'all' | 'female' | 'male' | 'custom'>('all');
   const [presetSearch, setPresetSearch] = useState('');
   const [showSearchHelp, setShowSearchHelp] = useState(false);
-  const [isGeneratingFromSearch, setIsGeneratingFromSearch] = useState(false);
   const [customAvatars, setCustomAvatars] = useState<SavedAvatarConfig[]>([]);
-
-  const [isCameraOpen, setIsCameraOpen] = useState(false);
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-
-  const startCamera = async () => {
-    setIsCameraOpen(true);
-    setSaveMessage('');
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-      }
-    } catch (err) {
-      console.error("Error accessing camera:", err);
-      setSaveMessage("Could not access camera. Please ensure permissions are granted.");
-      setIsCameraOpen(false);
-    }
-  };
-
-  const stopCamera = () => {
-    if (videoRef.current && videoRef.current.srcObject) {
-      const stream = videoRef.current.srcObject as MediaStream;
-      stream.getTracks().forEach(track => track.stop());
-    }
-    setIsCameraOpen(false);
-  };
-
-  const handleAIGenerate = async (query: string) => {
-    setIsGeneratingFromSearch(true);
-    setSaveMessage('');
-    try {
-      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY as string });
-      const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
-        contents: `Generate a 3D avatar configuration based on this search query: "${query}".
-        Return ONLY a valid JSON object with these exact keys and appropriate values.
-        String values must be chosen from the allowed options if applicable.
-        Numeric values should be between 40 and 60.
-        Colors should be hex codes.
-        CRITICAL: Ensure high contrast between the background theme (bgTheme) and the skinColor/clothesColor. If the skin or clothes are dark, use a 'light' bgTheme. If they are light, use a 'dark' bgTheme.`,
-        config: {
-          responseMimeType: "application/json",
-          responseSchema: {
-            type: Type.OBJECT,
-            properties: {
-              gender: { type: Type.STRING, enum: ['male', 'female'], description: "The gender of the person" },
-              age: { type: Type.NUMBER, description: "Age between 18 and 80" },
-              skinColor: { type: Type.STRING, description: "Hex color code" },
-              hairColor: { type: Type.STRING, description: "Hex color code" },
-              eyeColor: { type: Type.STRING, description: "Hex color code" },
-              hairStyle: { type: Type.STRING, enum: ['short', 'long', 'bald', 'curly', 'buzzcut', 'dreadlocks', 'mohawk', 'spiky', 'wavy', 'bun', 'ponytail', 'fade', 'afro'] },
-              eyeStyle: { type: Type.STRING, enum: ['normal', 'glasses', 'sunglasses'] },
-              noseStyle: { type: Type.STRING, enum: ['small', 'wide', 'pointed', 'button', 'aquiline', 'snub', 'roman', 'flat', 'broad', 'thin'] },
-              mouthStyle: { type: Type.STRING, enum: ['smile', 'neutral', 'sad', 'smirk', 'open', 'surprised', 'pout', 'laugh', 'thin', 'wide'] },
-              clothesStyle: { type: Type.STRING, enum: ['tshirt', 'suit', 'hoodie', 'sweater', 'jacket', 'tanktop', 'dress', 'shirt', 'turtleneck', 'vneck', 'doctor', 'chef', 'police', 'astronaut', 'construction', 'ninja', 'wizard', 'cyberpunk', 'sports', 'military', 'royal', 'farmer', 'kimono', 'hanfu', 'sari', 'dashiki', 'poncho', 'qipao', 'dirndl', 'kilt'] },
-              clothesColor: { type: Type.STRING, description: "Hex color code" },
-              bgTheme: { type: Type.STRING, enum: ['light', 'dark', 'gradient', 'neon'] },
-              headwear: { type: Type.STRING, enum: ['none', 'cap', 'beanie', 'hijab', 'turban', 'sombrero', 'conical', 'crown', 'cowboy', 'headband'] },
-              facialHairStyle: { type: Type.STRING, enum: ['none', 'stubble', 'mustache', 'beard', 'goatee'] },
-              facialHairColor: { type: Type.STRING, description: "Hex color code" },
-              faceWidth: { type: Type.NUMBER, description: "40 to 60" },
-              eyeSize: { type: Type.NUMBER, description: "40 to 60" },
-              eyeAngle: { type: Type.NUMBER, description: "40 to 60" },
-              eyeDistance: { type: Type.NUMBER, description: "40 to 60" },
-              eyelidHeight: { type: Type.NUMBER, description: "40 to 60" },
-              upperLashes: { type: Type.STRING, enum: ['none', 'short', 'long', 'thick'] },
-              lowerLashes: { type: Type.STRING, enum: ['none', 'short', 'long'] },
-              noseWidth: { type: Type.NUMBER, description: "40 to 60" },
-              noseHeight: { type: Type.NUMBER, description: "40 to 60" },
-              noseAngle: { type: Type.NUMBER, description: "40 to 60" },
-              noseTipSize: { type: Type.NUMBER, description: "40 to 60" },
-              mouthFullness: { type: Type.NUMBER, description: "40 to 60" },
-              mouthWidth: { type: Type.NUMBER, description: "40 to 60" },
-              mouthHeight: { type: Type.NUMBER, description: "40 to 60" }
-            },
-            required: ["gender", "age", "skinColor", "hairColor", "eyeColor", "hairStyle", "eyeStyle", "noseStyle", "mouthStyle", "clothesStyle", "clothesColor", "bgTheme", "headwear", "facialHairStyle", "facialHairColor", "faceWidth", "eyeSize", "eyeAngle", "eyeDistance", "eyelidHeight", "upperLashes", "lowerLashes", "noseWidth", "noseHeight", "noseAngle", "noseTipSize", "mouthFullness", "mouthWidth", "mouthHeight"]
-          }
-        }
-      });
-      const data = JSON.parse(response.text || '{}');
-      setConfig(prev => {
-        const newConfig = ensureGoodContrast({ ...prev, ...data });
-        
-        const customName = `AI Generated - ${query}`;
-        saveCustomAvatar({
-          ...newConfig,
-          name: customName,
-          voice: data.gender === 'female' ? 'Zephyr' : 'Puck'
-        }).then(newCustomAvatar => {
-          setCustomAvatars(customList => [newCustomAvatar, ...customList]);
-        });
-        
-        return newConfig;
-      });
-      setShowPresetModal(false);
-      setPresetSearch('');
-    } catch (e) {
-      console.error(e);
-      setSaveMessage("Failed to generate avatar from search.");
-    } finally {
-      setIsGeneratingFromSearch(false);
-    }
-  };
-
-  const captureAndAnalyze = async () => {
-    if (!videoRef.current || !canvasRef.current) return;
-    
-    const video = videoRef.current;
-    const canvas = canvasRef.current;
-    
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-    
-    const base64Image = canvas.toDataURL('image/jpeg').split(',')[1];
-    
-    stopCamera();
-    setIsAnalyzing(true);
-    setSaveMessage('');
-    
-    try {
-      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY as string });
-      
-      const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
-        contents: {
-          parts: [
-            {
-              inlineData: {
-                data: base64Image,
-                mimeType: "image/jpeg"
-              }
-            },
-            {
-              text: "Analyze this face and map the person's features to the provided CustomAvatarProps schema. Return ONLY valid JSON matching the schema. IMPORTANT RULES: 1. Always use 'light' for bgTheme. 2. Do not generate pure white (#ffffff) or extremely light skinColor. Use realistic natural skin tones. 3. Do not generate pure white or extremely light clothesColor."
-            }
-          ]
-        },
-        config: {
-          responseMimeType: "application/json",
-          responseSchema: {
-            type: Type.OBJECT,
-            properties: {
-              hairStyle: { type: Type.STRING, enum: ['short', 'long', 'bald', 'curly', 'buzzcut', 'dreadlocks', 'mohawk', 'spiky', 'wavy', 'bun', 'ponytail', 'fade', 'afro'] },
-              hairColor: { type: Type.STRING, description: "Hex color code for hair" },
-              skinColor: { type: Type.STRING, description: "Hex color code for skin" },
-              eyeColor: { type: Type.STRING, description: "Hex color code for eyes" },
-              eyeStyle: { type: Type.STRING, enum: ['normal', 'glasses', 'sunglasses'] },
-              noseStyle: { type: Type.STRING, enum: ['small', 'wide', 'pointed', 'button', 'aquiline', 'snub', 'roman', 'flat', 'broad', 'thin'] },
-              mouthStyle: { type: Type.STRING, enum: ['smile', 'neutral', 'sad', 'smirk', 'open', 'surprised', 'pout', 'laugh', 'thin', 'wide'] },
-              clothesStyle: { type: Type.STRING, enum: ['tshirt', 'suit', 'hoodie', 'sweater', 'jacket', 'tanktop', 'dress', 'shirt', 'turtleneck', 'vneck', 'doctor', 'chef', 'police', 'astronaut', 'construction', 'ninja', 'wizard', 'cyberpunk', 'sports', 'military', 'royal', 'farmer', 'kimono', 'hanfu', 'sari', 'dashiki', 'poncho', 'qipao', 'dirndl', 'kilt'] },
-              clothesColor: { type: Type.STRING, description: "Hex color code for clothes" },
-              headwear: { type: Type.STRING, enum: ['none', 'cap', 'beanie', 'hijab', 'turban', 'sombrero', 'conical', 'crown', 'cowboy', 'headband'] },
-              bgTheme: { type: Type.STRING, enum: ['light', 'dark', 'gradient', 'neon'] },
-              facialHairStyle: { type: Type.STRING, enum: ['none', 'stubble', 'mustache', 'beard', 'goatee'] },
-              facialHairColor: { type: Type.STRING, description: "Hex color code for facial hair" },
-              faceWidth: { type: Type.NUMBER, description: "0 to 100" },
-              eyeSize: { type: Type.NUMBER, description: "0 to 100" },
-              eyeAngle: { type: Type.NUMBER, description: "0 to 100" },
-              eyeDistance: { type: Type.NUMBER, description: "0 to 100" },
-              eyelidHeight: { type: Type.NUMBER, description: "0 to 100" },
-              upperLashes: { type: Type.STRING, enum: ['none', 'short', 'long', 'thick'] },
-              lowerLashes: { type: Type.STRING, enum: ['none', 'short', 'long'] },
-              noseWidth: { type: Type.NUMBER, description: "0 to 100" },
-              noseHeight: { type: Type.NUMBER, description: "0 to 100" },
-              noseAngle: { type: Type.NUMBER, description: "0 to 100" },
-              noseTipSize: { type: Type.NUMBER, description: "0 to 100" },
-              mouthFullness: { type: Type.NUMBER, description: "0 to 100" },
-              mouthWidth: { type: Type.NUMBER, description: "0 to 100" },
-              mouthHeight: { type: Type.NUMBER, description: "0 to 100" },
-              gender: { type: Type.STRING, enum: ["male", "female"], description: "The gender of the person" }
-            },
-            required: ["gender", "hairStyle", "hairColor", "skinColor", "eyeColor", "eyeStyle", "noseStyle", "mouthStyle", "clothesStyle", "clothesColor", "headwear", "bgTheme", "facialHairStyle", "facialHairColor", "faceWidth", "eyeSize", "eyeAngle", "eyeDistance", "eyelidHeight", "upperLashes", "lowerLashes", "noseWidth", "noseHeight", "noseAngle", "noseTipSize", "mouthFullness", "mouthWidth", "mouthHeight"]
-          }
-        }
-      });
-      
-      const result = JSON.parse(response.text || "{}");
-      
-      setConfig(prev => {
-        const mergedConfig = { ...prev, ...result };
-        const contrastFixedResult = ensureGoodContrast(mergedConfig);
-        if (onAvatarGenerated) onAvatarGenerated(contrastFixedResult);
-        
-        const customName = `AI Generated - Camera`;
-        saveCustomAvatar({
-          ...contrastFixedResult,
-          name: customName,
-          voice: result.gender === 'female' ? 'Zephyr' : 'Puck'
-        }).then(newCustomAvatar => {
-          setCustomAvatars(customList => [newCustomAvatar, ...customList]);
-        });
-        
-        return contrastFixedResult;
-      });
-      
-      if (result.gender === 'female') {
-        if (!aiVoice.includes('Zephyr') && !aiVoice.includes('Kore')) {
-          setAiVoice('Zephyr');
-        }
-      } else if (result.gender === 'male') {
-        if (!aiVoice.includes('Puck') && !aiVoice.includes('Charon') && !aiVoice.includes('Fenrir')) {
-          setAiVoice('Puck');
-        }
-      }
-
-      setSaveMessage('Avatar generated successfully!');
-      setTimeout(() => setSaveMessage(''), 3000);
-      
-    } catch (err) {
-      console.error("Error analyzing image:", err);
-      setSaveMessage("Failed to analyze image. Please try again.");
-    } finally {
-      setIsAnalyzing(false);
-    }
-  };
 
   useEffect(() => {
     const loadSaved = async () => {
@@ -441,18 +143,6 @@ export const AvatarDesigner: React.FC<{ onAvatarGenerated?: (config: CustomAvata
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const skinLum = getLuminance(config.skinColor);
-  const clothesLum = getLuminance(config.clothesColor);
-  const bgLum = bgLuminance[config.bgTheme || 'light'];
-  
-  const skinContrast = getContrast(skinLum, bgLum);
-  const clothesContrast = getContrast(clothesLum, bgLum);
-  const hasPoorContrast = skinContrast < 2.5 || clothesContrast < 2.5;
-
-  const autoFixContrast = () => {
-    setConfig(prev => ensureGoodContrast({ ...prev }));
-  };
-
   const colors = {
     skin: ['#ffe0d2', '#f5cbb7', '#e0ac69', '#8d5524', '#3d2210'],
     hair: ['#1a1a1a', '#4a3018', '#a53814', '#e8c37a', '#a0a0a0', '#94a3b8', '#e11d48', '#0284c7'],
@@ -486,66 +176,9 @@ export const AvatarDesigner: React.FC<{ onAvatarGenerated?: (config: CustomAvata
                 </button>
               </div>
 
-              <div className="mb-6">
-                <button 
-                  onClick={startCamera}
-                  disabled={isAnalyzing}
-                  className="w-full px-4 py-3 bg-[var(--trust-blue)] text-white rounded-lg font-bold text-sm hover:brightness-110 transition-all shadow-md disabled:opacity-50 flex items-center justify-center gap-2"
-                >
-                  {isAnalyzing ? (
-                    'Analyzing Face...'
-                  ) : (
-                    <>
-                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
-                      Generate from Photo
-                    </>
-                  )}
-                </button>
-              </div>
-
-              {isCameraOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4">
-                  <div className="bg-[var(--bg-sidebar)] p-6 rounded-xl max-w-md w-full">
-                    <div className="flex justify-between items-center mb-4">
-                      <h3 className="text-lg font-bold text-[var(--text-header)]">Take a Photo</h3>
-                      <button onClick={stopCamera} className="text-[var(--text-body)] opacity-70 hover:opacity-100">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-                      </button>
-                    </div>
-                    <div className="relative aspect-video bg-black rounded-lg overflow-hidden mb-4">
-                      <video ref={videoRef} autoPlay playsInline className="w-full h-full object-cover" />
-                      <canvas ref={canvasRef} className="hidden" />
-                    </div>
-                    <button 
-                      onClick={captureAndAnalyze}
-                      className="w-full px-4 py-3 bg-green-600 text-white rounded-lg font-bold text-sm hover:bg-green-500 transition-all shadow-md"
-                    >
-                      Capture & Generate
-                    </button>
-                  </div>
-                </div>
-              )}
-
               <div className="aspect-square w-full max-w-[300px] mx-auto mb-6">
                 <CustomAvatar3D {...config} />
               </div>
-
-              {hasPoorContrast && (
-                <div className="mb-6 p-3 bg-orange-500/10 border border-orange-500/30 rounded-lg flex items-start gap-3">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-orange-500 mt-0.5 shrink-0"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
-                  <div className="flex-1">
-                    <p className="text-xs text-orange-600 dark:text-orange-400">
-                      <strong>Low Contrast Warning:</strong> The current background theme may make the avatar hard to see. Consider changing the background theme, skin color, or clothes color.
-                    </p>
-                    <button
-                      onClick={autoFixContrast}
-                      className="mt-2 px-3 py-1 bg-orange-500 text-white text-xs font-medium rounded hover:bg-orange-600 transition-colors"
-                    >
-                      Auto Fix Contrast
-                    </button>
-                  </div>
-                </div>
-              )}
               
               <div className="flex justify-center gap-4">
                 <button 
@@ -1083,25 +716,8 @@ export const AvatarDesigner: React.FC<{ onAvatarGenerated?: (config: CustomAvata
                       </div>
                       <h3 className="text-lg font-bold text-[var(--text-header)] mb-2">No presets found</h3>
                       <p className="text-[var(--text-body)] opacity-70 max-w-md mb-6">
-                        We couldn't find any avatars matching "{presetSearch}". Would you like our AI to generate a custom avatar based on this description?
+                        We couldn't find any avatars matching "{presetSearch}". Try adjusting your search terms.
                       </p>
-                      <button
-                        onClick={() => handleAIGenerate(presetSearch)}
-                        disabled={isGeneratingFromSearch}
-                        className="flex items-center gap-2 px-6 py-3 bg-[var(--trust-blue)] text-white font-medium rounded-xl hover:bg-blue-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg"
-                      >
-                        {isGeneratingFromSearch ? (
-                          <>
-                            <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-                            Generating...
-                          </>
-                        ) : (
-                          <>
-                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2v4"/><path d="M12 18v4"/><path d="M4.93 4.93l2.83 2.83"/><path d="M16.24 16.24l2.83 2.83"/><path d="M2 12h4"/><path d="M18 12h4"/><path d="M4.93 19.07l2.83-2.83"/><path d="M16.24 7.76l2.83-2.83"/></svg>
-                            Generate with AI
-                          </>
-                        )}
-                      </button>
                     </div>
                   );
                 }

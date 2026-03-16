@@ -4,6 +4,8 @@ import { VerifyView } from './VerifyView';
 import { TrustKeyService } from './TrustKeyService';
 import { UniversalSigner } from './UniversalSigner';
 import { BatchVerifier } from './BatchVerifier';
+import { ResumeProfile } from './ResumeProfile';
+import { HackathonView } from './HackathonView';
 
 export const DemoNotebook: React.FC = () => {
   const [activeStep, setActiveStep] = useState(0);
@@ -32,10 +34,10 @@ export const DemoNotebook: React.FC = () => {
   const steps = [
     { 
       id: 1, 
-      title: "Stage 01: Sovereign Identity Initialization", 
+      title: "Stage 01: Sovereign Identity & Verification", 
       subtitle: "Establishing Cryptographic Root of Trust",
-      desc: "We begin by generating a Sovereign Grade cryptographic keypair. Unlike standard API keys, this identity is self-sovereign and immutable, forming the base layer of our trust architecture.",
-      speakerGuide: "Start by explaining that Signet doesn't rely on centralized authorities. We generate a 264-bit entropy key that identifies the creator across the entire protocol."
+      desc: "This entire website and its underlying architecture were built with the help of Google AI Studio. We begin by generating a Sovereign Grade cryptographic keypair. To demonstrate its real-world application, we've integrated a live verification of the architect's resume. Using the generated public key, anyone can verify the authenticity of the signed resume payload.",
+      speakerGuide: "Start by explaining that this site was built using Google AI Studio. Then explain that Signet doesn't rely on centralized authorities. We generate a 264-bit entropy key that identifies the creator. Show the Architect Profile verification demo to explain how data is signed with a private key and instantly verified in the browser."
     },
     { 
       id: 2, 
@@ -67,7 +69,14 @@ export const DemoNotebook: React.FC = () => {
     },
     { 
       id: 6, 
-      title: "Stage 06: Conclusion & Future Outlook", 
+      title: "Stage 06: Hackathon Submission", 
+      subtitle: "Project Requirements & Checklist",
+      desc: "To conclude our technical demonstration, we present our complete Hackathon Submission. This outlines how SignetAI fulfills all the core requirements, including the use of Gemini 2.5 Flash, Firebase, and our innovative approach to digital provenance.",
+      speakerGuide: "Present the Hackathon Submission page. Walk the judges through the checklist to demonstrate that all criteria have been met and exceeded."
+    },
+    { 
+      id: 7, 
+      title: "Stage 07: Conclusion & Future Outlook", 
       subtitle: "The New Standard for Digital Trust",
       desc: "Signet Protocol isn't just a tool; it's a new standard for digital integrity. By combining sovereign identity with deep forensic analysis, we ensure that truth remains verifiable in an era of synthetic media.",
       speakerGuide: "Wrap up by thanking the judges. Emphasize that Signet is ready for integration today, bringing transparency back to the digital world."
@@ -294,8 +303,15 @@ export const DemoNotebook: React.FC = () => {
               )}
 
               {(isActive || isPast) && step.id === 1 && (
-                <div className="mt-6 border border-[var(--border-light)] rounded-xl overflow-hidden bg-black/20 p-4 max-h-[800px] overflow-y-auto">
-                  <TrustKeyService />
+                <div className="mt-6 flex flex-col gap-6">
+                  <div className="border border-[var(--border-light)] rounded-xl overflow-hidden bg-black/20 p-4 max-h-[800px] overflow-y-auto">
+                    <h4 className="text-xs font-bold uppercase tracking-widest opacity-50 mb-4">Identity Generation</h4>
+                    <TrustKeyService />
+                  </div>
+                  <div className="border border-[var(--border-light)] rounded-xl overflow-hidden bg-black/20 p-4 max-h-[800px] overflow-y-auto">
+                    <h4 className="text-xs font-bold uppercase tracking-widest opacity-50 mb-4">Resume Verification Demo</h4>
+                    <ResumeProfile />
+                  </div>
                 </div>
               )}
 
@@ -326,6 +342,13 @@ export const DemoNotebook: React.FC = () => {
                 <div className="mt-6 border border-[var(--border-light)] rounded-xl overflow-hidden bg-black/20 p-4 max-h-[800px] overflow-y-auto">
                   <h4 className="text-xs font-bold uppercase tracking-widest opacity-50 mb-4">Video Diff Engine</h4>
                   <VerifyView autoRun={true} />
+                </div>
+              )}
+
+              {(isActive || isPast) && step.id === 6 && (
+                <div className="mt-6 border border-[var(--border-light)] rounded-xl overflow-hidden bg-black/20 p-4 max-h-[800px] overflow-y-auto">
+                  <h4 className="text-xs font-bold uppercase tracking-widest opacity-50 mb-4">Hackathon Submission</h4>
+                  <HackathonView />
                 </div>
               )}
 

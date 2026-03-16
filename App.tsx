@@ -33,6 +33,7 @@ import { TermsOfServiceView } from './components/TermsOfServiceView';
 import { UserDataDeletionView } from './components/UserDataDeletionView';
 import { DemoNotebook } from './components/DemoNotebook';
 import { HackathonView } from './components/HackathonView';
+import { ResumeProfile } from './components/ResumeProfile';
 
 class ErrorBoundary extends Component<{children: ReactNode}, {hasError: boolean, error: Error | null}> {
   constructor(props: {children: ReactNode}) {
@@ -135,6 +136,7 @@ const Sidebar: React.FC<{ currentView: string; isOpen: boolean }> = ({ currentVi
       <SidebarGroup title="Getting Started">
         <SidebarLink id="" currentView={currentView} label="Introduction" />
         <SidebarLink id="mission" currentView={currentView} label="Mission & Team" />
+        <SidebarLink id="architect" currentView={currentView} label="Architect Profile" />
         <div className="lg:hidden">
           <SidebarLink id="hackathon" currentView={currentView} label="Hackathon Submission" highlight />
           <SidebarLink id="demo" currentView={currentView} label="▶ Run Demo Notebook" highlight />
@@ -261,7 +263,7 @@ const Header: React.FC<{
 );
 
 const App: React.FC = () => {
-  const [view, setView] = useState<'home' | 'mission' | 'spec' | 'standards' | 'schema' | 'branding' | 'manual' | 'auditor' | 'identity' | 'compliance' | 'verify' | 'ecosystem' | 'svg-lab' | 'pdf-lab' | 'universal-lab' | 'image-diff' | 'status' | 'batch' | 'cli' | 'privacy' | 'donate' | 'terms' | 'data-deletion' | 'demo' | 'hackathon' | 'avatar-lab'>('home');
+  const [view, setView] = useState<'home' | 'mission' | 'architect' | 'spec' | 'standards' | 'schema' | 'branding' | 'manual' | 'auditor' | 'identity' | 'compliance' | 'verify' | 'ecosystem' | 'svg-lab' | 'pdf-lab' | 'universal-lab' | 'image-diff' | 'status' | 'batch' | 'cli' | 'privacy' | 'donate' | 'terms' | 'data-deletion' | 'demo' | 'hackathon' | 'avatar-lab'>('home');
   const [theme, setTheme] = useState<Theme>('standard');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isPortalOpen, setIsPortalOpen] = useState(false);
@@ -282,6 +284,8 @@ const App: React.FC = () => {
 
       if (route === '#mission') {
         setView('mission');
+      } else if (route === '#architect') {
+        setView('architect');
       } else if (route === '#auditor') {
         setView('auditor');
       } else if (route === '#identity') {
@@ -400,6 +404,7 @@ const App: React.FC = () => {
               </>
             )}
             {view === 'mission' && <MissionView />}
+            {view === 'architect' && <ResumeProfile />}
             {view === 'identity' && <TrustKeyService />}
             {view === 'auditor' && <ProvenanceLab />}
             {view === 'spec' && <SpecView />}
